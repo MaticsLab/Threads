@@ -385,3 +385,10 @@ def stitch_text(sewer, font_id, text, height_mm=None, letter_spacing_mm=0.0):
             'height_mm': round(font.size * scale, 1),
             'satin_columns': n_satin, 'running_paths': n_run,
             'missing_chars': missing}
+
+
+# public names, shared with the SVG digitizer (svginput.py)
+satin_zigzag = _satin_zigzag
+center_run = _center_run
+flatten_path = _flatten
+resample_polyline = _resample

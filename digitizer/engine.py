@@ -6,6 +6,7 @@ import pystitch
 from shapely.ops import unary_union
 
 from . import core, segment
+from inkstitchlib import fills as fill_methods
 
 
 @dataclass
@@ -24,6 +25,8 @@ class Params:
     min_fill_area: float = 0.20
     min_blob_area: float = 2.0    # below this, satin-ing a blob isn't worth it
     border_width: float = 1.0     # satin outline band around blobs
+    fill_method: str = 'tatami'   # tatami | contour | circular (Ink/Stitch fills)
+    fill_angle: float = 65.0
     heavy_underlay: bool = True
 
 
@@ -105,8 +108,8 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
                                           stagger=False, start=s.pos, travel=travel)
                             core.sew_fill(s, g, 20.0, p.underlay_spacing, 3.0,
                                           stagger=False, start=s.pos, travel=travel)
-                    core.sew_fill(s, g, 65.0, p.row_spacing, p.max_stitch,
-                                  stagger=True, start=s.pos, travel=travel)
+                    fill_methods.sew_area(s, g, p.fill_method, p.fill_angle,
+                                   p.row_spacing, p.max_stitch, travel=travel)
                     # too wide to satin across, but it still needs a hard edge:
                     # a satin outline over the fill is what stops a torso or a
                     # head reading as ragged

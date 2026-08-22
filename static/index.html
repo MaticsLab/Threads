@@ -88,6 +88,8 @@
       <div class="tabs">
         <button id="tabImage" class="on">Artwork</button>
         <button id="tabText">Lettering</button>
+        <button id="tabImport">Import</button>
+        <button id="tabBiz">Business</button>
       </div>
 
       <!-- ============================== artwork -->
@@ -122,6 +124,17 @@
           <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
         </div>
 
+        <div class="row">
+          <div><label>Fill method</label>
+            <select id="fillMethod">
+              <option value="tatami" selected>Tatami</option>
+              <option value="contour">Contour</option>
+              <option value="circular">Circular</option>
+            </select>
+          </div>
+          <div><label>Fill angle (°)</label><input type="number" id="fillAngle" value="65" step="5" min="0" max="180"></div>
+        </div>
+
         <label><input type="checkbox" id="underlay" checked> Heavy underlay</label>
         <label><input type="checkbox" id="autotune" checked> Auto-tune from QA</label>
 
@@ -147,14 +160,97 @@
         <button id="goText" class="wide">Stitch text</button>
       </div>
 
+      <!-- ============================== import -->
+      <div id="paneImport" class="hide">
+        <h2>1 · Import</h2>
+        <div class="drop" id="dropImport">
+          <div>Click or drop a file<br><span class="muted">SVG (digitized like Ink/Stitch) or any machine file:<br>DST, PES, JEF, EXP, VP3, XXX, HUS, PEC, …</span></div>
+        </div>
+        <input type="file" id="fileImport" class="hide"
+               accept=".svg,.dst,.pes,.jef,.exp,.vp3,.xxx,.u01,.pec,.tbf,.hus,.pcs,.sew,.shv,.jpx,.dsb,.dsz,.csv,.json">
+        <p class="muted" id="importName" style="margin:8px 0 0"></p>
+
+        <div class="row">
+          <div><label>SVG width (mm) <span class="muted">0 = natural</span></label>
+            <input type="number" id="importWidth" value="0" step="5" min="0"></div>
+          <div><label>SVG fill method</label>
+            <select id="importFill">
+              <option value="tatami" selected>Tatami</option>
+              <option value="contour">Contour</option>
+              <option value="circular">Circular</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="goImport" class="wide" disabled>Import &amp; stitch</button>
+      </div>
+
+      <!-- ============================== business (embTools database) -->
+      <div id="paneBiz" class="hide">
+        <h2>1 · Clients &amp; vendors</h2>
+        <div class="row">
+          <div><label>Book</label>
+            <select id="bizKind"><option value="client" selected>Clients</option><option value="vendor">Vendors</option></select>
+          </div>
+          <div><label>Sort by</label>
+            <select id="bizSort"><option value="name" selected>Name</option><option value="business">Business</option></select>
+          </div>
+        </div>
+        <div id="bizList" style="max-height:180px;overflow:auto;margin-top:10px"></div>
+
+        <div class="row">
+          <div><label>Name *</label><input type="text" id="bzName"></div>
+          <div><label>Business</label><input type="text" id="bzBusiness"></div>
+        </div>
+        <div class="row">
+          <div><label>Email</label><input type="text" id="bzEmail"></div>
+          <div><label>Phone</label><input type="text" id="bzPhone"></div>
+        </div>
+        <div class="row">
+          <div><label>Mobile</label><input type="text" id="bzMobile"></div>
+          <div><label>Website</label><input type="text" id="bzWebsite"></div>
+        </div>
+        <label>Address</label><input type="text" id="bzAddress">
+        <label>Billing address</label><input type="text" id="bzBilling">
+        <div class="row" style="margin-top:14px">
+          <button id="bizSave">Add</button>
+          <button id="bizDelete" class="ghost" disabled>Delete</button>
+        </div>
+        <p class="muted" style="margin:8px 0 0">Click an entry to edit it; the selected
+          client's name is printed on the worksheet PDF.</p>
+      </div>
+
       <label style="margin-top:16px">Thread palette <span class="muted">(for thread names)</span></label>
       <select id="palette"></select>
 
-      <div class="util">
-        <span class="muted">mm ⇄ inch</span>
-        <input type="number" id="convMM" value="100" step="1"> mm =
-        <input type="number" id="convIN" value="3.937" step="0.01"> in
+      <details>
+        <summary>Unit conversions (embTools)</summary>
+        <div class="util"><input type="number" id="convMM" value="100"> mm ⇄ <input type="number" id="convIN" value="3.937"> in</div>
+        <div class="util"><input type="number" id="convCM" value="10"> cm ⇄ <input type="number" id="convIN1" value="3.937"> in</div>
+        <div class="util"><input type="number" id="convPX" value="378"> px ⇄ <input type="number" id="convMM1" value="100"> mm</div>
+        <div class="util"><input type="number" id="convPT" value="72"> pt ⇄ <input type="number" id="convIN2" value="1"> in</div>
+      </details>
+
+      <details>
+        <summary>Run time calculator (embTools)</summary>
+        <div class="row"><div><label>Stitches</label><input type="number" id="rtStitches" value="5000"></div>
+          <div><label>Speed (spm)</label><input type="number" id="rtSpeed" value="700"></div></div>
+        <div class="row"><div><label>Trims</label><input type="number" id="rtTrims" value="0"></div>
+          <div><label>Sec / trim</label><input type="number" id="rtTrimSec" value="5"></div></div>
+        <p style="margin:10px 0 0;font-weight:600">≈ <span id="rtOut">7.1</span> min per piece</p>
+      </details>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>Notes (embTools)</h2>
+      <div class="tabs" style="margin-bottom:10px">
+        <button class="ntab on" data-note="notes">Notes</button>
+        <button class="ntab" data-note="quotes">Quote log</button>
+        <button class="ntab" data-note="todo">To-do</button>
       </div>
+      <textarea id="noteText" style="min-height:90px" placeholder="Saved on the server, embTools style…"></textarea>
+      <button id="noteSave" class="mini" style="margin-top:8px">Save</button>
+      <span class="muted" id="noteStatus"></span>
     </div>
 
     <div class="card hide" id="layersCard" style="margin-top:18px">
@@ -174,6 +270,7 @@
         <button class="mode mini on" data-mode="photo">Preview</button>
         <button class="mode mini" data-mode="plan">Stitch plan</button>
         <button class="mode mini" data-mode="realistic">Realistic</button>
+        <button class="mode mini" data-mode="density">Density</button>
         <button class="mode mini" data-mode="player">▶ Player</button>
         <span class="muted" id="viewerHint" style="margin-left:auto">scroll to zoom · drag to pan</span>
       </div>
@@ -204,6 +301,7 @@
             <option value="tbf">TBF — Tajima</option>
             <option value="csv">CSV — stitch list</option>
             <option value="png">PNG — raster</option>
+            <option value="zip">ZIP — all formats + worksheet</option>
           </select>
         </div>
         <a id="dl"><button class="ghost">Download</button></a>
@@ -216,6 +314,10 @@
           <div><label>Setup fee $</label><input type="number" id="qSetup" value="0" step="1"></div>
           <div><label>$ / 1000 stitches</label><input type="number" id="qPrice" value="0" step="0.1"></div>
           <div><label>Design name</label><input type="text" id="qName" value="design"></div>
+        </div>
+        <div class="row">
+          <div><label>Client (from Business book)</label><select id="qClient"><option value="">—</option></select></div>
+          <div></div>
         </div>
         <div class="row3">
           <div><label>Garments qty</label><input type="number" id="qQty" value="0" step="1"></div>
@@ -258,18 +360,103 @@ const $ = id => document.getElementById(id);
 let job = null, kind = null, fonts = [];
 
 /* ------------------------------------------------------------- tabs */
-$('tabImage').onclick = () => { setTab(true); };
-$('tabText').onclick = () => { setTab(false); };
-function setTab(img) {
-  $('tabImage').classList.toggle('on', img);
-  $('tabText').classList.toggle('on', !img);
-  $('paneImage').classList.toggle('hide', !img);
-  $('paneText').classList.toggle('hide', img);
+const TABS = { tabImage: 'paneImage', tabText: 'paneText', tabImport: 'paneImport', tabBiz: 'paneBiz' };
+Object.keys(TABS).forEach(t => $(t).onclick = () => setTab(t));
+function setTab(active) {
+  Object.entries(TABS).forEach(([t, pane]) => {
+    $(t).classList.toggle('on', t === active);
+    $(pane).classList.toggle('hide', t !== active);
+  });
 }
 
-/* ------------------------------------------------- unit converter (embTools) */
-$('convMM').oninput = () => { $('convIN').value = ($('convMM').value / 25.4).toFixed(3); };
-$('convIN').oninput = () => { $('convMM').value = ($('convIN').value * 25.4).toFixed(1); };
+/* ---------------------------------------- unit conversions (embTools port) */
+function bindPair(aId, bId, a2b, b2a) {
+  $(aId).oninput = () => { $(bId).value = a2b(parseFloat($(aId).value) || 0); };
+  $(bId).oninput = () => { $(aId).value = b2a(parseFloat($(bId).value) || 0); };
+}
+bindPair('convMM', 'convIN', v => (v / 25.4).toFixed(3), v => (v * 25.4).toFixed(1));
+bindPair('convCM', 'convIN1', v => (v * 0.39370).toFixed(3), v => (v / 0.39370).toFixed(2));
+bindPair('convPX', 'convMM1', v => (v * 0.2645833333).toFixed(2), v => (v / 0.2645833333).toFixed(1));
+bindPair('convPT', 'convIN2', v => (v / 72).toFixed(3), v => (v * 72).toFixed(1));
+
+/* ------------------------------------- run time calculator (embTools port) */
+function runtimeCalc() {
+  const st = parseFloat($('rtStitches').value) || 0, spm = parseFloat($('rtSpeed').value) || 1;
+  const tr = parseFloat($('rtTrims').value) || 0, ts = parseFloat($('rtTrimSec').value) || 0;
+  $('rtOut').textContent = (st / spm + (tr * ts) / 60).toFixed(1);
+}
+['rtStitches', 'rtSpeed', 'rtTrims', 'rtTrimSec'].forEach(id => $(id).oninput = runtimeCalc);
+runtimeCalc();
+
+/* --------------------------------------- business database (embTools port) */
+const BZ = ['name', 'business_name', 'email', 'phone', 'mobile', 'website', 'address', 'billing_address'];
+const BZ_IDS = ['bzName', 'bzBusiness', 'bzEmail', 'bzPhone', 'bzMobile', 'bzWebsite', 'bzAddress', 'bzBilling'];
+let bizEditing = null;
+
+async function bizLoad() {
+  const rows = await (await fetch(`/api/business/${$('bizKind').value}?sort=${$('bizSort').value}`)).json();
+  $('bizList').innerHTML = rows.map(r =>
+    `<div class="chip" style="cursor:pointer" data-id="${r.id}">
+       <span>${r.name}</span><span class="muted" style="margin-left:auto">${r.business_name || r.email || ''}</span>
+     </div>`).join('') || '<p class="muted">Empty — add the first entry below.</p>';
+  document.querySelectorAll('#bizList .chip').forEach(el => el.onclick = () => bizEdit(rows.find(r => r.id == el.dataset.id)));
+  if ($('bizKind').value === 'client') {
+    $('qClient').innerHTML = '<option value="">—</option>' +
+      rows.map(r => `<option>${r.name}</option>`).join('');
+  }
+  bizClear();
+}
+function bizEdit(r) {
+  bizEditing = r.id;
+  BZ.forEach((f, i) => $(BZ_IDS[i]).value = r[f] || '');
+  $('bizSave').textContent = 'Update';
+  $('bizDelete').disabled = false;
+}
+function bizClear() {
+  bizEditing = null;
+  BZ_IDS.forEach(id => $(id).value = '');
+  $('bizSave').textContent = 'Add';
+  $('bizDelete').disabled = true;
+}
+$('bizKind').onchange = bizLoad;
+$('bizSort').onchange = bizLoad;
+$('bizSave').onclick = async () => {
+  const data = {};
+  BZ.forEach((f, i) => data[f] = $(BZ_IDS[i]).value);
+  if (!data.name.trim()) { alert('Name is required'); return; }
+  const kind = $('bizKind').value;
+  const url = bizEditing ? `/api/business/${kind}/${bizEditing}` : `/api/business/${kind}`;
+  const res = await fetch(url, { method: bizEditing ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  if (!res.ok) { alert((await res.json()).detail); return; }
+  bizLoad();
+};
+$('bizDelete').onclick = async () => {
+  if (!bizEditing) return;
+  await fetch(`/api/business/${$('bizKind').value}/${bizEditing}`, { method: 'DELETE' });
+  bizLoad();
+};
+bizLoad();
+
+/* --------------------------------------------------- notes (embTools port) */
+let noteKind = 'notes';
+document.querySelectorAll('.ntab').forEach(b => b.onclick = async () => {
+  document.querySelectorAll('.ntab').forEach(x => x.classList.toggle('on', x === b));
+  noteKind = b.dataset.note;
+  await noteLoad();
+});
+async function noteLoad() {
+  const d = await (await fetch(`/api/notes/${noteKind}`)).json();
+  $('noteText').value = d.text;
+  $('noteStatus').textContent = '';
+}
+$('noteSave').onclick = async () => {
+  await fetch(`/api/notes/${noteKind}`, { method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: $('noteText').value }) });
+  $('noteStatus').textContent = 'saved';
+};
+noteLoad();
 
 /* ---------------------------------------------------------- fonts + palettes */
 (async () => {
@@ -332,6 +519,8 @@ $('go').onclick = async () => {
   fd.append('max_satin', $('satin').value);
   fd.append('heavy_underlay', $('underlay').checked);
   fd.append('autotune', $('autotune').checked);
+  fd.append('fill_method', $('fillMethod').value);
+  fd.append('fill_angle', $('fillAngle').value);
   fd.append('palette', $('palette').value);
   try {
     const res = await fetch('/api/digitize', { method: 'POST', body: fd });
@@ -359,14 +548,41 @@ $('goText').onclick = async () => {
   b.disabled = false; b.textContent = 'Stitch text';
 };
 
+/* ------------------------------------------------------------ import flow */
+$('dropImport').onclick = () => $('fileImport').click();
+$('dropImport').ondragover = e => { e.preventDefault(); };
+$('dropImport').ondrop = e => { e.preventDefault(); if (e.dataTransfer.files[0]) pickImport(e.dataTransfer.files[0]); };
+$('fileImport').onchange = e => { if (e.target.files[0]) pickImport(e.target.files[0]); };
+function pickImport(f) {
+  window._imp = f;
+  $('importName').textContent = f.name;
+  $('goImport').disabled = false;
+}
+$('goImport').onclick = async () => {
+  const b = $('goImport'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Importing…';
+  const fd = new FormData();
+  fd.append('design', window._imp);
+  fd.append('width_mm', $('importWidth').value);
+  fd.append('fill_method', $('importFill').value);
+  fd.append('palette', $('palette').value);
+  try {
+    const res = await fetch('/api/import', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    show(await res.json());
+  } catch (err) { alert(err.message); }
+  b.disabled = false; b.textContent = 'Import & stitch';
+};
+
 /* --------------------------------------------------------------- results */
+let previewSrc = '';
 function show(d) {
   job = d.job; kind = d.kind;
   const r = d.report;
   $('hint').classList.add('hide');
   $('out').classList.remove('hide');
   $('warnings').innerHTML = (d.warnings || []).map(w => `<div class="warn">${w}</div>`).join('');
-  $('preview').src = d.preview;
+  previewSrc = d.preview;
+  $('preview').src = previewSrc;
   setMode('photo');
 
   const rows = [
@@ -386,6 +602,14 @@ function show(d) {
     rows.push(['Satin columns', d.lettering.satin_columns]);
     rows.push(['Running paths', d.lettering.running_paths]);
   }
+  if (d.import_info) {
+    if (d.import_info.source_format) rows.push(['Imported from', d.import_info.source_format.toUpperCase()]);
+    if (d.import_info.elements) rows.push(['SVG elements', d.import_info.elements]);
+    if (d.import_info.satin_columns !== undefined && kind === 'svg') {
+      rows.push(['Satin columns', d.import_info.satin_columns]);
+      rows.push(['Fills / strokes', `${d.import_info.fills} / ${d.import_info.strokes}`]);
+    }
+  }
   (r.layers || []).forEach(L => rows.push([`Coverage ${L.hex}`, L.coverage + '%']));
   $('spec').innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
 
@@ -400,15 +624,17 @@ function show(d) {
      <span class="muted" style="margin-left:auto">${t.palette}</span></div>`).join('');
 
   updateDl();
-  planCache = {}; stopPlayer(); playerData = null;
+  planCache = {}; stopPlayer(); playerData = null; bounds = null; playN = 0;
+  $('rtStitches').value = r.stitches; runtimeCalc();
 }
 
 $('fmt').onchange = updateDl;
-['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount'].forEach(id => $(id).onchange = updateDl);
+['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient'].forEach(id => $(id).onchange = updateDl);
 function updateDl() {
   $('dl').href = `/api/download/${job}?fmt=${$('fmt').value}`;
   const q = new URLSearchParams({
     name: $('qName').value || 'design', palette: $('palette').value,
+    client: $('qClient').value,
     setup: $('qSetup').value, price_per_1000: $('qPrice').value,
     garment_qty: $('qQty').value, garment_base: $('qBase').value,
     markup_pct: $('qMarkup').value, discount_pct: $('qDiscount').value,
@@ -416,106 +642,180 @@ function updateDl() {
   $('pdf').href = `/api/worksheet/${job}.pdf?` + q;
 }
 
-/* ------------------------------------------- viewer: pan/zoom svg + player */
-let planCache = {}, canvas = null, playerData = null, playing = false, playN = 0, playTotal = 0;
+/* ---------------------------------------------------------------- viewer
+   Plan view: SVG via svg.js + svg.panzoom.js (few paths, cheap).
+   Realistic + player: <canvas> — thousands of stitches as batched Path2D
+   strokes with a 3-pass thread shading, instead of one SVG filter per
+   stitch (which is what made big designs freeze the tab). */
+let planCache = {}, canvas = null, playerData = null, playing = false,
+    playN = 0, playTotal = 0, curMode = 'photo';
+let cnv = null, cctx = null, view = { s: 1, ox: 0, oy: 0 }, bounds = null;
 
 document.querySelectorAll('.vbar .mode').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 
 function setMode(mode) {
+  curMode = mode;
   document.querySelectorAll('.vbar .mode').forEach(b =>
     b.classList.toggle('on', b.dataset.mode === mode));
   $('playerBar').classList.toggle('hide', mode !== 'player');
-  $('viewerHint').textContent = mode === 'photo' ? '' : 'scroll to zoom · drag to pan';
+  $('viewerHint').textContent = (mode === 'photo' || mode === 'density') ? '' : 'scroll to zoom · drag to pan';
   stopPlayer();
-  const v = $('viewer');
-  if (mode === 'photo') {
-    clearCanvas(); $('preview').classList.remove('hide');
+  clearSvg(); removeCanvas();
+  if (mode === 'photo' || mode === 'density') {
+    $('preview').src = mode === 'density' ? `/api/density/${job}.png` : previewSrc;
+    $('preview').classList.remove('hide');
     return;
   }
   $('preview').classList.add('hide');
-  if (mode === 'player') { initPlayer(); return; }
-  loadSvg(mode === 'realistic');
+  if (mode === 'plan') { loadPlanSvg(); return; }
+  initStitchView(mode);                 // realistic | player
 }
 
-function clearCanvas() {
-  if (canvas) { canvas.remove(); canvas = null; }
-}
+function clearSvg() { if (canvas) { canvas.remove(); canvas = null; } }
+function removeCanvas() { if (cnv) { cnv.remove(); cnv = null; cctx = null; } }
 
-async function loadSvg(realistic) {
-  const key = realistic ? 'r' : 'p';
-  clearCanvas();
-  if (!planCache[key]) {
-    const res = await fetch(`/api/plan/${job}.svg` + (realistic ? '?realistic=true' : ''));
-    planCache[key] = await res.text();
+async function loadPlanSvg() {
+  if (!planCache.p) {
+    const res = await fetch(`/api/plan/${job}.svg`);
+    planCache.p = await res.text();
   }
-  mountSvg(planCache[key]);
-}
-
-function mountSvg(text) {
-  const doc = new DOMParser().parseFromString(text, 'image/svg+xml').documentElement;
-  const vb = doc.getAttribute('viewBox');
+  if (curMode !== 'plan') return;
+  clearSvg();
+  const doc = new DOMParser().parseFromString(planCache.p, 'image/svg+xml').documentElement;
   const ser = new XMLSerializer();
   let inner = '';
   for (const ch of doc.children) inner += ser.serializeToString(ch);
-  canvas = SVG().addTo('#viewer').attr('viewBox', vb).size('100%', '100%');
+  canvas = SVG().addTo('#viewer').attr('viewBox', doc.getAttribute('viewBox')).size('100%', '100%');
   canvas.svg(inner);
   canvas.panZoom({ zoomMin: 0.3, zoomMax: 60, zoomFactor: 0.18 });
-  return canvas;
 }
 
-/* stitch player — the embTools stitch player, drawn with svg.js */
-async function initPlayer() {
-  clearCanvas();
+/* ------------------------------------------------ canvas stitch rendering */
+async function loadStitches() {
   if (!playerData) {
     playerData = await (await fetch(`/api/stitches/${job}`)).json();
     playTotal = playerData.reduce((n, b) => n + b.runs.reduce((m, r) => m + r.length, 0), 0);
+    let minx = 1e18, miny = 1e18, maxx = -1e18, maxy = -1e18;
+    playerData.forEach(b => b.runs.forEach(r => r.forEach(p => {
+      if (p[0] < minx) minx = p[0]; if (p[0] > maxx) maxx = p[0];
+      if (p[1] < miny) miny = p[1]; if (p[1] > maxy) maxy = p[1];
+    })));
+    bounds = { minx, miny, maxx, maxy };
   }
-  // bounds (loop, not spread — big designs overflow the arg stack)
-  let minx = 1e18, miny = 1e18, maxx = -1e18, maxy = -1e18;
-  playerData.forEach(b => b.runs.forEach(r => r.forEach(p => {
-    if (p[0] < minx) minx = p[0]; if (p[0] > maxx) maxx = p[0];
-    if (p[1] < miny) miny = p[1]; if (p[1] > maxy) maxy = p[1];
-  })));
-  const pad = 8, x0 = minx - pad, y0 = miny - pad;
-  const w = maxx - x0 + pad, h = maxy - y0 + pad;
-  canvas = SVG().addTo('#viewer').attr('viewBox', `${x0} ${y0} ${w} ${h}`).size('100%', '100%');
-  canvas.panZoom({ zoomMin: 0.3, zoomMax: 60, zoomFactor: 0.18 });
-  $('playPos').max = playTotal;
-  drawUpTo(parseInt($('playPos').value) || 0);
 }
 
-let playerPaths = null;
-function drawUpTo(n) {
-  if (!canvas) return;
-  if (!playerPaths) {
-    playerPaths = [];
-    playerData.forEach(b => b.runs.forEach(r => {
-      playerPaths.push({ run: r, color: b.color,
-        el: canvas.polyline([]).fill('none')
-              .stroke({ color: b.color, width: 1.6, linecap: 'round', linejoin: 'round' }) });
-    }));
+function ensureCanvas() {
+  if (!cnv) {
+    cnv = document.createElement('canvas');
+    cnv.style.cssText = 'width:100%;height:100%;display:block;cursor:grab;touch-action:none';
+    $('viewer').appendChild(cnv);
+    cctx = cnv.getContext('2d');
+    bindPanZoom(cnv);
   }
-  let left = n;
-  for (const p of playerPaths) {
-    const take = Math.max(0, Math.min(p.run.length, left));
-    left -= p.run.length;
-    const pts = take >= 2 ? p.run.slice(0, take) : [];
-    if ((p._n || 0) !== take) { p.el.plot(pts); p._n = take; }
-  }
-  $('playInfo').textContent = `${n.toLocaleString()} / ${playTotal.toLocaleString()} st`;
-  $('playPos').value = n;
+  const r = $('viewer').getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cnv.width = Math.round(r.width * dpr); cnv.height = Math.round(r.height * dpr);
+  cnv._dpr = dpr; cnv._w = r.width; cnv._h = r.height;
 }
 
+function fitView() {
+  const w = bounds.maxx - bounds.minx || 1, h = bounds.maxy - bounds.miny || 1;
+  view.s = Math.min(cnv._w / w, cnv._h / h) * 0.92;
+  view.ox = (cnv._w - w * view.s) / 2 - bounds.minx * view.s;
+  view.oy = (cnv._h - h * view.s) / 2 - bounds.miny * view.s;
+}
+
+async function initStitchView(mode) {
+  await loadStitches();
+  if (curMode !== mode) return;
+  ensureCanvas();
+  fitView();
+  if (mode === 'player') { $('playPos').max = playTotal; drawFrame(); }
+  else drawFrame();
+}
+
+function shade(hex, f) {
+  const v = parseInt(hex.slice(1), 16);
+  const c = x => Math.max(0, Math.min(255, Math.round(x * f)));
+  return `rgb(${c(v >> 16 & 255)},${c(v >> 8 & 255)},${c(v & 255)})`;
+}
+
+function drawFrame() {
+  if (!cctx) return;
+  const dpr = cnv._dpr;
+  cctx.setTransform(1, 0, 0, 1, 0, 0);
+  cctx.clearRect(0, 0, cnv.width, cnv.height);
+  cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
+  cctx.lineCap = 'round'; cctx.lineJoin = 'round';
+  const limit = curMode === 'player' ? playN : Infinity;
+  const W = 1.7;                                   // thread width in CSS px (~0.45mm)
+  let left = limit;
+  for (const b of playerData) {
+    const paths = new Path2D();
+    let any = false;
+    for (const r of b.runs) {
+      const take = curMode === 'player' ? Math.max(0, Math.min(r.length, left)) : r.length;
+      if (curMode === 'player') left -= r.length;
+      if (take < 2) continue;
+      any = true;
+      paths.moveTo(r[0][0], r[0][1]);
+      for (let i = 1; i < take; i++) paths.lineTo(r[i][0], r[i][1]);
+    }
+    if (!any) continue;
+    if (curMode === 'realistic') {
+      cctx.strokeStyle = shade(b.color, 0.55); cctx.lineWidth = W;
+      cctx.stroke(paths);
+      cctx.save(); cctx.translate(-W * 0.10, -W * 0.16);
+      cctx.strokeStyle = b.color; cctx.lineWidth = W * 0.62; cctx.stroke(paths);
+      cctx.translate(-W * 0.08, -W * 0.12);
+      cctx.strokeStyle = shade(b.color, 1.45); cctx.lineWidth = W * 0.26; cctx.stroke(paths);
+      cctx.restore();
+    } else {
+      cctx.strokeStyle = b.color; cctx.lineWidth = W * 0.85; cctx.stroke(paths);
+    }
+    if (curMode === 'player' && left <= 0) break;
+  }
+  if (curMode === 'player') {
+    $('playInfo').textContent = `${Math.floor(playN).toLocaleString()} / ${playTotal.toLocaleString()} st`;
+    $('playPos').value = Math.floor(playN);
+  }
+}
+
+function bindPanZoom(el) {
+  let dragging = false, lx = 0, ly = 0;
+  el.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (!e.deltaY) return;
+    const f = e.deltaY < 0 ? 1.18 : 1 / 1.18;
+    const r = el.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    view.ox = mx - (mx - view.ox) * f;
+    view.oy = my - (my - view.oy) * f;
+    view.s *= f;
+    requestAnimationFrame(drawFrame);
+  }, { passive: false });
+  el.addEventListener('pointerdown', e => {
+    dragging = true; lx = e.clientX; ly = e.clientY;
+    el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing';
+  });
+  el.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    view.ox += e.clientX - lx; view.oy += e.clientY - ly;
+    lx = e.clientX; ly = e.clientY;
+    requestAnimationFrame(drawFrame);
+  });
+  el.addEventListener('pointerup', () => { dragging = false; el.style.cursor = 'grab'; });
+}
+
+/* stitch player controls (embTools stitch run, drawn on the canvas) */
 let rafId = null, lastT = 0;
 $('playBtn').onclick = () => { playing ? stopPlayer() : startPlayer(); };
 $('playPos').oninput = () => {
   stopPlayer();
   playN = parseInt($('playPos').value) || 0;
-  if (playerPaths) drawUpTo(playN);
+  drawFrame();
 };
 
 function startPlayer() {
-  if (!playerData) return;
+  if (!playerData || curMode !== 'player') return;
   playing = true; $('playBtn').textContent = '⏸';
   if (playN >= playTotal) playN = 0;
   lastT = performance.now();
@@ -524,7 +824,7 @@ function startPlayer() {
     const spm = parseInt($('playSpeed').value);            // stitches per minute
     playN = Math.min(playTotal, playN + (t - lastT) / 1000 * spm / 60);
     lastT = t;
-    drawUpTo(Math.floor(playN));
+    drawFrame();
     if (playN < playTotal) rafId = requestAnimationFrame(tick);
     else stopPlayer();
   };
@@ -533,9 +833,11 @@ function startPlayer() {
 function stopPlayer() {
   playing = false; $('playBtn').textContent = '▶';
   if (rafId) cancelAnimationFrame(rafId);
-  if (!canvas || !$('playerBar').classList.contains('hide')) return;
-  playerPaths = null;
 }
+window.addEventListener('resize', () => {
+  if (cnv && playerData) { ensureCanvas(); fitView(); drawFrame(); }
+});
+
 </script>
 </body>
 </html>

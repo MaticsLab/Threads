@@ -62,6 +62,23 @@ def nearest(rgb, palette_name):
     return best
 
 
+def threadlist_txt(design_name, report, layers, matches=None):
+    """Plain-text thread list, after Ink/Stitch's threadlist export."""
+    lines = ['Design: %s' % design_name,
+             'Size: %.1f x %.1f mm' % (report.get('width_mm', 0), report.get('height_mm', 0)),
+             'Stitches: %s   Colour changes: %s' % (report.get('stitches', 0),
+                                                    report.get('colour_changes', 0)),
+             '', 'Thread order:']
+    for i, L in enumerate(layers):
+        row = '%2d  %-12s %s' % (i + 1, L.get('name', ''), L['hex'])
+        if matches and i < len(matches):
+            t = matches[i]
+            row += '   %s %s %s' % (t['palette'], t['thread_name'],
+                                    ('#' + t['thread_number']) if t['thread_number'] else '')
+        lines.append(row)
+    return '\n'.join(lines) + '\n'
+
+
 def match_layers(layers, palette_name):
     """Attach the nearest thread of the palette to each colour layer dict."""
     out = []

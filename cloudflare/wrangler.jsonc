@@ -1,0 +1,25 @@
+// Cloudflare Containers deployment for StitchForge.
+// Deploy from this directory:  npm install && npx wrangler deploy
+// Requires a Cloudflare account with Workers Paid (Containers enabled).
+{
+  "name": "stitchforge",
+  "main": "worker.js",
+  "compatibility_date": "2025-06-20",
+  "containers": [
+    {
+      "class_name": "StitchForgeContainer",
+      // built from the repo's Dockerfile; the app listens on 8000 by default
+      "image": "../Dockerfile",
+      "max_instances": 1,
+      "instance_type": "standard"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "STITCHFORGE", "class_name": "StitchForgeContainer" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["StitchForgeContainer"] }
+  ]
+}
