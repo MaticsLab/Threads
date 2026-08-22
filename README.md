@@ -23,7 +23,9 @@ uvicorn app:app --reload --port 8000
 
 Tests: `pytest`.
 
-## Deploy on Railway
+## Deploy
+
+### Railway
 
 The repo ships a `Dockerfile` and `railway.json`, so it deploys as a single
 web service with no extra configuration:
@@ -46,6 +48,41 @@ between the digitize call and the export/worksheet calls, and jobs live on
 the container's ephemeral disk (they don't survive redeploys — by design,
 there's no persistence layer).
 
+### Cloudflare
+
+Two options, in order of effort:
+
+**1. Cloudflare in front of Railway (recommended, no code changes).**
+The app sends `Cache-Control` on static assets and per-job artifacts and
+gzips its big payloads, so Cloudflare's CDN caches them at the edge:
+
+1. Add your domain to Cloudflare (free plan is fine).
+2. Railway service → **Settings → Networking → Custom Domain** — e.g.
+   `stitch.yourdomain.com`; Railway shows a CNAME target.
+3. In Cloudflare DNS, create that CNAME with the proxy (orange cloud) **on**,
+   and set SSL/TLS mode to **Full (strict)**.
+
+Static files, stitch plans, density maps and stitch JSON are then served
+from Cloudflare's edge after first hit.
+
+**2. Full migration to Cloudflare Containers** (Workers Paid plan): the
+`cloudflare/` directory has a ready `wrangler.jsonc` + Worker that builds
+the same Dockerfile and routes all traffic to one container instance:
+
+```bash
+cd cloudflare && npm install && npx wrangler deploy
+```
+
+## Performance notes
+
+- Realistic preview and the stitch player render on a `<canvas>` with
+  batched `Path2D` strokes — the SVG realistic file (one lighting filter per
+  stitch, exactly Ink/Stitch's) is still available at
+  `/api/plan/{job}.svg?realistic=true` for export, but the browser no longer
+  has to evaluate thousands of live SVG filters.
+- Responses over 1 KB are gzipped; job artifacts are immutable and cached
+  (`Cache-Control: public`), so a browser or CDN only fetches them once.
+
 ## What you get
 
 - **PNG → DST** — the digitizing pipeline described below, unchanged.
@@ -59,10 +96,23 @@ there's no persistence layer).
   in the layout of Ink/Stitch's print worksheet, including thread names
   matched from real palettes (Madeira, Isacord, Gunold, Brother) and a
   quote sheet ported from embTools.
-- **Previews** — raster preview, stitch-plan SVG, and Ink/Stitch's
-  *realistic* preview (every stitch drawn as a lit thread via the
-  feSpecularLighting filter), all in a pan/zoom viewer, plus a stitch
-  player that sews the design on screen.
+- **SVG digitizing** — upload an SVG and it's digitized the way Ink/Stitch
+  digitizes Inkscape files: fills (even-odd, holes kept), running-stitch /
+  zigzag strokes, and real satin columns for paths carrying
+  `inkstitch:satin_column` attributes (angle, spacing, bean repeats honoured).
+- **Embroidery file import** — read any pystitch-supported machine file
+  (DST, PES, JEF, HUS, VP3, …) to preview, play, re-export and print.
+- **Fill methods** — tatami with fill-angle control, contour fill, and
+  circular fill, per Ink/Stitch's fill family.
+- **Previews** — raster preview, stitch-plan SVG (pan/zoom via
+  svg.panzoom.js), a fast canvas *realistic* view, a stitch **density map**
+  (green/yellow/red per penetration, like Ink/Stitch's density map), and a
+  stitch player that sews the design on screen.
+- **Business tools (embTools)** — client & vendor database, notes / quote
+  log / to-do panes, quote sheet on the worksheet, run-time calculator and
+  the full unit-conversion set (mm⇄in, cm⇄in, px⇄mm, pt⇄in).
+- **Batch export** — one ZIP with every major format, a thread list, the
+  stitch plan SVG and the worksheet PDF.
 
 ## Integrated projects
 
@@ -119,15 +169,22 @@ It loops up to four passes and stops as soon as a pass makes no changes.
 
 ```
 POST /api/analyze                image + colour count -> layers
-POST /api/digitize               digitize an analyzed upload
+POST /api/digitize               digitize an analyzed upload (fill_method, fill_angle, ...)
 POST /api/lettering              text + font -> stitched lettering
+POST /api/import                 SVG (digitized) or any machine embroidery file
 GET  /api/fonts                  bundled fonts (+ /api/fonts/{id}/preview.png)
 GET  /api/palettes               thread palettes
 GET  /api/download/{job}?fmt=    dst pes jef exp vp3 xxx u01 pec tbf csv json txt gcode png
+                                 or zip (all formats + threadlist + worksheet + plan)
 GET  /api/plan/{job}.svg         stitch plan SVG (?realistic=true for the lit preview)
-GET  /api/stitches/{job}         stitch blocks JSON (drives the player)
-GET  /api/worksheet/{job}.pdf    print worksheet (quote params: setup, price_per_1000,
-                                 garment_qty, garment_base, markup_pct, discount_pct)
+GET  /api/stitches/{job}         stitch blocks JSON (drives the player + canvas views)
+GET  /api/density/{job}.png      stitch density map
+GET  /api/threadlist/{job}.txt   thread list export
+GET  /api/worksheet/{job}.pdf    print worksheet (client, quote params: setup,
+                                 price_per_1000, garment_qty, garment_base, markup_pct,
+                                 discount_pct)
+GET/POST/PUT/DELETE /api/business/{client|vendor}[/{id}]   contact book (embTools)
+GET/PUT  /api/notes/{notes|quotes|todo}                    persisted notes (embTools)
 ```
 
 ## Layout

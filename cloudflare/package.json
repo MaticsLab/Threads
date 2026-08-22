@@ -1,0 +1,10 @@
+{
+  "name": "stitchforge-cloudflare",
+  "private": true,
+  "dependencies": {
+    "@cloudflare/containers": "^0.0.28"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

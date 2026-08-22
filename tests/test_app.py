@@ -2,10 +2,13 @@
 import io
 import os
 import sys
+import tempfile
 
 import pytest
 from PIL import Image, ImageDraw
 
+os.environ.setdefault('STITCHFORGE_DATA',
+                      os.path.join(tempfile.mkdtemp(), 'sf_test_data'))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient
@@ -101,3 +104,82 @@ def test_lettering_bad_input():
 def test_palettes():
     r = client.get('/api/palettes')
     assert 'Madeira Rayon' in r.json()
+
+
+def test_fill_methods():
+    for method in ('contour', 'circular'):
+        r = client.post('/api/analyze',
+                        files={'image': ('t.png', _test_png(), 'image/png')},
+                        data={'colors': 2})
+        job = r.json()['job']
+        r = client.post('/api/digitize', data={
+            'job': job, 'colors': 2, 'width_mm': 50, 'hoop_w': 100, 'hoop_h': 100,
+            'density': 0.4, 'max_satin': 8, 'heavy_underlay': False,
+            'autotune': False, 'fill_method': method})
+        assert r.status_code == 200, (method, r.text)
+        assert r.json()['report']['stitches'] > 200
+
+
+TEST_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="40mm"
+     viewBox="0 0 60 40">
+  <rect x="4" y="4" width="24" height="16" fill="#1a3b69"/>
+  <circle cx="45" cy="12" r="8" fill="#a8201a"/>
+  <path d="M4,30 C20,38 40,22 56,32" fill="none" stroke="#1d7a4c" stroke-width="0.5"/>
+</svg>'''
+
+
+def test_svg_import():
+    r = client.post('/api/import',
+                    files={'design': ('art.svg', TEST_SVG.encode(), 'image/svg+xml')},
+                    data={'width_mm': 0})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d['kind'] == 'svg'
+    assert d['import_info']['fills'] >= 2
+    assert d['import_info']['strokes'] >= 1
+    # content spans x=4..56 of the 60mm document -> ~52mm stitched extent
+    assert 48 <= d['report']['width_mm'] <= 56
+    assert d['report']['stitches'] > 300
+    assert client.get('/api/download/%s?fmt=dst' % d['job']).status_code == 200
+
+
+def test_embroidery_file_import(image_job):
+    job, _ = image_job
+    dst = client.get('/api/download/%s?fmt=dst' % job).content
+    r = client.post('/api/import',
+                    files={'design': ('old.dst', dst, 'application/octet-stream')})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d['kind'] == 'import'
+    assert d['report']['stitches'] > 200
+    assert client.get('/api/download/%s?fmt=pes' % d['job']).status_code == 200
+
+
+def test_density_and_zip_and_threadlist(image_job):
+    job, _ = image_job
+    r = client.get('/api/density/%s.png' % job)
+    assert r.status_code == 200 and r.content[:8].startswith(b'\x89PNG')
+    r = client.get('/api/download/%s?fmt=zip' % job)
+    assert r.status_code == 200 and r.content[:2] == b'PK'
+    r = client.get('/api/threadlist/%s.txt' % job)
+    assert r.status_code == 200 and b'Thread order' in r.content
+
+
+def test_business_crud():
+    r = client.post('/api/business/client', json={'name': 'Acme Embroidery',
+                                                  'business_name': 'Acme'})
+    assert r.status_code == 200
+    cid = r.json()['id']
+    rows = client.get('/api/business/client').json()
+    assert any(row['id'] == cid for row in rows)
+    assert client.put('/api/business/client/%d' % cid,
+                      json={'name': 'Acme 2'}).status_code == 200
+    assert client.delete('/api/business/client/%d' % cid).status_code == 200
+    assert client.post('/api/business/client', json={'name': '  '}).status_code == 400
+    assert client.get('/api/business/nope').status_code == 404
+
+
+def test_notes():
+    assert client.put('/api/notes/todo', json={'text': 'hoop the caps'}).status_code == 200
+    assert client.get('/api/notes/todo').json()['text'] == 'hoop the caps'
+    assert client.get('/api/notes/nope').status_code == 404

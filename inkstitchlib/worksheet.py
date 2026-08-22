@@ -104,7 +104,7 @@ def quote(stitches, setup=0.0, price_per_1000=0.0, garment_qty=0, garment_base=0
 
 
 def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
-          design_name='design', quote_params=None, spm=700):
+          design_name='design', quote_params=None, spm=700, client=''):
     """Write the worksheet PDF to `path`.
 
     report: engine.qa_report dict (or the lighter lettering report).
@@ -149,8 +149,11 @@ def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
 
     # client fields, like the editable spans on the HTML worksheet
     y -= 6
-    for label in ('Client', 'Purchase order', 'Fabric / garment'):
+    for label, value in (('Client', client), ('Purchase order', ''),
+                         ('Fabric / garment', '')):
         _text(c, x2, y, label, 9, color=MUTED)
+        if value:
+            _text(c, x2 + 34 * mm, y, value[:40], 9)
         c.setStrokeColor(LINE)
         c.line(x2 + 32 * mm, y - 1, PAGE_W - MARGIN, y - 1)
         y -= 15
