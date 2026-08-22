@@ -5,3 +5,4 @@ __pycache__/
 .gitignore
 tests/
 docs_example.png
+cloudflare/
