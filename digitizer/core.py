@@ -652,3 +652,119 @@ def sew_column(s, col, travel):
         side ^= 1
 
 
+
+
+# --------------------------------------------- blob treatment: outline + satin
+def poly_max_width(poly, iters=12):
+    """Widest point of a shape = 2x its largest inscribed circle."""
+    b = poly.bounds
+    lo, hi = 0.0, min(b[2] - b[0], b[3] - b[1]) / 2 + 0.1
+    for _ in range(iters):
+        mid = (lo + hi) / 2
+        if poly.buffer(-mid).is_empty:
+            hi = mid
+        else:
+            lo = mid
+    return 2 * lo
+
+
+def principal_angle(poly):
+    c = np.array(poly.exterior.coords)[:, :2]
+    c = c - c.mean(0)
+    if len(c) < 3:
+        return 0.0
+    _, _, vt = np.linalg.svd(c, full_matrices=False)
+    return float(np.degrees(np.arctan2(vt[0][1], vt[0][0])))
+
+
+def satin_ring(poly, width, spacing):
+    """A satin band that follows the outline — this is what makes a round
+    shape read as round. Returns (outer, inner, mid) triples."""
+    outer = poly.exterior
+    ip = poly.buffer(-width)
+    if ip.is_empty:
+        return None
+    if ip.geom_type == 'MultiPolygon':
+        ip = max(ip.geoms, key=lambda g: g.area)
+    inner = ip.exterior
+    if inner.length < spacing * 4:
+        return None
+
+    p0 = outer.interpolate(0.0, normalized=True)
+    best_t, bd = 0.0, 1e18
+    for i in range(240):
+        t = i / 240.0
+        q = inner.interpolate(t, normalized=True)
+        d = (q.x - p0.x) ** 2 + (q.y - p0.y) ** 2
+        if d < bd:
+            bd, best_t = d, t
+
+    n = max(12, int(outer.length / spacing))
+    for flip in (False, True):
+        out = []
+        for i in range(n + 1):
+            t = i / n
+            a = outer.interpolate(t, normalized=True)
+            u = (best_t - t) % 1.0 if flip else (best_t + t) % 1.0
+            b = inner.interpolate(u, normalized=True)
+            out.append(((a.x, a.y), (b.x, b.y),
+                        ((a.x + b.x) / 2, (a.y + b.y) / 2)))
+        spans = [np.hypot(o[0] - i2[0], o[1] - i2[1]) for o, i2, _ in out]
+        # a twisted ring shows up as stitches far longer than the band width
+        if max(spans) < width * 3.0:
+            return out
+    return None
+
+
+def sew_ring(sewer, ring, travel=None):
+    sewer.move_to(ring[0][2], travel)
+    for _, _, mid in ring[::max(1, len(ring) // 24)]:
+        sewer.run_to(mid, UNDERLAY_RUN)          # centre-run underlay
+    sewer.move_to(ring[0][0], travel)
+    side = 0
+    for a, b, _ in ring:
+        sewer.run_to(a if side == 0 else b, MAX_SATIN + 1)
+        side ^= 1
+
+
+def blob_rows(poly, spacing, max_span):
+    """Satin across a blob: rows perpendicular to its long axis, one stitch
+    per row. Returns None if the shape is too wide to satin safely."""
+    ang = principal_angle(poly) + 90.0
+    segs = scan_segments(poly, ang, spacing)
+    if not segs:
+        return None
+    if max(np.hypot(a[0] - b[0], a[1] - b[1]) for _, a, b in segs) > max_span:
+        return None
+    return order_segments(segs)
+
+
+def sew_blob(sewer, poly, spacing, max_span, border_w, travel=None,
+             heavy_underlay=True):
+    """Outline underlay -> open underfill -> satin core -> satin outline.
+
+    Sewn in that order on purpose: the border goes down last so it lands on
+    top and gives the shape a clean, hard edge.
+    """
+    sew_edge_run(sewer, poly, inset=min(0.6, border_w), travel=travel)
+    if heavy_underlay:
+        sew_fill(sewer, poly, principal_angle(poly) + 45, 2.5, 3.0,
+                 stagger=False, start=sewer.pos, travel=travel)
+
+    ring = satin_ring(poly, border_w, spacing)
+    core = poly.buffer(-border_w * 0.72) if ring else poly
+    if core.geom_type == 'MultiPolygon':
+        core = max(core.geoms, key=lambda g: g.area)
+
+    if not core.is_empty and core.area > 0.4:
+        rows = blob_rows(core, spacing, max_span)
+        if rows is not None:
+            for a, b, _row in rows:
+                sewer.move_to(a, travel)
+                sewer.run_to(b, max_span + 1)
+        else:
+            sew_fill(sewer, core, principal_angle(core), ROW_SPACING,
+                     MAX_STITCH, stagger=True, start=sewer.pos, travel=travel)
+
+    if ring:
+        sew_ring(sewer, ring, travel)

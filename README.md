@@ -23,6 +23,21 @@ uvicorn app:app --reload --port 8000
 
 Tests: `pytest`.
 
+## Deploy on Railway
+
+The repo ships a `Dockerfile` and `railway.json`, so it deploys as a single
+web service with no extra configuration:
+
+1. Railway dashboard → **New Project → Deploy from GitHub repo** → pick this
+   repo (or `railway init && railway up` with the CLI).
+2. Railway builds the Dockerfile, injects `PORT`, and health-checks `/`.
+3. **Settings → Networking → Generate Domain** to make it public.
+
+Keep it at one replica/worker: digitized patterns are held in process memory
+between the digitize call and the export/worksheet calls, and jobs live on
+the container's ephemeral disk (they don't survive redeploys — by design,
+there's no persistence layer).
+
 ## What you get
 
 - **PNG → DST** — the digitizing pipeline described below, unchanged.

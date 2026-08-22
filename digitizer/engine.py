@@ -22,6 +22,8 @@ class Params:
     trim_dist: float = 2.0
     underlay_spacing: float = 2.5
     min_fill_area: float = 0.20
+    min_blob_area: float = 2.0    # below this, satin-ing a blob isn't worth it
+    border_width: float = 1.0     # satin outline band around blobs
     heavy_underlay: bool = True
 
 
@@ -54,7 +56,7 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
             ys, xs = np.where(comp > 0)
             comps.append((comp, (xs.mean() * scale, ys.mean() * scale)))
 
-        ncol = nfill = 0
+        ncol = nfill = nblob = 0
         start_count = s.count
         # finish each shape before moving on — travelling back and forth
         # across the design is what generates jump stitches
@@ -83,22 +85,43 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
                 g = q.buffer(0.25)
                 if g.geom_type == 'MultiPolygon':
                     g = max(g.geoms, key=lambda z: z.area)
-                if q.area >= 3.0:
-                    core.sew_edge_run(s, g, travel=travel)
-                    if p.heavy_underlay:
-                        core.sew_fill(s, g, 110.0, p.underlay_spacing, 3.0,
-                                      stagger=False, start=s.pos, travel=travel)
-                        core.sew_fill(s, g, 20.0, p.underlay_spacing, 3.0,
-                                      stagger=False, start=s.pos, travel=travel)
-                core.sew_fill(s, g, 65.0, p.row_spacing, p.max_stitch,
-                              stagger=True, start=s.pos, travel=travel)
-                nfill += 1
+
+                # A rounded, blocky region (a head, a torso) reads badly as
+                # plain tatami: the edge goes ragged and it never looks round.
+                # If it is narrow enough to satin, give it the full treatment —
+                # outline underlay, open underfill, satin core, satin outline.
+                mw = core.poly_max_width(g) if g.area >= p.min_blob_area else 0.0
+                if mw and mw <= p.max_satin:
+                    core.sew_blob(s, g, p.row_spacing, p.max_satin,
+                                  min(p.border_width, mw * 0.30),
+                                  travel=travel,
+                                  heavy_underlay=p.heavy_underlay)
+                    nblob += 1
+                else:
+                    if q.area >= 3.0:
+                        core.sew_edge_run(s, g, travel=travel)
+                        if p.heavy_underlay:
+                            core.sew_fill(s, g, 110.0, p.underlay_spacing, 3.0,
+                                          stagger=False, start=s.pos, travel=travel)
+                            core.sew_fill(s, g, 20.0, p.underlay_spacing, 3.0,
+                                          stagger=False, start=s.pos, travel=travel)
+                    core.sew_fill(s, g, 65.0, p.row_spacing, p.max_stitch,
+                                  stagger=True, start=s.pos, travel=travel)
+                    # too wide to satin across, but it still needs a hard edge:
+                    # a satin outline over the fill is what stops a torso or a
+                    # head reading as ragged
+                    if q.area >= p.min_blob_area * 2:
+                        ring = core.satin_ring(g, p.border_width, p.row_spacing)
+                        if ring:
+                            core.sew_ring(s, ring, travel)
+                    nfill += 1
 
             for col in core.order_columns(columns, s.pos):
                 core.sew_column(s, col, travel)
                 ncol += 1
         stats.append({'name': L['name'], 'hex': L['hex'], 'columns': ncol,
-                      'fills': nfill, 'stitches': s.count - start_count})
+                      'blobs': nblob, 'fills': nfill,
+                      'stitches': s.count - start_count})
 
     s.tie_off()
     s.pattern.end()
@@ -239,6 +262,7 @@ def digitize(layers, p: Params, max_passes=4, log=None):
     width_px = layers[0]['mask'].shape[1]
     canvas = p.target_width_mm * 1.02          # first guess; art is inset
     best = None
+    tuned_satin = tuned_gap = False
     for i in range(max_passes):
         pat, stats = build_pattern(layers, canvas, width_px, p)
         rep = qa_report(pat, layers, canvas, width_px, p)
@@ -251,9 +275,13 @@ def digitize(layers, p: Params, max_passes=4, log=None):
             note.append('width %.2f mm vs %.2f target -> rescaling canvas'
                         % (rep['width_mm'], p.target_width_mm))
 
-        # 2. stitches too long for safety
-        if rep['max_stitch_mm'] > p.max_satin + 0.8:
+        # 2. stitches too long for safety. Satin stitches run a little longer
+        # than the cap because each one crosses on a diagonal, so only react to
+        # a real overshoot, and only once — ratcheting the cap down pushes
+        # shapes out of satin and into fill, which is worse.
+        if rep['max_stitch_mm'] > p.max_satin + 1.2 and not tuned_satin:
             p.max_satin = max(4.0, p.max_satin - 0.5)
+            tuned_satin = True
             note.append('longest stitch %.2f mm -> satin cap down to %.1f mm'
                         % (rep['max_stitch_mm'], p.max_satin))
 
@@ -263,8 +291,11 @@ def digitize(layers, p: Params, max_passes=4, log=None):
             p.satin_spacing = round(p.row_spacing / 2, 4)
             note.append('coverage %.1f%% -> density tightened to %.3f mm'
                         % (rep['coverage_min'], p.row_spacing))
-        if rep['worst_gap_mm2'] > 1.0 and p.min_fill_area > 0.08:
+        # only chase genuinely visible holes; dropping the floor further just
+        # fragments the design into tiny patches, each needing its own travel
+        if rep['worst_gap_mm2'] > 2.0 and not tuned_gap:
             p.min_fill_area = round(max(0.08, p.min_fill_area / 2), 3)
+            tuned_gap = True
             note.append('gap of %.2f mm2 -> fill floor down to %.2f mm2'
                         % (rep['worst_gap_mm2'], p.min_fill_area))
 
