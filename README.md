@@ -66,12 +66,36 @@ Static files, stitch plans, density maps and stitch JSON are then served
 from Cloudflare's edge after first hit.
 
 **2. Full migration to Cloudflare Containers** (Workers Paid plan): the
-`cloudflare/` directory has a ready `wrangler.jsonc` + Worker that builds
-the same Dockerfile and routes all traffic to one container instance:
+`cloudflare/` directory has a ready `wrangler.jsonc` + Worker. Static files
+are served from Cloudflare's edge (Workers assets); everything else is
+routed to one container instance built from the repo's Dockerfile.
+
+With the GitHub repo connected to Cloudflare (Workers Builds), create the
+Worker from the repo and every push to `main` deploys automatically:
+
+1. Dashboard → **Workers & Pages → Create → Import a repository** → pick
+   this repo.
+2. Build settings: **root directory** `cloudflare`,
+   **build command** `npm install`,
+   **deploy command** `npx wrangler deploy`.
+3. First deploy builds the Docker image on Cloudflare's builders and gives
+   you `stitchforge.<account>.workers.dev`; add a custom domain on the
+   Worker if you want one.
+
+Manual deploys work too (needs Docker locally):
 
 ```bash
 cd cloudflare && npm install && npx wrangler deploy
 ```
+
+Notes for the Containers runtime:
+- The container sleeps after 1h idle (`sleepAfter` in `worker.js`); jobs
+  live in instance memory/tmp, so download/worksheet links from before a
+  sleep return 404 — re-digitize, or raise `sleepAfter`.
+- `instance_type: standard` (4 GiB / ½ vCPU) — digitizing runs a bit slower
+  than on a full core; bump the instance type if Cloudflare's plan offers
+  larger ones.
+- Keep `max_instances: 1` — the pattern cache is in-process.
 
 ## Performance notes
 
