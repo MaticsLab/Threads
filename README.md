@@ -33,6 +33,14 @@ web service with no extra configuration:
 2. Railway builds the Dockerfile, injects `PORT`, and health-checks `/`.
 3. **Settings → Networking → Generate Domain** to make it public.
 
+If the service was created with Railway's Railpack/Nixpacks builder instead
+of the Dockerfile, it still boots: the `Procfile` and the `main.py` shim
+cover both `uvicorn app:app` and Railpack's `uvicorn main:app` default. If a
+deploy loops with "Could not import module", clear any custom **Start
+Command** in the service settings (or set it to
+`uvicorn app:app --host 0.0.0.0 --port $PORT`) and make sure the service
+deploys the `main` branch.
+
 Keep it at one replica/worker: digitized patterns are held in process memory
 between the digitize call and the export/worksheet calls, and jobs live on
 the container's ephemeral disk (they don't survive redeploys — by design,
