@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StitchForge — image &amp; lettering to embroidery</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231a3b69'/%3E%3Cpath d='M4 11 Q8 3 12 11' stroke='%23f0b428' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#12161c; --muted:#6b7480; --line:#e3e6ea; --bg:#f6f7f9;
+    --accent:#1a3b69; --warn:#a8620a; --warnbg:#fdf5e7; --ok:#1d7a4c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:18px 28px;
+    display:flex;align-items:baseline;gap:10px}
+  h1{margin:0;font-size:19px;letter-spacing:-.01em}
+  h1 span{color:var(--muted);font-weight:400;margin-left:10px;font-size:14px}
+  main{max-width:1240px;margin:0 auto;padding:26px 20px 60px;
+    display:grid;grid-template-columns:360px 1fr;gap:26px;align-items:start}
+  @media(max-width:960px){main{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px}
+  .card h2{margin:0 0 14px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted);font-weight:600}
+  label{display:block;font-size:13px;margin:13px 0 5px;color:#333}
+  input[type=number],input[type=text],select,textarea{width:100%;padding:8px 10px;
+    border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff}
+  textarea{resize:vertical;min-height:64px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .drop{border:1.5px dashed #c6ccd4;border-radius:9px;padding:26px 14px;text-align:center;
+    cursor:pointer;color:var(--muted);font-size:13px;background:#fbfcfd}
+  .drop:hover{border-color:var(--accent);color:var(--accent)}
+  .drop img{max-width:100%;max-height:130px;border-radius:5px}
+  button{padding:11px;border:0;border-radius:7px;background:var(--accent);color:#fff;
+    font:600 14px/1 inherit;cursor:pointer}
+  button:disabled{background:#9aa4b1;cursor:default}
+  button.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+  button.mini{padding:6px 10px;font-size:12px}
+  .wide{width:100%;margin-top:18px}
+  .tabs{display:flex;gap:6px;margin-bottom:16px}
+  .tabs button{flex:1;background:#eef1f5;color:var(--muted);border:1px solid var(--line)}
+  .tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .chip{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:13px;
+    border-bottom:1px solid #f0f2f4}
+  .sw{width:17px;height:17px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:none}
+  .muted{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:6px 0;border-bottom:1px solid #f0f2f4}
+  td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+  .warn{background:var(--warnbg);border-left:3px solid var(--warn);padding:9px 12px;
+    border-radius:0 5px 5px 0;font-size:13px;margin-bottom:8px}
+  .pass{font-size:12.5px;padding:8px 0;border-bottom:1px solid #f0f2f4;color:#444}
+  .pass b{color:var(--ink)}
+  .viewer{background:#b8bdc4;border-radius:8px;height:430px;position:relative;overflow:hidden}
+  .viewer>img{position:absolute;inset:0;margin:auto;max-width:96%;max-height:96%;border-radius:4px}
+  .viewer>svg,.viewer>div>svg{width:100%;height:100%;display:block;cursor:grab}
+  .vbar{display:flex;gap:6px;align-items:center;margin:0 0 10px;flex-wrap:wrap}
+  .vbar .mode{background:#eef1f5;color:var(--muted);border:1px solid var(--line)}
+  .vbar .mode.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .player{display:flex;gap:10px;align-items:center;margin-top:10px}
+  .player input[type=range]{flex:1}
+  .dlrow{display:flex;gap:10px;margin-top:16px;align-items:end;flex-wrap:wrap}
+  .dlrow>div{flex:1;min-width:130px}
+  details{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+  details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
+  .fontprev{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:44px}
+  .fontprev img{max-height:44px;max-width:100%;border-radius:4px;background:#fff;
+    border:1px solid var(--line)}
+  .util{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:14px}
+  .util input{width:90px}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid #fff6;
+    border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;
+    vertical-align:-2px;margin-right:7px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>StitchForge <span>image &amp; lettering → machine embroidery</span></h1>
+</header>
+
+<main>
+  <div>
+    <div class="card">
+      <div class="tabs">
+        <button id="tabImage" class="on">Artwork</button>
+        <button id="tabText">Lettering</button>
+      </div>
+
+      <!-- ============================== artwork -->
+      <div id="paneImage">
+        <h2>1 · Artwork</h2>
+        <div class="drop" id="drop">
+          <div id="dropText">Click or drop an image<br><span class="muted">PNG with transparency works best</span></div>
+          <img id="thumb" class="hide">
+        </div>
+        <input type="file" id="file" accept="image/*" class="hide">
+
+        <label>Thread colours</label>
+        <select id="colors">
+          <option>2</option><option selected>3</option><option>4</option>
+          <option>5</option><option>6</option>
+        </select>
+
+        <div class="row">
+          <div><label>Width (mm)</label><input type="number" id="width" value="90" step="1" min="10"></div>
+          <div><label>Hoop</label>
+            <select id="hoop">
+              <option value="100x100" selected>4" × 4"</option>
+              <option value="100x235">4" × 9.25"</option>
+              <option value="130x180">5" × 7"</option>
+              <option value="200x300">8" × 12"</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.28" max="0.5"></div>
+          <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
+        </div>
+
+        <label><input type="checkbox" id="underlay" checked> Heavy underlay</label>
+        <label><input type="checkbox" id="autotune" checked> Auto-tune from QA</label>
+
+        <button id="go" class="wide" disabled>Digitize</button>
+      </div>
+
+      <!-- ============================== lettering -->
+      <div id="paneText" class="hide">
+        <h2>1 · Lettering</h2>
+        <label>Font <span class="muted">(Ink/Stitch embroidery fonts)</span></label>
+        <select id="font"></select>
+        <div class="fontprev"><img id="fontPrev" class="hide"><span id="fontMeta" class="muted"></span></div>
+
+        <label>Text</label>
+        <textarea id="text" placeholder="Type the text to stitch…"></textarea>
+
+        <div class="row3">
+          <div><label>Height (mm)</label><input type="number" id="theight" value="20" step="1" min="4"></div>
+          <div><label>Spacing (mm)</label><input type="number" id="tspacing" value="0" step="0.5"></div>
+          <div><label>Thread</label><input type="color" id="tcolor" value="#1a3b69" style="width:100%;height:38px;padding:2px;border:1px solid var(--line);border-radius:6px"></div>
+        </div>
+
+        <button id="goText" class="wide">Stitch text</button>
+      </div>
+
+      <label style="margin-top:16px">Thread palette <span class="muted">(for thread names)</span></label>
+      <select id="palette"></select>
+
+      <div class="util">
+        <span class="muted">mm ⇄ inch</span>
+        <input type="number" id="convMM" value="100" step="1"> mm =
+        <input type="number" id="convIN" value="3.937" step="0.01"> in
+      </div>
+    </div>
+
+    <div class="card hide" id="layersCard" style="margin-top:18px">
+      <h2>Colour layers</h2>
+      <div id="layers"></div>
+      <p class="muted" style="margin:11px 0 0">Sewn lightest first so darker outline
+        colours cover the seams.</p>
+    </div>
+  </div>
+
+  <div>
+    <div class="card hide" id="out">
+      <h2>Result</h2>
+      <div id="warnings"></div>
+
+      <div class="vbar">
+        <button class="mode mini on" data-mode="photo">Preview</button>
+        <button class="mode mini" data-mode="plan">Stitch plan</button>
+        <button class="mode mini" data-mode="realistic">Realistic</button>
+        <button class="mode mini" data-mode="player">▶ Player</button>
+        <span class="muted" id="viewerHint" style="margin-left:auto">scroll to zoom · drag to pan</span>
+      </div>
+      <div class="viewer" id="viewer"><img id="preview"></div>
+
+      <div class="player hide" id="playerBar">
+        <button class="mini" id="playBtn">▶</button>
+        <input type="range" id="playPos" min="0" max="1000" value="0">
+        <select id="playSpeed" style="width:auto">
+          <option value="200">1×</option><option value="700" selected>3.5×</option>
+          <option value="2000">10×</option><option value="6000">30×</option>
+        </select>
+        <span class="muted" id="playInfo" style="min-width:110px;text-align:right">0 st</span>
+      </div>
+
+      <div class="dlrow">
+        <div>
+          <label>Machine file</label>
+          <select id="fmt">
+            <option value="dst" selected>DST — Tajima</option>
+            <option value="pes">PES — Brother</option>
+            <option value="jef">JEF — Janome</option>
+            <option value="exp">EXP — Melco</option>
+            <option value="vp3">VP3 — Husqvarna</option>
+            <option value="xxx">XXX — Singer</option>
+            <option value="u01">U01 — Barudan</option>
+            <option value="pec">PEC — Brother</option>
+            <option value="tbf">TBF — Tajima</option>
+            <option value="csv">CSV — stitch list</option>
+            <option value="png">PNG — raster</option>
+          </select>
+        </div>
+        <a id="dl"><button class="ghost">Download</button></a>
+        <a id="pdf"><button class="ghost">Worksheet PDF</button></a>
+      </div>
+
+      <details id="quoteBox">
+        <summary>Quote sheet (embTools) — printed on the worksheet</summary>
+        <div class="row3">
+          <div><label>Setup fee $</label><input type="number" id="qSetup" value="0" step="1"></div>
+          <div><label>$ / 1000 stitches</label><input type="number" id="qPrice" value="0" step="0.1"></div>
+          <div><label>Design name</label><input type="text" id="qName" value="design"></div>
+        </div>
+        <div class="row3">
+          <div><label>Garments qty</label><input type="number" id="qQty" value="0" step="1"></div>
+          <div><label>Garment base $</label><input type="number" id="qBase" value="0" step="0.5"></div>
+          <div><label>Markup / discount %</label>
+            <div class="row"><input type="number" id="qMarkup" value="0" step="1"><input type="number" id="qDiscount" value="0" step="1"></div>
+          </div>
+        </div>
+      </details>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:18px">
+        <div><h2>Specification</h2><table id="spec"></table></div>
+        <div>
+          <h2 id="rightColTitle">Auto-tune passes</h2><div id="passes"></div>
+          <h2 style="margin-top:16px">Threads</h2><div id="threadList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="hint">
+      <h2>How it works</h2>
+      <p style="margin:0 0 10px"><b>Artwork:</b> every stroke narrower than the satin cap is
+        stitched as a true satin column on the stroke's perpendicular; anything wider gets a
+        tatami fill underneath. The finished file is measured — coverage, gaps, stitch
+        lengths, hoop clearance — and rebuilt until it passes.</p>
+      <p style="margin:0 0 10px"><b>Lettering:</b> text is sewn from Ink/Stitch embroidery
+        fonts — each glyph is a hand-digitized set of satin columns and running stitches,
+        stitched here with Ink/Stitch's rail-and-rung satin engine.</p>
+      <p style="margin:0">Exports go through pystitch (DST, PES, JEF, EXP, VP3, …), the
+        previews use Ink/Stitch's realistic stitch filter with svg.panzoom.js, and the
+        worksheet PDF follows Ink/Stitch's print template with an embTools quote sheet.</p>
+    </div>
+  </div>
+</main>
+
+<script src="/static/vendor/svg.min.js"></script>
+<script src="/static/vendor/svg.panzoom.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let job = null, kind = null, fonts = [];
+
+/* ------------------------------------------------------------- tabs */
+$('tabImage').onclick = () => { setTab(true); };
+$('tabText').onclick = () => { setTab(false); };
+function setTab(img) {
+  $('tabImage').classList.toggle('on', img);
+  $('tabText').classList.toggle('on', !img);
+  $('paneImage').classList.toggle('hide', !img);
+  $('paneText').classList.toggle('hide', img);
+}
+
+/* ------------------------------------------------- unit converter (embTools) */
+$('convMM').oninput = () => { $('convIN').value = ($('convMM').value / 25.4).toFixed(3); };
+$('convIN').oninput = () => { $('convMM').value = ($('convIN').value * 25.4).toFixed(1); };
+
+/* ---------------------------------------------------------- fonts + palettes */
+(async () => {
+  try {
+    fonts = await (await fetch('/api/fonts')).json();
+    $('font').innerHTML = fonts.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    fontInfo();
+    const pals = await (await fetch('/api/palettes')).json();
+    $('palette').innerHTML = pals.map(p =>
+      `<option ${p === 'Madeira Rayon' ? 'selected' : ''}>${p}</option>`).join('');
+  } catch (e) { console.error(e); }
+})();
+$('font').onchange = fontInfo;
+function fontInfo() {
+  const f = fonts.find(x => x.id === $('font').value);
+  if (!f) return;
+  $('fontPrev').classList.toggle('hide', !f.preview);
+  if (f.preview) $('fontPrev').src = `/api/fonts/${f.id}/preview.png`;
+  const lo = (f.size_mm * f.min_scale).toFixed(0), hi = (f.size_mm * f.max_scale).toFixed(0);
+  $('fontMeta').textContent = `${lo}–${hi} mm` + (f.letter_case ? ` · ${f.letter_case}case only` : '');
+}
+
+/* ------------------------------------------------------------ artwork flow */
+$('drop').onclick = () => $('file').click();
+$('drop').ondragover = e => { e.preventDefault(); };
+$('drop').ondrop = e => { e.preventDefault(); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); };
+$('file').onchange = e => { if (e.target.files[0]) pick(e.target.files[0]); };
+$('colors').onchange = () => { if (window._f) pick(window._f); };
+
+async function pick(f) {
+  window._f = f;
+  const r = new FileReader();
+  r.onload = ev => { $('thumb').src = ev.target.result; $('thumb').classList.remove('hide'); $('dropText').classList.add('hide'); };
+  r.readAsDataURL(f);
+
+  const fd = new FormData();
+  fd.append('image', f); fd.append('colors', $('colors').value);
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const d = await res.json();
+    job = d.job;
+    $('layers').innerHTML = d.layers.map(L =>
+      `<div class="chip"><span class="sw" style="background:${L.hex}"></span>
+       <span>${L.order}. ${L.hex}</span>
+       <span class="muted" style="margin-left:auto">stroke ≤${L.max_stroke_at_100mm}mm @100mm</span></div>`).join('');
+    $('layersCard').classList.remove('hide');
+    $('go').disabled = false;
+  } catch (err) { alert(err.message); }
+}
+
+$('go').onclick = async () => {
+  const b = $('go'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Digitizing…';
+  const [hw, hh] = $('hoop').value.split('x');
+  const fd = new FormData();
+  fd.append('job', job); fd.append('colors', $('colors').value);
+  fd.append('width_mm', $('width').value);
+  fd.append('hoop_w', hw); fd.append('hoop_h', hh);
+  fd.append('density', $('density').value);
+  fd.append('max_satin', $('satin').value);
+  fd.append('heavy_underlay', $('underlay').checked);
+  fd.append('autotune', $('autotune').checked);
+  fd.append('palette', $('palette').value);
+  try {
+    const res = await fetch('/api/digitize', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    show(await res.json());
+  } catch (err) { alert(err.message); }
+  b.disabled = false; b.textContent = 'Digitize';
+};
+
+/* ----------------------------------------------------------- lettering flow */
+$('goText').onclick = async () => {
+  const b = $('goText'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Stitching…';
+  const fd = new FormData();
+  fd.append('text', $('text').value);
+  fd.append('font', $('font').value);
+  fd.append('height_mm', $('theight').value);
+  fd.append('letter_spacing_mm', $('tspacing').value);
+  fd.append('color', $('tcolor').value);
+  fd.append('palette', $('palette').value);
+  try {
+    const res = await fetch('/api/lettering', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    show(await res.json());
+  } catch (err) { alert(err.message); }
+  b.disabled = false; b.textContent = 'Stitch text';
+};
+
+/* --------------------------------------------------------------- results */
+function show(d) {
+  job = d.job; kind = d.kind;
+  const r = d.report;
+  $('hint').classList.add('hide');
+  $('out').classList.remove('hide');
+  $('warnings').innerHTML = (d.warnings || []).map(w => `<div class="warn">${w}</div>`).join('');
+  $('preview').src = d.preview;
+  setMode('photo');
+
+  const rows = [
+    ['Size', `${r.width_mm} × ${r.height_mm} mm`],
+    ['', `${r.width_in}″ wide`],
+    ['Stitches', r.stitches.toLocaleString()],
+    ['Run time @700spm', r.runtime_min + ' min'],
+    ['Colour stops', r.colour_changes],
+    ['Travels', `${r.travels} (${r.trimmed} trimmed, ${r.floats} floats)`],
+    ['Stitch length', `${r.min_stitch_mm}–${r.max_stitch_mm} mm`],
+  ];
+  if (r.hoop_clearance_mm !== undefined) rows.push(['Hoop clearance', r.hoop_clearance_mm + ' mm']);
+  if (d.settings && d.settings.density) rows.push(['Density used', d.settings.density + ' mm']);
+  if (d.lettering) {
+    rows.push(['Font', d.lettering.font]);
+    rows.push(['Letter height', d.lettering.height_mm + ' mm']);
+    rows.push(['Satin columns', d.lettering.satin_columns]);
+    rows.push(['Running paths', d.lettering.running_paths]);
+  }
+  (r.layers || []).forEach(L => rows.push([`Coverage ${L.hex}`, L.coverage + '%']));
+  $('spec').innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
+
+  $('rightColTitle').textContent = d.passes ? 'Auto-tune passes' : 'Lettering';
+  $('passes').innerHTML = (d.passes || []).map(p =>
+    `<div class="pass"><b>Pass ${p.pass}</b> — ${p.width_mm}mm, ${p.stitches.toLocaleString()} stitches,
+     ${p.coverage_min}% min coverage<br>${p.actions.length ? p.actions.join('<br>') : '<span style="color:var(--ok)">passed all checks</span>'}</div>`).join('');
+
+  $('threadList').innerHTML = (d.threads || []).map((t, i) =>
+    `<div class="chip"><span class="sw" style="background:${t.hex}"></span>
+     <span>${i + 1}. ${t.thread_name}${t.thread_number ? ' #' + t.thread_number : ''}</span>
+     <span class="muted" style="margin-left:auto">${t.palette}</span></div>`).join('');
+
+  updateDl();
+  planCache = {}; stopPlayer(); playerData = null;
+}
+
+$('fmt').onchange = updateDl;
+['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount'].forEach(id => $(id).onchange = updateDl);
+function updateDl() {
+  $('dl').href = `/api/download/${job}?fmt=${$('fmt').value}`;
+  const q = new URLSearchParams({
+    name: $('qName').value || 'design', palette: $('palette').value,
+    setup: $('qSetup').value, price_per_1000: $('qPrice').value,
+    garment_qty: $('qQty').value, garment_base: $('qBase').value,
+    markup_pct: $('qMarkup').value, discount_pct: $('qDiscount').value,
+  });
+  $('pdf').href = `/api/worksheet/${job}.pdf?` + q;
+}
+
+/* ------------------------------------------- viewer: pan/zoom svg + player */
+let planCache = {}, canvas = null, playerData = null, playing = false, playN = 0, playTotal = 0;
+
+document.querySelectorAll('.vbar .mode').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+function setMode(mode) {
+  document.querySelectorAll('.vbar .mode').forEach(b =>
+    b.classList.toggle('on', b.dataset.mode === mode));
+  $('playerBar').classList.toggle('hide', mode !== 'player');
+  $('viewerHint').textContent = mode === 'photo' ? '' : 'scroll to zoom · drag to pan';
+  stopPlayer();
+  const v = $('viewer');
+  if (mode === 'photo') {
+    clearCanvas(); $('preview').classList.remove('hide');
+    return;
+  }
+  $('preview').classList.add('hide');
+  if (mode === 'player') { initPlayer(); return; }
+  loadSvg(mode === 'realistic');
+}
+
+function clearCanvas() {
+  if (canvas) { canvas.remove(); canvas = null; }
+}
+
+async function loadSvg(realistic) {
+  const key = realistic ? 'r' : 'p';
+  clearCanvas();
+  if (!planCache[key]) {
+    const res = await fetch(`/api/plan/${job}.svg` + (realistic ? '?realistic=true' : ''));
+    planCache[key] = await res.text();
+  }
+  mountSvg(planCache[key]);
+}
+
+function mountSvg(text) {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml').documentElement;
+  const vb = doc.getAttribute('viewBox');
+  const ser = new XMLSerializer();
+  let inner = '';
+  for (const ch of doc.children) inner += ser.serializeToString(ch);
+  canvas = SVG().addTo('#viewer').attr('viewBox', vb).size('100%', '100%');
+  canvas.svg(inner);
+  canvas.panZoom({ zoomMin: 0.3, zoomMax: 60, zoomFactor: 0.18 });
+  return canvas;
+}
+
+/* stitch player — the embTools stitch player, drawn with svg.js */
+async function initPlayer() {
+  clearCanvas();
+  if (!playerData) {
+    playerData = await (await fetch(`/api/stitches/${job}`)).json();
+    playTotal = playerData.reduce((n, b) => n + b.runs.reduce((m, r) => m + r.length, 0), 0);
+  }
+  // bounds (loop, not spread — big designs overflow the arg stack)
+  let minx = 1e18, miny = 1e18, maxx = -1e18, maxy = -1e18;
+  playerData.forEach(b => b.runs.forEach(r => r.forEach(p => {
+    if (p[0] < minx) minx = p[0]; if (p[0] > maxx) maxx = p[0];
+    if (p[1] < miny) miny = p[1]; if (p[1] > maxy) maxy = p[1];
+  })));
+  const pad = 8, x0 = minx - pad, y0 = miny - pad;
+  const w = maxx - x0 + pad, h = maxy - y0 + pad;
+  canvas = SVG().addTo('#viewer').attr('viewBox', `${x0} ${y0} ${w} ${h}`).size('100%', '100%');
+  canvas.panZoom({ zoomMin: 0.3, zoomMax: 60, zoomFactor: 0.18 });
+  $('playPos').max = playTotal;
+  drawUpTo(parseInt($('playPos').value) || 0);
+}
+
+let playerPaths = null;
+function drawUpTo(n) {
+  if (!canvas) return;
+  if (!playerPaths) {
+    playerPaths = [];
+    playerData.forEach(b => b.runs.forEach(r => {
+      playerPaths.push({ run: r, color: b.color,
+        el: canvas.polyline([]).fill('none')
+              .stroke({ color: b.color, width: 1.6, linecap: 'round', linejoin: 'round' }) });
+    }));
+  }
+  let left = n;
+  for (const p of playerPaths) {
+    const take = Math.max(0, Math.min(p.run.length, left));
+    left -= p.run.length;
+    const pts = take >= 2 ? p.run.slice(0, take) : [];
+    if ((p._n || 0) !== take) { p.el.plot(pts); p._n = take; }
+  }
+  $('playInfo').textContent = `${n.toLocaleString()} / ${playTotal.toLocaleString()} st`;
+  $('playPos').value = n;
+}
+
+let rafId = null, lastT = 0;
+$('playBtn').onclick = () => { playing ? stopPlayer() : startPlayer(); };
+$('playPos').oninput = () => {
+  stopPlayer();
+  playN = parseInt($('playPos').value) || 0;
+  if (playerPaths) drawUpTo(playN);
+};
+
+function startPlayer() {
+  if (!playerData) return;
+  playing = true; $('playBtn').textContent = '⏸';
+  if (playN >= playTotal) playN = 0;
+  lastT = performance.now();
+  const tick = t => {
+    if (!playing) return;
+    const spm = parseInt($('playSpeed').value);            // stitches per minute
+    playN = Math.min(playTotal, playN + (t - lastT) / 1000 * spm / 60);
+    lastT = t;
+    drawUpTo(Math.floor(playN));
+    if (playN < playTotal) rafId = requestAnimationFrame(tick);
+    else stopPlayer();
+  };
+  rafId = requestAnimationFrame(tick);
+}
+function stopPlayer() {
+  playing = false; $('playBtn').textContent = '▶';
+  if (rafId) cancelAnimationFrame(rafId);
+  if (!canvas || !$('playerBar').classList.contains('hide')) return;
+  playerPaths = null;
+}
+</script>
+</body>
+</html>
