@@ -135,11 +135,21 @@ Notes for the Containers runtime:
   a stitch **density map** (green/yellow/red per penetration), and a stitch
   player that sews the design on screen.
 - **Thread brands** — all 75 Ink/Stitch brand palettes ship built in, plus
-  a **BAI Matte** palette built from the product colour card. Add your own
-  brand's colour card in the UI (＋ Brand) or via `POST /api/palettes`;
-  matching, worksheets and previews use it like any built-in. The *true
-  thread colours* toggle recolours the realistic/3D/player views with the
-  matched brand threads — how the design will actually look sewn.
+  a **BAI Matte** palette built from the product colour card (each colour
+  keeps its Pantone TCX reference). Add your own brand's colour card in the
+  UI (＋ Brand) or via `POST /api/palettes`; matching, worksheets and
+  previews use it like any built-in. The *true thread colours* toggle
+  recolours the realistic/3D/player views with the matched brand threads.
+- **Design panel** — a floating, draggable panel (like the Matics builder's):
+  click any thread on the canvas to select its colour block, pick a swatch
+  from any brand, and *Save changes* persists the recolour into the exports,
+  preview, stitch plan and worksheet (`POST /api/recolor/{job}`). Save
+  colourways as named **themes** and apply them to any design
+  (`/api/themes`).
+- **Canvas workspace** — the whole right side is the canvas: a floating
+  toolbox at the bottom switches views and opens Details / Export / Design
+  as draggable popouts. Trackpad-native navigation: two-finger scroll pans,
+  pinch or ⌘-scroll zooms at the cursor, double-click refits.
 - **Business tools (embTools)** — client & vendor database, notes / quote
   log / to-do panes, quote sheet on the worksheet, run-time calculator and
   the full unit-conversion set (mm⇄in, cm⇄in, px⇄mm, pt⇄in).
@@ -210,6 +220,8 @@ GET  /api/palettes/{name}        a palette's colours
 POST /api/palettes               add a brand {name, threads:[{name,number,hex}]}
 DELETE /api/palettes/{name}      remove a custom brand
 GET  /api/match/{job}?palette=   re-match a job's colours to another brand
+POST /api/recolor/{job}          persist new thread colours everywhere
+GET/POST/DELETE /api/themes[/{id}]   saved colourways (design themes)
 GET  /api/download/{job}?fmt=    dst pes jef exp vp3 xxx u01 pec tbf csv json txt gcode png
                                  or zip (all formats + threadlist + worksheet + plan)
 GET  /api/plan/{job}.svg         stitch plan SVG (?realistic=true for the lit preview)

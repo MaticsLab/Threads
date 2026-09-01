@@ -1,24 +1,24 @@
 GIMP Palette
 Name: BAI Matte
 Columns: 4
-# RGB Value        Color Name  Number  (Madeira Matt cross-reference)
-177  14  60                     Berry Red  8072
-173  28  45                    Bright Red  8035
-250 125 120                   Salmon Pink  8087
-226 184 108                      Old Gold  8191
-250 197  52                    Sun Yellow  8670
-213 188 167                  Powder Blush  8964
-139  95  79                   Cocoa Brown  8556
-  2  95  70                  Spruce Green  8238
-137 181 105                    Sage Green  8255
-236 242  84                    Lime Green  8666
- 48  37 128                    Royal Blue  8382
- 90 124 170                    Denim Blue  8405
- 32 163 188                      Sky Blue  8327
-121 182 176                    Light Teal  8860
-  4   8  15                         Black  8680
-118 122 121                    Steel Grey  8651
-195 190 184                   Silver Grey  8624
-235 234 232                 Pale Lavender  8679
-238 133 188                          Pink  8026
-224 131  85                    Terracotta  8533
+# RGB from Madeira Matt cross-refs; names carry the Pantone code from the colour card
+177  14  60                  Berry Red 19-1940TCX  8072
+173  28  45                 Bright Red 18-1553TCX  8035
+238 133 188                       Pink 15-2216TCX  8026
+250 125 120                Salmon Pink 16-1520TCX  8087
+224 131  85                 Terracotta 16-1443TCX  8533
+226 184 108                   Old Gold 15-1132TCX  8191
+250 197  52                       Sun Yellow 810U  8670
+213 188 167               Powder Blush 14-1210TCX  8964
+139  95  79                Cocoa Brown 18-1137TCX  8556
+  2  95  70               Spruce Green 19-5511TCX  8238
+137 181 105                 Sage Green 14-0244TCX  8255
+236 242  84                 Lime Green 14-0340TCX  8666
+ 48  37 128                 Royal Blue 19-3954TCX  8382
+ 90 124 170                 Denim Blue 18-3929TCX  8405
+ 32 163 188                   Sky Blue 16-4530TCX  8327
+121 182 176                 Light Teal 13-5313TCX  8860
+  4   8  15                      Black 19-4004TCX  8680
+118 122 121                 Steel Grey 18-4017TCX  8651
+195 190 184                Silver Grey 14-4105TCX  8624
+235 234 232              Pale Lavender 11-0601TCX  8679

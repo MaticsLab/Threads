@@ -568,6 +568,73 @@ def rematch(job: str, palette: str = 'Madeira Rayon'):
     return threads.match_layers(layers, palette)
 
 
+@app.post('/api/recolor/{job}')
+async def recolor(job: str, data: dict):
+    """Change the design's thread colours (from the Design panel) and persist
+    them everywhere: exports, preview, stitch plan, worksheet."""
+    import re as _re
+    d = _job_dir(job)
+    meta = _load_meta(job)
+    layers = meta['layers']
+    new = data.get('layers') or []
+    if len(new) != len(layers):
+        raise HTTPException(400, 'expected %d colours (one per colour block), got %d'
+                            % (len(layers), len(new)))
+    pat = _load_pattern(job)
+    for L, n in zip(layers, new):
+        hexv = str(n.get('hex', '')).lstrip('#')
+        if not _re.fullmatch(r'[0-9a-fA-F]{6}', hexv):
+            raise HTTPException(400, 'colours must be 6-digit hex values')
+        L['hex'] = '#' + hexv.upper()
+        v = int(hexv, 16)
+        L['rgb'] = [(v >> 16) & 255, (v >> 8) & 255, v & 255]
+        if n.get('name'):
+            L['name'] = str(n['name'])[:64]
+    pat.threadlist.clear()
+    for L in layers:
+        th = pystitch.EmbThread()
+        th.color = int(L['hex'][1:], 16)
+        th.description = L.get('name', '')
+        pat.add_thread(th)
+
+    png = render.preview(pat, [tuple(L['rgb']) for L in layers],
+                         os.path.join(d, 'preview.png'))
+    with open(os.path.join(d, 'plan.svg'), 'w') as f:
+        f.write(stitch_svg.render(pat, realistic=False))
+    for stale in ('realistic.svg', 'design.zip'):
+        p = os.path.join(d, stale)
+        if os.path.exists(p):
+            os.remove(p)
+    with open(os.path.join(d, 'meta.json'), 'w') as f:
+        json.dump(_native(meta), f)
+
+    palette = data.get('palette', 'Madeira Rayon')
+    matches = threads.match_layers([{**L, 'rgb': tuple(L['rgb'])} for L in layers], palette)
+    return _native({'layers': layers, 'preview': _b64(png), 'threads': matches})
+
+
+# ------------------------------------------------- design themes (colourways)
+@app.get('/api/themes')
+def themes_list():
+    return business.list_themes()
+
+
+@app.post('/api/themes')
+async def themes_add(data: dict):
+    try:
+        tid = business.add_theme(data.get('name', ''), data.get('colors') or [])
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {'id': tid}
+
+
+@app.delete('/api/themes/{tid}')
+def themes_delete(tid: int):
+    if not business.delete_theme(tid):
+        raise HTTPException(404, 'no such theme')
+    return {'ok': True}
+
+
 # --------------------------------------------- business database (embTools)
 @app.get('/api/business/{kind}')
 def business_list(kind: str, sort: str = 'name'):

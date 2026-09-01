@@ -56,6 +56,7 @@ export function mount(container, blocks, colorOf) {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(cx, 0, cz);
   controls.enableDamping = true;
+  controls.zoomSpeed = 0.7;
   controls.maxPolarAngle = Math.PI / 2.05;
   controls.minDistance = 5;
   controls.maxDistance = dist * 4;
