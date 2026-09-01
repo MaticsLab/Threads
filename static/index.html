@@ -3,73 +3,112 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>StitchForge — image &amp; lettering to embroidery</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%231a3b69'/%3E%3Cpath d='M4 11 Q8 3 12 11' stroke='%23f0b428' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+<title>Threads Studio — image &amp; lettering to embroidery</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%234f46e5'/%3E%3Cpath d='M4 11 Q8 3 12 11' stroke='%23fbbf24' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
 <style>
   :root{
-    --ink:#12161c; --muted:#6b7480; --line:#e3e6ea; --bg:#f6f7f9;
-    --accent:#1a3b69; --warn:#a8620a; --warnbg:#fdf5e7; --ok:#1d7a4c;
+    --bg:#f2f3f8; --surface:#ffffff; --ink:#161926; --muted:#6d7383;
+    --line:#e5e7ef; --line2:#d8dbe6;
+    --accent:#4f46e5; --accent-press:#4338ca; --accent-soft:#eef0ff;
+    --stage:#181c26; --ok:#188652; --warn:#a8620a; --warnbg:#fdf5e7;
+    --r:12px; --shadow:0 1px 2px rgba(22,25,38,.05),0 4px 16px rgba(22,25,38,.06);
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
-    font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-  header{background:#fff;border-bottom:1px solid var(--line);padding:18px 28px;
-    display:flex;align-items:baseline;gap:10px}
-  h1{margin:0;font-size:19px;letter-spacing:-.01em}
-  h1 span{color:var(--muted);font-weight:400;margin-left:10px;font-size:14px}
-  main{max-width:1240px;margin:0 auto;padding:26px 20px 60px;
-    display:grid;grid-template-columns:360px 1fr;gap:26px;align-items:start}
-  @media(max-width:960px){main{grid-template-columns:1fr}}
-  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px}
-  .card h2{margin:0 0 14px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
-    color:var(--muted);font-weight:600}
-  label{display:block;font-size:13px;margin:13px 0 5px;color:#333}
-  input[type=number],input[type=text],select,textarea{width:100%;padding:8px 10px;
-    border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff}
+    font:14.5px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+
+  header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+    padding:12px 26px;display:flex;align-items:center;gap:12px}
+  .logo{width:30px;height:30px;border-radius:9px;flex:none;
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);display:grid;place-items:center}
+  .logo svg{display:block}
+  h1{margin:0;font-size:16.5px;letter-spacing:-.01em;font-weight:700}
+  .crumb{color:var(--muted);font-size:12.5px;font-weight:500;
+    border:1px solid var(--line);border-radius:99px;padding:3px 11px;background:#fff}
+  header .right{margin-left:auto;color:var(--muted);font-size:12.5px}
+
+  main{max-width:1340px;margin:0 auto;padding:24px 22px 70px;
+    display:grid;grid-template-columns:390px 1fr;gap:22px;align-items:start}
+  @media(max-width:1020px){main{grid-template-columns:1fr}}
+
+  .card{background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+  .card+.card{margin-top:18px}
+  .card h2{margin:0 0 14px;font-size:10.5px;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--muted);font-weight:700}
+
+  label{display:block;font-size:12.5px;margin:13px 0 5px;color:#3d4250;font-weight:500}
+  input[type=number],input[type=text],select,textarea{width:100%;padding:8px 11px;
+    border:1px solid var(--line2);border-radius:9px;font:inherit;background:#fff;
+    transition:border-color .12s, box-shadow .12s}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft)}
   textarea{resize:vertical;min-height:64px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  .drop{border:1.5px dashed #c6ccd4;border-radius:9px;padding:26px 14px;text-align:center;
-    cursor:pointer;color:var(--muted);font-size:13px;background:#fbfcfd}
-  .drop:hover{border-color:var(--accent);color:var(--accent)}
-  .drop img{max-width:100%;max-height:130px;border-radius:5px}
-  button{padding:11px;border:0;border-radius:7px;background:var(--accent);color:#fff;
-    font:600 14px/1 inherit;cursor:pointer}
-  button:disabled{background:#9aa4b1;cursor:default}
-  button.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent)}
-  button.mini{padding:6px 10px;font-size:12px}
+
+  .drop{border:1.5px dashed var(--line2);border-radius:11px;padding:26px 14px;
+    text-align:center;cursor:pointer;color:var(--muted);font-size:13px;
+    background:#fafbfe;transition:border-color .12s,background .12s}
+  .drop:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .drop img{max-width:100%;max-height:130px;border-radius:7px}
+
+  button{padding:10px 14px;border:0;border-radius:9px;background:var(--accent);
+    color:#fff;font:600 13.5px/1 inherit;cursor:pointer;
+    box-shadow:0 1px 2px rgba(79,70,229,.35);transition:background .12s,transform .06s}
+  button:hover{background:var(--accent-press)}
+  button:active{transform:translateY(1px)}
+  button:disabled{background:#a9adc4;box-shadow:none;cursor:default}
+  button.ghost{background:#fff;color:var(--accent);border:1px solid var(--line2);box-shadow:none}
+  button.ghost:hover{border-color:var(--accent);background:var(--accent-soft)}
+  button.mini{padding:6px 10px;font-size:12px;border-radius:8px}
   .wide{width:100%;margin-top:18px}
-  .tabs{display:flex;gap:6px;margin-bottom:16px}
-  .tabs button{flex:1;background:#eef1f5;color:var(--muted);border:1px solid var(--line)}
-  .tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:#eceef5;
+    padding:4px;border-radius:11px;margin-bottom:18px}
+  .tabs button{display:flex;align-items:center;justify-content:center;gap:6px;
+    background:transparent;color:var(--muted);box-shadow:none;padding:8px 4px;border-radius:8px}
+  .tabs button:hover{background:#e2e5f0;color:var(--ink)}
+  .tabs button.on{background:#fff;color:var(--accent);box-shadow:0 1px 3px rgba(22,25,38,.12)}
+  .tabs svg{flex:none}
+
   .chip{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:13px;
-    border-bottom:1px solid #f0f2f4}
-  .sw{width:17px;height:17px;border-radius:4px;border:1px solid rgba(0,0,0,.15);flex:none}
+    border-bottom:1px solid #f0f2f6}
+  .sw{width:17px;height:17px;border-radius:5px;border:1px solid rgba(0,0,0,.14);flex:none}
   .muted{color:var(--muted);font-size:12px}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  td{padding:6px 0;border-bottom:1px solid #f0f2f4}
-  td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+  td{padding:6.5px 0;border-bottom:1px solid #f0f2f6}
+  td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   .warn{background:var(--warnbg);border-left:3px solid var(--warn);padding:9px 12px;
-    border-radius:0 5px 5px 0;font-size:13px;margin-bottom:8px}
-  .pass{font-size:12.5px;padding:8px 0;border-bottom:1px solid #f0f2f4;color:#444}
+    border-radius:0 7px 7px 0;font-size:13px;margin-bottom:8px}
+  .pass{font-size:12.5px;padding:8px 0;border-bottom:1px solid #f0f2f6;color:#444}
   .pass b{color:var(--ink)}
-  .viewer{background:#b8bdc4;border-radius:8px;height:430px;position:relative;overflow:hidden}
-  .viewer>img{position:absolute;inset:0;margin:auto;max-width:96%;max-height:96%;border-radius:4px}
-  .viewer>svg,.viewer>div>svg{width:100%;height:100%;display:block;cursor:grab}
+
+  .stage{position:relative;background:var(--stage);border-radius:var(--r);
+    height:470px;overflow:hidden;border:1px solid #10131b}
+  .stage>img{position:absolute;inset:0;margin:auto;max-width:94%;max-height:94%;border-radius:6px}
+  .stage>svg,.stage>div>svg{width:100%;height:100%;display:block;cursor:grab}
   .vbar{display:flex;gap:6px;align-items:center;margin:0 0 10px;flex-wrap:wrap}
-  .vbar .mode{background:#eef1f5;color:var(--muted);border:1px solid var(--line)}
+  .vbar .mode{background:#fff;color:var(--muted);border:1px solid var(--line2);box-shadow:none}
   .vbar .mode.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .player{display:flex;gap:10px;align-items:center;margin-top:10px}
-  .player input[type=range]{flex:1}
+  .tgl{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);
+    margin-left:auto;cursor:pointer;font-weight:500}
+  .tgl input{accent-color:var(--accent)}
+  #viewerHint{color:var(--muted);font-size:11.5px}
+
+  .player{display:flex;gap:10px;align-items:center;margin-top:12px}
+  .player input[type=range]{flex:1;accent-color:var(--accent)}
   .dlrow{display:flex;gap:10px;margin-top:16px;align-items:end;flex-wrap:wrap}
-  .dlrow>div{flex:1;min-width:130px}
-  details{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+  .dlrow>div{flex:1;min-width:150px}
+  details{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fbfcff}
   details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
   .fontprev{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:44px}
-  .fontprev img{max-height:44px;max-width:100%;border-radius:4px;background:#fff;
-    border:1px solid var(--line)}
-  .util{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:14px}
-  .util input{width:90px}
+  .fontprev img{max-height:44px;max-width:100%;border-radius:6px;background:#fff;border:1px solid var(--line)}
+  .util{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:12px}
+  .util input{width:86px}
+  .palrow{display:flex;gap:8px;align-items:center}
+  .palrow select{flex:1}
   .spin{display:inline-block;width:13px;height:13px;border:2px solid #fff6;
     border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;
     vertical-align:-2px;margin-right:7px}
@@ -79,17 +118,20 @@
 </head>
 <body>
 <header>
-  <h1>StitchForge <span>image &amp; lettering → machine embroidery</span></h1>
+  <div class="logo"><svg width="17" height="17" viewBox="0 0 16 16"><path d="M3 11 Q8 2.5 13 11" stroke="#fbbf24" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="3" cy="11" r="1.4" fill="#fff"/><circle cx="13" cy="11" r="1.4" fill="#fff"/></svg></div>
+  <h1>Threads Studio</h1>
+  <span class="crumb">MaticsLab</span>
+  <div class="right">image · lettering · any machine format</div>
 </header>
 
 <main>
   <div>
     <div class="card">
       <div class="tabs">
-        <button id="tabImage" class="on">Artwork</button>
-        <button id="tabText">Lettering</button>
-        <button id="tabImport">Import</button>
-        <button id="tabBiz">Business</button>
+        <button id="tabImage" class="on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 3.5 3.5L16 13l4 5"/></svg>Artwork</button>
+        <button id="tabText"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5h14M12 5v14M8 19h8"/></svg>Letter</button>
+        <button id="tabImport"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 0L7 8m5-5l5 5M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Import</button>
+        <button id="tabBiz"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Business</button>
       </div>
 
       <!-- ============================== artwork -->
@@ -154,7 +196,7 @@
         <div class="row3">
           <div><label>Height (mm)</label><input type="number" id="theight" value="20" step="1" min="4"></div>
           <div><label>Spacing (mm)</label><input type="number" id="tspacing" value="0" step="0.5"></div>
-          <div><label>Thread</label><input type="color" id="tcolor" value="#1a3b69" style="width:100%;height:38px;padding:2px;border:1px solid var(--line);border-radius:6px"></div>
+          <div><label>Thread</label><input type="color" id="tcolor" value="#1a3b69" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
         </div>
 
         <button id="goText" class="wide">Stitch text</button>
@@ -185,7 +227,7 @@
         <button id="goImport" class="wide" disabled>Import &amp; stitch</button>
       </div>
 
-      <!-- ============================== business (embTools database) -->
+      <!-- ============================== business (embTools) -->
       <div id="paneBiz" class="hide">
         <h2>1 · Clients &amp; vendors</h2>
         <div class="row">
@@ -220,8 +262,23 @@
           client's name is printed on the worksheet PDF.</p>
       </div>
 
-      <label style="margin-top:16px">Thread palette <span class="muted">(for thread names)</span></label>
-      <select id="palette"></select>
+      <label style="margin-top:16px">Thread palette <span class="muted">(brand used for thread names &amp; true colours)</span></label>
+      <div class="palrow">
+        <select id="palette"></select>
+        <button class="mini ghost" id="palAdd" title="Add a thread brand">＋ Brand</button>
+      </div>
+      <div id="palPanel" class="hide" style="margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fbfcff">
+        <label style="margin-top:0">Brand name</label>
+        <input type="text" id="palName" placeholder="e.g. BAI Matte">
+        <label>Colours — one per line: <span class="muted">Name, Number, #HEX</span></label>
+        <textarea id="palRows" style="min-height:96px" placeholder="Berry Red, 8072, #B10E3C&#10;Bright Red, 8035, #AD1C2D&#10;Sky Blue, 8327, #20A3BC"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button class="mini" id="palSave">Save brand</button>
+          <button class="mini ghost" id="palCancel">Cancel</button>
+        </div>
+        <p class="muted" id="palStatus" style="margin:8px 0 0"></p>
+      </div>
+      <button id="palDelete" class="mini ghost hide" style="margin-top:8px">Delete this custom brand</button>
 
       <details>
         <summary>Unit conversions (embTools)</summary>
@@ -241,9 +298,16 @@
       </details>
     </div>
 
-    <div class="card" style="margin-top:18px">
+    <div class="card hide" id="layersCard">
+      <h2>Colour layers</h2>
+      <div id="layers"></div>
+      <p class="muted" style="margin:11px 0 0">Sewn lightest first so darker outline
+        colours cover the seams.</p>
+    </div>
+
+    <div class="card">
       <h2>Notes (embTools)</h2>
-      <div class="tabs" style="margin-bottom:10px">
+      <div class="tabs" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
         <button class="ntab on" data-note="notes">Notes</button>
         <button class="ntab" data-note="quotes">Quote log</button>
         <button class="ntab" data-note="todo">To-do</button>
@@ -251,13 +315,6 @@
       <textarea id="noteText" style="min-height:90px" placeholder="Saved on the server, embTools style…"></textarea>
       <button id="noteSave" class="mini" style="margin-top:8px">Save</button>
       <span class="muted" id="noteStatus"></span>
-    </div>
-
-    <div class="card hide" id="layersCard" style="margin-top:18px">
-      <h2>Colour layers</h2>
-      <div id="layers"></div>
-      <p class="muted" style="margin:11px 0 0">Sewn lightest first so darker outline
-        colours cover the seams.</p>
     </div>
   </div>
 
@@ -270,11 +327,13 @@
         <button class="mode mini on" data-mode="photo">Preview</button>
         <button class="mode mini" data-mode="plan">Stitch plan</button>
         <button class="mode mini" data-mode="realistic">Realistic</button>
+        <button class="mode mini" data-mode="3d">3D</button>
         <button class="mode mini" data-mode="density">Density</button>
         <button class="mode mini" data-mode="player">▶ Player</button>
-        <span class="muted" id="viewerHint" style="margin-left:auto">scroll to zoom · drag to pan</span>
+        <label class="tgl"><input type="checkbox" id="trueColors"> true thread colours</label>
+        <span class="muted" id="viewerHint"></span>
       </div>
-      <div class="viewer" id="viewer"><img id="preview"></div>
+      <div class="stage" id="viewer"><img id="preview"></div>
 
       <div class="player hide" id="playerBar">
         <button class="mini" id="playBtn">▶</button>
@@ -341,23 +400,24 @@
       <h2>How it works</h2>
       <p style="margin:0 0 10px"><b>Artwork:</b> every stroke narrower than the satin cap is
         stitched as a true satin column on the stroke's perpendicular; anything wider gets a
-        tatami fill underneath. The finished file is measured — coverage, gaps, stitch
-        lengths, hoop clearance — and rebuilt until it passes.</p>
+        tatami, contour or circular fill underneath. The finished file is measured — coverage,
+        gaps, stitch lengths, hoop clearance — and rebuilt until it passes.</p>
       <p style="margin:0 0 10px"><b>Lettering:</b> text is sewn from Ink/Stitch embroidery
-        fonts — each glyph is a hand-digitized set of satin columns and running stitches,
-        stitched here with Ink/Stitch's rail-and-rung satin engine.</p>
-      <p style="margin:0">Exports go through pystitch (DST, PES, JEF, EXP, VP3, …), the
-        previews use Ink/Stitch's realistic stitch filter with svg.panzoom.js, and the
-        worksheet PDF follows Ink/Stitch's print template with an embTools quote sheet.</p>
+        fonts with Ink/Stitch's rail-and-rung satin engine. <b>Import:</b> SVGs are digitized
+        like Inkscape files; machine files (DST, PES, …) convert to any other format.</p>
+      <p style="margin:0">Preview modes include a lit realistic view and full 3D. Thread
+        brands are matched by palette — add your own brand's colour card with ＋ Brand.</p>
     </div>
   </div>
 </main>
 
+<script type="importmap">{"imports":{"three":"/static/vendor/three/three.module.min.js"}}</script>
 <script src="/static/vendor/svg.min.js"></script>
 <script src="/static/vendor/svg.panzoom.js"></script>
+<script type="module" src="/static/viewer3d.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let job = null, kind = null, fonts = [];
+let job = null, kind = null, fonts = [], lastThreads = [];
 
 /* ------------------------------------------------------------- tabs */
 const TABS = { tabImage: 'paneImage', tabText: 'paneText', tabImport: 'paneImport', tabBiz: 'paneBiz' };
@@ -458,15 +518,81 @@ $('noteSave').onclick = async () => {
 };
 noteLoad();
 
-/* ---------------------------------------------------------- fonts + palettes */
+/* ------------------------------------------------- thread palettes / brands */
+let paletteList = [];
+async function loadPalettes(selectName) {
+  paletteList = await (await fetch('/api/palettes')).json();
+  const cur = selectName || $('palette').value || 'Madeira Rayon';
+  const custom = paletteList.filter(p => p.custom);
+  const builtin = paletteList.filter(p => !p.custom);
+  let html = '';
+  if (custom.length)
+    html += '<optgroup label="My brands">' +
+      custom.map(p => `<option>${p.name}</option>`).join('') + '</optgroup>';
+  html += '<optgroup label="Ink/Stitch brands">' +
+    builtin.map(p => `<option>${p.name}</option>`).join('') + '</optgroup>';
+  $('palette').innerHTML = html;
+  $('palette').value = paletteList.some(p => p.name === cur) ? cur : 'Madeira Rayon';
+  paletteChanged(false);
+}
+function isCustomPalette() {
+  const p = paletteList.find(p => p.name === $('palette').value);
+  return p && p.custom;
+}
+async function paletteChanged(rematch = true) {
+  $('palDelete').classList.toggle('hide', !isCustomPalette());
+  if (rematch && job) {
+    try {
+      const r = await fetch(`/api/match/${job}?palette=${encodeURIComponent($('palette').value)}`);
+      if (r.ok) {
+        lastThreads = await r.json();
+        renderThreads();
+        drawFrame();
+        if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
+      }
+    } catch (e) {}
+  }
+  updateDl();
+}
+$('palette').onchange = () => paletteChanged(true);
+$('palAdd').onclick = () => { $('palPanel').classList.toggle('hide'); $('palStatus').textContent = ''; };
+$('palCancel').onclick = () => $('palPanel').classList.add('hide');
+$('palSave').onclick = async () => {
+  const lines = $('palRows').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const threads = [];
+  for (const line of lines) {
+    const hexm = line.match(/#?([0-9a-fA-F]{6})\b/);
+    if (!hexm) continue;
+    const rest = line.replace(hexm[0], '').split(/[,;\t]+/).map(s => s.trim()).filter(Boolean);
+    const number = (rest.find(s => /\d/.test(s) && s.length <= 12 && !/[a-df-z]/i.test(s)) || '');
+    const name = rest.filter(s => s !== number).join(' ') || 'Unnamed';
+    threads.push({ name, number, hex: '#' + hexm[1] });
+  }
+  const res = await fetch('/api/palettes', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: $('palName').value, threads }) });
+  const d = await res.json();
+  if (!res.ok) { $('palStatus').textContent = d.detail; return; }
+  $('palStatus').textContent = `saved — ${d.colors} colours`;
+  $('palPanel').classList.add('hide');
+  await loadPalettes(d.name);
+  paletteChanged(true);
+};
+$('palDelete').onclick = async () => {
+  if (!isCustomPalette()) return;
+  if (!confirm(`Delete the custom brand "${$('palette').value}"?`)) return;
+  await fetch('/api/palettes/' + encodeURIComponent($('palette').value), { method: 'DELETE' });
+  await loadPalettes('Madeira Rayon');
+  paletteChanged(true);
+};
+
+/* ---------------------------------------------------------- fonts on load */
 (async () => {
   try {
     fonts = await (await fetch('/api/fonts')).json();
     $('font').innerHTML = fonts.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
     fontInfo();
-    const pals = await (await fetch('/api/palettes')).json();
-    $('palette').innerHTML = pals.map(p =>
-      `<option ${p === 'Madeira Rayon' ? 'selected' : ''}>${p}</option>`).join('');
+    await loadPalettes('Madeira Rayon');
   } catch (e) { console.error(e); }
 })();
 $('font').onchange = fontInfo;
@@ -583,7 +709,7 @@ function show(d) {
   $('warnings').innerHTML = (d.warnings || []).map(w => `<div class="warn">${w}</div>`).join('');
   previewSrc = d.preview;
   $('preview').src = previewSrc;
-  setMode('photo');
+  lastThreads = d.threads || [];
 
   const rows = [
     ['Size', `${r.width_mm} × ${r.height_mm} mm`],
@@ -613,24 +739,30 @@ function show(d) {
   (r.layers || []).forEach(L => rows.push([`Coverage ${L.hex}`, L.coverage + '%']));
   $('spec').innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
 
-  $('rightColTitle').textContent = d.passes ? 'Auto-tune passes' : 'Lettering';
+  $('rightColTitle').textContent = d.passes ? 'Auto-tune passes' : 'Details';
   $('passes').innerHTML = (d.passes || []).map(p =>
     `<div class="pass"><b>Pass ${p.pass}</b> — ${p.width_mm}mm, ${p.stitches.toLocaleString()} stitches,
      ${p.coverage_min}% min coverage<br>${p.actions.length ? p.actions.join('<br>') : '<span style="color:var(--ok)">passed all checks</span>'}</div>`).join('');
 
-  $('threadList').innerHTML = (d.threads || []).map((t, i) =>
-    `<div class="chip"><span class="sw" style="background:${t.hex}"></span>
-     <span>${i + 1}. ${t.thread_name}${t.thread_number ? ' #' + t.thread_number : ''}</span>
-     <span class="muted" style="margin-left:auto">${t.palette}</span></div>`).join('');
-
+  renderThreads();
   updateDl();
   planCache = {}; stopPlayer(); playerData = null; bounds = null; playN = 0;
+  if (window.Stitch3D) window.Stitch3D.dispose();
+  setMode('photo');
   $('rtStitches').value = r.stitches; runtimeCalc();
+}
+
+function renderThreads() {
+  $('threadList').innerHTML = (lastThreads || []).map((t, i) =>
+    `<div class="chip"><span class="sw" style="background:${t.thread_hex || t.hex}"></span>
+     <span>${i + 1}. ${t.thread_name}${t.thread_number ? ' #' + t.thread_number : ''}</span>
+     <span class="muted" style="margin-left:auto">${t.palette}</span></div>`).join('');
 }
 
 $('fmt').onchange = updateDl;
 ['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient'].forEach(id => $(id).onchange = updateDl);
 function updateDl() {
+  if (!job) return;
   $('dl').href = `/api/download/${job}?fmt=${$('fmt').value}`;
   const q = new URLSearchParams({
     name: $('qName').value || 'design', palette: $('palette').value,
@@ -643,24 +775,39 @@ function updateDl() {
 }
 
 /* ---------------------------------------------------------------- viewer
-   Plan view: SVG via svg.js + svg.panzoom.js (few paths, cheap).
-   Realistic + player: <canvas> — thousands of stitches as batched Path2D
-   strokes with a 3-pass thread shading, instead of one SVG filter per
-   stitch (which is what made big designs freeze the tab). */
+   Plan: SVG via svg.js + svg.panzoom.js. Realistic + player: <canvas> with
+   per-stitch thread sprites (lit capsules). 3D: three.js instanced capsules
+   on fabric (static/viewer3d.js). "True thread colours" recolours every
+   stitch view with the matched brand thread instead of the artwork colour. */
 let planCache = {}, canvas = null, playerData = null, playing = false,
     playN = 0, playTotal = 0, curMode = 'photo';
 let cnv = null, cctx = null, view = { s: 1, ox: 0, oy: 0 }, bounds = null;
+const LIGHT_ANG = -Math.PI * 0.75;      // light from the top-left
 
 document.querySelectorAll('.vbar .mode').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('trueColors').onchange = () => {
+  spriteCache.clear();
+  drawFrame();
+  if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
+};
+
+function blockColor(bi) {
+  if ($('trueColors').checked && lastThreads[bi] && lastThreads[bi].thread_hex)
+    return lastThreads[bi].thread_hex;
+  return playerData ? playerData[bi].color : '#000000';
+}
 
 function setMode(mode) {
   curMode = mode;
   document.querySelectorAll('.vbar .mode').forEach(b =>
     b.classList.toggle('on', b.dataset.mode === mode));
   $('playerBar').classList.toggle('hide', mode !== 'player');
-  $('viewerHint').textContent = (mode === 'photo' || mode === 'density') ? '' : 'scroll to zoom · drag to pan';
+  $('viewerHint').textContent =
+    mode === '3d' ? 'drag to orbit · scroll to zoom' :
+    (mode === 'photo' || mode === 'density') ? '' : 'scroll to zoom · drag to pan';
   stopPlayer();
   clearSvg(); removeCanvas();
+  if (window.Stitch3D) window.Stitch3D.dispose();
   if (mode === 'photo' || mode === 'density') {
     $('preview').src = mode === 'density' ? `/api/density/${job}.png` : previewSrc;
     $('preview').classList.remove('hide');
@@ -668,6 +815,7 @@ function setMode(mode) {
   }
   $('preview').classList.add('hide');
   if (mode === 'plan') { loadPlanSvg(); return; }
+  if (mode === '3d') { init3d(); return; }
   initStitchView(mode);                 // realistic | player
 }
 
@@ -690,7 +838,6 @@ async function loadPlanSvg() {
   canvas.panZoom({ zoomMin: 0.3, zoomMax: 60, zoomFactor: 0.18 });
 }
 
-/* ------------------------------------------------ canvas stitch rendering */
 async function loadStitches() {
   if (!playerData) {
     playerData = await (await fetch(`/api/stitches/${job}`)).json();
@@ -702,6 +849,12 @@ async function loadStitches() {
     })));
     bounds = { minx, miny, maxx, maxy };
   }
+}
+
+async function init3d() {
+  await loadStitches();
+  if (curMode !== '3d' || !window.Stitch3D) return;
+  window.Stitch3D.mount($('viewer'), playerData, blockColor);
 }
 
 function ensureCanvas() {
@@ -729,51 +882,112 @@ async function initStitchView(mode) {
   if (curMode !== mode) return;
   ensureCanvas();
   fitView();
-  if (mode === 'player') { $('playPos').max = playTotal; drawFrame(); }
-  else drawFrame();
+  if (mode === 'player') $('playPos').max = playTotal;
+  drawFrame();
 }
 
 function shade(hex, f) {
   const v = parseInt(hex.slice(1), 16);
-  const c = x => Math.max(0, Math.min(255, Math.round(x * f)));
-  return `rgb(${c(v >> 16 & 255)},${c(v >> 8 & 255)},${c(v & 255)})`;
+  const one = x => {
+    const y = f <= 1 ? x * f : x + (255 - x) * (f - 1);
+    return Math.max(0, Math.min(255, Math.round(y)));
+  };
+  return `rgb(${one(v >> 16 & 255)},${one(v >> 8 & 255)},${one(v & 255)})`;
+}
+
+/* thread sprites: a lit capsule per (colour, angle-vs-light bin); stitches
+   perpendicular to the light throw the most sheen, like real rayon */
+const spriteCache = new Map();
+const SPRITE_BINS = 9;
+function threadSprite(color, bin) {
+  const key = color + '|' + bin;
+  if (spriteCache.has(key)) return spriteCache.get(key);
+  const L = 64, W = 16;
+  const c = document.createElement('canvas');
+  c.width = L; c.height = W;
+  const g = c.getContext('2d');
+  const r = W / 2 - 0.5;
+  g.beginPath();
+  g.moveTo(r + 0.5, 0.5);
+  g.lineTo(L - r - 0.5, 0.5);
+  g.arc(L - r - 0.5, W / 2, r, -Math.PI / 2, Math.PI / 2);
+  g.lineTo(r + 0.5, W - 0.5);
+  g.arc(r + 0.5, W / 2, r, Math.PI / 2, -Math.PI / 2);
+  g.closePath();
+  const sheen = bin / (SPRITE_BINS - 1);
+  const grad = g.createLinearGradient(0, 0, 0, W);
+  grad.addColorStop(0.00, shade(color, 0.45));
+  grad.addColorStop(0.28, shade(color, 0.92 + 0.25 * sheen));
+  grad.addColorStop(0.42, shade(color, 1.0 + 0.72 * sheen));
+  grad.addColorStop(0.60, shade(color, 0.88 + 0.22 * sheen));
+  grad.addColorStop(1.00, shade(color, 0.40));
+  g.fillStyle = grad;
+  g.fill();
+  spriteCache.set(key, c);
+  return c;
 }
 
 function drawFrame() {
-  if (!cctx) return;
+  if (!cctx || !playerData) return;
   const dpr = cnv._dpr;
   cctx.setTransform(1, 0, 0, 1, 0, 0);
   cctx.clearRect(0, 0, cnv.width, cnv.height);
-  cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
-  cctx.lineCap = 'round'; cctx.lineJoin = 'round';
-  const limit = curMode === 'player' ? playN : Infinity;
-  const W = 1.7;                                   // thread width in CSS px (~0.45mm)
-  let left = limit;
-  for (const b of playerData) {
-    const paths = new Path2D();
-    let any = false;
-    for (const r of b.runs) {
-      const take = curMode === 'player' ? Math.max(0, Math.min(r.length, left)) : r.length;
-      if (curMode === 'player') left -= r.length;
-      if (take < 2) continue;
-      any = true;
-      paths.moveTo(r[0][0], r[0][1]);
-      for (let i = 1; i < take; i++) paths.lineTo(r[i][0], r[i][1]);
+  const W = 1.8;                                    // thread width, CSS px (~0.48mm)
+  const sprites = curMode === 'realistic' && view.s >= 1.15;
+
+  if (sprites) {
+    const a = view.s * dpr;
+    for (let bi = 0; bi < playerData.length; bi++) {
+      const col = blockColor(bi);
+      for (const r of playerData[bi].runs) {
+        for (let k = 1; k < r.length; k++) {
+          const px = r[k - 1][0], py = r[k - 1][1];
+          const dx = r[k][0] - px, dy = r[k][1] - py;
+          const len = Math.hypot(dx, dy);
+          if (len < 0.02) continue;
+          const ang = Math.atan2(dy, dx);
+          const sheen = Math.abs(Math.sin(ang - LIGHT_ANG));
+          const spr = threadSprite(col, Math.round(sheen * (SPRITE_BINS - 1)));
+          const cos = Math.cos(ang), sin = Math.sin(ang);
+          cctx.setTransform(a * cos, a * sin, -a * sin, a * cos,
+                            (px * view.s + view.ox) * dpr, (py * view.s + view.oy) * dpr);
+          cctx.drawImage(spr, -W * 0.45, -W / 2, len + W * 0.9, W);
+        }
+      }
     }
-    if (!any) continue;
-    if (curMode === 'realistic') {
-      cctx.strokeStyle = shade(b.color, 0.55); cctx.lineWidth = W;
-      cctx.stroke(paths);
-      cctx.save(); cctx.translate(-W * 0.10, -W * 0.16);
-      cctx.strokeStyle = b.color; cctx.lineWidth = W * 0.62; cctx.stroke(paths);
-      cctx.translate(-W * 0.08, -W * 0.12);
-      cctx.strokeStyle = shade(b.color, 1.45); cctx.lineWidth = W * 0.26; cctx.stroke(paths);
-      cctx.restore();
-    } else {
-      cctx.strokeStyle = b.color; cctx.lineWidth = W * 0.85; cctx.stroke(paths);
+    cctx.setTransform(1, 0, 0, 1, 0, 0);
+  } else {
+    cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
+    cctx.lineCap = 'round'; cctx.lineJoin = 'round';
+    let left = curMode === 'player' ? playN : Infinity;
+    for (let bi = 0; bi < playerData.length; bi++) {
+      const b = playerData[bi], col = blockColor(bi);
+      const paths = new Path2D();
+      let any = false;
+      for (const r of b.runs) {
+        const take = curMode === 'player' ? Math.max(0, Math.min(r.length, left)) : r.length;
+        if (curMode === 'player') left -= r.length;
+        if (take < 2) continue;
+        any = true;
+        paths.moveTo(r[0][0], r[0][1]);
+        for (let i = 1; i < take; i++) paths.lineTo(r[i][0], r[i][1]);
+      }
+      if (!any) { if (curMode === 'player' && left <= 0) break; continue; }
+      if (curMode === 'realistic') {
+        cctx.strokeStyle = shade(col, 0.55); cctx.lineWidth = W;
+        cctx.stroke(paths);
+        cctx.save(); cctx.translate(-W * 0.10, -W * 0.16);
+        cctx.strokeStyle = col; cctx.lineWidth = W * 0.62; cctx.stroke(paths);
+        cctx.translate(-W * 0.08, -W * 0.12);
+        cctx.strokeStyle = shade(col, 1.45); cctx.lineWidth = W * 0.26; cctx.stroke(paths);
+        cctx.restore();
+      } else {
+        cctx.strokeStyle = col; cctx.lineWidth = W * 0.85; cctx.stroke(paths);
+      }
+      if (curMode === 'player' && left <= 0) break;
     }
-    if (curMode === 'player' && left <= 0) break;
   }
+
   if (curMode === 'player') {
     $('playInfo').textContent = `${Math.floor(playN).toLocaleString()} / ${playTotal.toLocaleString()} st`;
     $('playPos').value = Math.floor(playN);
@@ -837,7 +1051,6 @@ function stopPlayer() {
 window.addEventListener('resize', () => {
   if (cnv && playerData) { ensureCanvas(); fitView(); drawFrame(); }
 });
-
 </script>
 </body>
 </html>

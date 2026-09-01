@@ -129,9 +129,17 @@ Notes for the Containers runtime:
 - **Fill methods** — tatami with fill-angle control, contour fill, and
   circular fill, per Ink/Stitch's fill family.
 - **Previews** — raster preview, stitch-plan SVG (pan/zoom via
-  svg.panzoom.js), a fast canvas *realistic* view, a stitch **density map**
-  (green/yellow/red per penetration, like Ink/Stitch's density map), and a
-  stitch player that sews the design on screen.
+  svg.panzoom.js), a *realistic* view (every stitch drawn as a lit thread
+  capsule whose sheen follows its angle to the light), a full **3D view**
+  (three.js: instanced thread capsules on a woven fabric plane, orbit/zoom),
+  a stitch **density map** (green/yellow/red per penetration), and a stitch
+  player that sews the design on screen.
+- **Thread brands** — all 75 Ink/Stitch brand palettes ship built in, plus
+  a **BAI Matte** palette built from the product colour card. Add your own
+  brand's colour card in the UI (＋ Brand) or via `POST /api/palettes`;
+  matching, worksheets and previews use it like any built-in. The *true
+  thread colours* toggle recolours the realistic/3D/player views with the
+  matched brand threads — how the design will actually look sewn.
 - **Business tools (embTools)** — client & vendor database, notes / quote
   log / to-do panes, quote sheet on the worksheet, run-time calculator and
   the full unit-conversion set (mm⇄in, cm⇄in, px⇄mm, pt⇄in).
@@ -197,7 +205,11 @@ POST /api/digitize               digitize an analyzed upload (fill_method, fill_
 POST /api/lettering              text + font -> stitched lettering
 POST /api/import                 SVG (digitized) or any machine embroidery file
 GET  /api/fonts                  bundled fonts (+ /api/fonts/{id}/preview.png)
-GET  /api/palettes               thread palettes
+GET  /api/palettes               thread palettes [{name, custom}]
+GET  /api/palettes/{name}        a palette's colours
+POST /api/palettes               add a brand {name, threads:[{name,number,hex}]}
+DELETE /api/palettes/{name}      remove a custom brand
+GET  /api/match/{job}?palette=   re-match a job's colours to another brand
 GET  /api/download/{job}?fmt=    dst pes jef exp vp3 xxx u01 pec tbf csv json txt gcode png
                                  or zip (all formats + threadlist + worksheet + plan)
 GET  /api/plan/{job}.svg         stitch plan SVG (?realistic=true for the lit preview)
