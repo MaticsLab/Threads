@@ -620,7 +620,7 @@ async def notes_set(kind: str, data: dict):
 
 @app.get('/api/worksheet/{job}.pdf')
 def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon',
-                  client: str = '',
+                  client: str = '', inline: bool = False,
                   setup: float = 0.0, price_per_1000: float = 0.0,
                   garment_qty: int = 0, garment_base: float = 0.0,
                   markup_pct: float = 0.0, discount_pct: float = 0.0):
@@ -645,8 +645,12 @@ def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon'
                     preview_png=os.path.join(d, 'preview.png'),
                     design_name=name or 'design', quote_params=quote_params,
                     client=client)
-    return FileResponse(out, filename='%s-worksheet.pdf' % (name or 'design'),
-                        media_type='application/pdf')
+    fname = '%s-worksheet.pdf' % (name or 'design')
+    if inline:
+        # render in the browser's PDF viewer (the UI's preview modal)
+        return FileResponse(out, media_type='application/pdf',
+                            headers={'Content-Disposition': 'inline; filename="%s"' % fname})
+    return FileResponse(out, filename=fname, media_type='application/pdf')
 
 
 app.mount('/static', StaticFiles(directory=os.path.join(APP_DIR, 'static')),

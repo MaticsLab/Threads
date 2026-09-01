@@ -7,40 +7,55 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%234f46e5'/%3E%3Cpath d='M4 11 Q8 3 12 11' stroke='%23fbbf24' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#f2f3f8; --surface:#ffffff; --ink:#161926; --muted:#6d7383;
-    --line:#e5e7ef; --line2:#d8dbe6;
-    --accent:#4f46e5; --accent-press:#4338ca; --accent-soft:#eef0ff;
+    --bg:#f6f7f9; --surface:#ffffff; --ink:#1a1d23; --muted:#6b7280;
+    --line:#e9eaee; --line2:#e2e4e9;
+    --accent:#2563eb; --accent-press:#1d4ed8; --accent-soft:#eef4ff;
     --stage:#181c26; --ok:#188652; --warn:#a8620a; --warnbg:#fdf5e7;
-    --r:12px; --shadow:0 1px 2px rgba(22,25,38,.05),0 4px 16px rgba(22,25,38,.06);
+    --r:16px; --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 28px rgba(16,24,40,.07);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:14.5px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;
+    font:14.5px/1.55 "Inter var","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 
-  header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);
-    backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
-    padding:12px 26px;display:flex;align-items:center;gap:12px}
-  .logo{width:30px;height:30px;border-radius:9px;flex:none;
-    background:linear-gradient(135deg,#4f46e5,#7c3aed);display:grid;place-items:center}
-  .logo svg{display:block}
-  h1{margin:0;font-size:16.5px;letter-spacing:-.01em;font-weight:700}
-  .crumb{color:var(--muted);font-size:12.5px;font-weight:500;
-    border:1px solid var(--line);border-radius:99px;padding:3px 11px;background:#fff}
-  header .right{margin-left:auto;color:var(--muted);font-size:12.5px}
+  /* ------------------------------------------------ builder-style toolbar */
+  header{position:relative;flex:none;background:#fff;border-bottom:1px solid var(--line);
+    height:60px;display:flex;align-items:center;padding:0 22px;gap:12px;z-index:30}
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+  .crumbs b{color:var(--ink);font-weight:600}
+  .crumbs .sep{color:#c3c7cf}
+  .topnav{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);
+    display:flex;align-items:center;gap:2px}
+  .topnav button{position:relative;background:transparent;color:var(--muted);box-shadow:none;
+    border:0;border-radius:10px;padding:8px 16px;font-weight:500;height:38px}
+  .topnav button:hover{background:#f2f3f6;color:var(--ink)}
+  .topnav button.on{background:#f2f3f6;color:var(--ink);font-weight:600}
+  .topnav button.on::after{content:"";position:absolute;top:-11px;left:22%;right:22%;
+    height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+  .hact{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .hact .ghost{display:flex;align-items:center;gap:7px}
+  .avatar{width:32px;height:32px;border-radius:50%;background:#23262e;color:#fff;
+    display:grid;place-items:center;font-size:13px;font-weight:600;flex:none}
 
-  main{max-width:1340px;margin:0 auto;padding:24px 22px 70px;
-    display:grid;grid-template-columns:390px 1fr;gap:22px;align-items:start}
-  @media(max-width:1020px){main{grid-template-columns:1fr}}
+  /* ------------------------------------------------------- app shell */
+  main{flex:1;min-height:0;max-width:1500px;width:100%;margin:0 auto;
+    padding:18px 22px;display:grid;grid-template-columns:400px 1fr;gap:20px}
+  main>div{overflow-y:auto;min-height:0;padding:2px;scrollbar-width:thin;
+    scrollbar-color:#d3d6dd transparent}
+  main>div::-webkit-scrollbar{width:8px}
+  main>div::-webkit-scrollbar-thumb{background:#d9dce2;border-radius:8px}
+  @media(max-width:1020px){main{grid-template-columns:1fr;overflow-y:auto}
+    main>div{overflow:visible}}
 
-  .card{background:var(--surface);border:1px solid var(--line);
+  .card{background:var(--surface);border:1px solid #eef0f3;
     border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
-  .card+.card{margin-top:18px}
+  .card+.card{margin-top:16px}
   .card h2{margin:0 0 14px;font-size:10.5px;letter-spacing:.11em;
     text-transform:uppercase;color:var(--muted);font-weight:700}
 
   label{display:block;font-size:12.5px;margin:13px 0 5px;color:#3d4250;font-weight:500}
   input[type=number],input[type=text],select,textarea{width:100%;padding:8px 11px;
-    border:1px solid var(--line2);border-radius:9px;font:inherit;background:#fff;
+    border:1px solid var(--line2);border-radius:10px;font:inherit;background:#fff;
     transition:border-color .12s, box-shadow .12s}
   input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);
     box-shadow:0 0 0 3px var(--accent-soft)}
@@ -48,50 +63,49 @@
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 
-  .drop{border:1.5px dashed var(--line2);border-radius:11px;padding:26px 14px;
+  .drop{border:1.5px dashed var(--line2);border-radius:12px;padding:26px 14px;
     text-align:center;cursor:pointer;color:var(--muted);font-size:13px;
-    background:#fafbfe;transition:border-color .12s,background .12s}
+    background:#fafbfd;transition:border-color .12s,background .12s}
   .drop:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-  .drop img{max-width:100%;max-height:130px;border-radius:7px}
+  .drop img{max-width:100%;max-height:130px;border-radius:8px}
 
-  button{padding:10px 14px;border:0;border-radius:9px;background:var(--accent);
+  button{padding:9px 14px;border:0;border-radius:10px;background:var(--accent);
     color:#fff;font:600 13.5px/1 inherit;cursor:pointer;
-    box-shadow:0 1px 2px rgba(79,70,229,.35);transition:background .12s,transform .06s}
+    box-shadow:0 1px 2px rgba(37,99,235,.3);transition:background .12s,transform .06s}
   button:hover{background:var(--accent-press)}
   button:active{transform:translateY(1px)}
-  button:disabled{background:#a9adc4;box-shadow:none;cursor:default}
-  button.ghost{background:#fff;color:var(--accent);border:1px solid var(--line2);box-shadow:none}
-  button.ghost:hover{border-color:var(--accent);background:var(--accent-soft)}
-  button.mini{padding:6px 10px;font-size:12px;border-radius:8px}
+  button:disabled{background:#aeb6c6;box-shadow:none;cursor:default}
+  button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line2);box-shadow:none;font-weight:500}
+  button.ghost:hover{background:#f4f6f9;border-color:#d4d8df}
+  button.mini{padding:6px 10px;font-size:12px;border-radius:9px}
   .wide{width:100%;margin-top:18px}
 
-  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:#eceef5;
-    padding:4px;border-radius:11px;margin-bottom:18px}
-  .tabs button{display:flex;align-items:center;justify-content:center;gap:6px;
-    background:transparent;color:var(--muted);box-shadow:none;padding:8px 4px;border-radius:8px}
-  .tabs button:hover{background:#e2e5f0;color:var(--ink)}
-  .tabs button.on{background:#fff;color:var(--accent);box-shadow:0 1px 3px rgba(22,25,38,.12)}
-  .tabs svg{flex:none}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#f0f1f4;
+    padding:4px;border-radius:11px;margin-bottom:14px}
+  .tabs button{background:transparent;color:var(--muted);box-shadow:none;padding:8px 4px;border-radius:8px}
+  .tabs button:hover{background:#e6e8ee;color:var(--ink)}
+  .tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
 
-  .chip{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:13px;
-    border-bottom:1px solid #f0f2f6}
-  .sw{width:17px;height:17px;border-radius:5px;border:1px solid rgba(0,0,0,.14);flex:none}
+  .chip{display:flex;align-items:center;gap:10px;padding:8px 10px;font-size:13px;
+    border-radius:10px}
+  .chip:hover{background:#f5f6f9}
+  .sw{width:20px;height:20px;border-radius:6px;border:1px solid rgba(0,0,0,.12);flex:none}
   .muted{color:var(--muted);font-size:12px}
   table{width:100%;border-collapse:collapse;font-size:13px}
   td{padding:6.5px 0;border-bottom:1px solid #f0f2f6}
   td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   .warn{background:var(--warnbg);border-left:3px solid var(--warn);padding:9px 12px;
-    border-radius:0 7px 7px 0;font-size:13px;margin-bottom:8px}
+    border-radius:0 8px 8px 0;font-size:13px;margin-bottom:8px}
   .pass{font-size:12.5px;padding:8px 0;border-bottom:1px solid #f0f2f6;color:#444}
   .pass b{color:var(--ink)}
 
-  .stage{position:relative;background:var(--stage);border-radius:var(--r);
-    height:470px;overflow:hidden;border:1px solid #10131b}
+  .stage{position:relative;background:var(--stage);border-radius:14px;
+    height:clamp(400px, calc(100vh - 350px), 760px);overflow:hidden}
   .stage>img{position:absolute;inset:0;margin:auto;max-width:94%;max-height:94%;border-radius:6px}
   .stage>svg,.stage>div>svg{width:100%;height:100%;display:block;cursor:grab}
-  .vbar{display:flex;gap:6px;align-items:center;margin:0 0 10px;flex-wrap:wrap}
-  .vbar .mode{background:#fff;color:var(--muted);border:1px solid var(--line2);box-shadow:none}
-  .vbar .mode.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .vbar{display:flex;gap:6px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+  .vbar .mode{background:#fff;color:var(--muted);border:1px solid var(--line2);box-shadow:none;font-weight:500}
+  .vbar .mode.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
   .tgl{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);
     margin-left:auto;cursor:pointer;font-weight:500}
   .tgl input{accent-color:var(--accent)}
@@ -101,7 +115,7 @@
   .player input[type=range]{flex:1;accent-color:var(--accent)}
   .dlrow{display:flex;gap:10px;margin-top:16px;align-items:end;flex-wrap:wrap}
   .dlrow>div{flex:1;min-width:150px}
-  details{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fbfcff}
+  details{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:#fbfcfe}
   details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
   .fontprev{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:44px}
   .fontprev img{max-height:44px;max-width:100%;border-radius:6px;background:#fff;border:1px solid var(--line)}
@@ -109,6 +123,18 @@
   .util input{width:86px}
   .palrow{display:flex;gap:8px;align-items:center}
   .palrow select{flex:1}
+
+  /* ------------------------------------------------ worksheet preview */
+  .modal{position:fixed;inset:0;background:rgba(15,18,26,.55);z-index:60;
+    display:grid;place-items:center;padding:24px}
+  .sheet{width:min(900px,96vw);height:min(92vh,1050px);background:#fff;
+    border-radius:16px;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 24px 80px rgba(10,14,22,.45)}
+  .sheet-head{display:flex;align-items:center;gap:10px;padding:12px 16px;
+    border-bottom:1px solid var(--line)}
+  .sheet-head b{font-size:14px}
+  .sheet iframe{flex:1;border:0;background:#525659}
+
   .spin{display:inline-block;width:13px;height:13px;border:2px solid #fff6;
     border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;
     vertical-align:-2px;margin-right:7px}
@@ -118,22 +144,24 @@
 </head>
 <body>
 <header>
-  <div class="logo"><svg width="17" height="17" viewBox="0 0 16 16"><path d="M3 11 Q8 2.5 13 11" stroke="#fbbf24" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="3" cy="11" r="1.4" fill="#fff"/><circle cx="13" cy="11" r="1.4" fill="#fff"/></svg></div>
-  <h1>Threads Studio</h1>
-  <span class="crumb">MaticsLab</span>
-  <div class="right">image · lettering · any machine format</div>
+  <div class="crumbs">Threads <span class="sep">›</span> <b id="crumbName">Artwork</b></div>
+  <nav class="topnav">
+    <button id="tabImage" class="on">Artwork</button>
+    <button id="tabText">Lettering</button>
+    <button id="tabImport">Import</button>
+    <button id="tabBiz">Business</button>
+  </nav>
+  <div class="hact">
+    <button class="ghost mini" id="pdfTop" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5M6 3h8l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/></svg>
+      Worksheet</button>
+    <div class="avatar">J</div>
+  </div>
 </header>
 
 <main>
   <div>
     <div class="card">
-      <div class="tabs">
-        <button id="tabImage" class="on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 3.5 3.5L16 13l4 5"/></svg>Artwork</button>
-        <button id="tabText"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5h14M12 5v14M8 19h8"/></svg>Letter</button>
-        <button id="tabImport"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 0L7 8m5-5l5 5M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Import</button>
-        <button id="tabBiz"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Business</button>
-      </div>
-
       <!-- ============================== artwork -->
       <div id="paneImage">
         <h2>1 · Artwork</h2>
@@ -364,7 +392,7 @@
           </select>
         </div>
         <a id="dl"><button class="ghost">Download</button></a>
-        <a id="pdf"><button class="ghost">Worksheet PDF</button></a>
+        <button class="ghost" id="pdf">Preview worksheet</button>
       </div>
 
       <details id="quoteBox">
@@ -411,6 +439,18 @@
   </div>
 </main>
 
+<div id="pdfModal" class="modal hide">
+  <div class="sheet">
+    <div class="sheet-head">
+      <b>Worksheet preview</b>
+      <span class="muted" id="pdfName"></span>
+      <a id="pdfDl" style="margin-left:auto"><button class="ghost mini">Download PDF</button></a>
+      <button class="ghost mini" id="pdfClose">✕</button>
+    </div>
+    <iframe id="pdfFrame" title="Worksheet PDF preview"></iframe>
+  </div>
+</div>
+
 <script type="importmap">{"imports":{"three":"/static/vendor/three/three.module.min.js"}}</script>
 <script src="/static/vendor/svg.min.js"></script>
 <script src="/static/vendor/svg.panzoom.js"></script>
@@ -427,6 +467,7 @@ function setTab(active) {
     $(t).classList.toggle('on', t === active);
     $(pane).classList.toggle('hide', t !== active);
   });
+  $('crumbName').textContent = $(active).textContent;
 }
 
 /* ---------------------------------------- unit conversions (embTools port) */
@@ -761,6 +802,7 @@ function renderThreads() {
 
 $('fmt').onchange = updateDl;
 ['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient'].forEach(id => $(id).onchange = updateDl);
+let wsUrl = '';
 function updateDl() {
   if (!job) return;
   $('dl').href = `/api/download/${job}?fmt=${$('fmt').value}`;
@@ -771,8 +813,27 @@ function updateDl() {
     garment_qty: $('qQty').value, garment_base: $('qBase').value,
     markup_pct: $('qMarkup').value, discount_pct: $('qDiscount').value,
   });
-  $('pdf').href = `/api/worksheet/${job}.pdf?` + q;
+  wsUrl = `/api/worksheet/${job}.pdf?` + q;
+  $('pdfTop').disabled = false;
 }
+
+/* worksheet preview modal — renders the PDF inline before downloading */
+function openPdf() {
+  if (!wsUrl) return;
+  $('pdfName').textContent = ($('qName').value || 'design') + '-worksheet.pdf';
+  $('pdfFrame').src = wsUrl + '&inline=true';
+  $('pdfDl').href = wsUrl;
+  $('pdfModal').classList.remove('hide');
+}
+function closePdf() {
+  $('pdfModal').classList.add('hide');
+  $('pdfFrame').src = 'about:blank';
+}
+$('pdf').onclick = openPdf;
+$('pdfTop').onclick = openPdf;
+$('pdfClose').onclick = closePdf;
+$('pdfModal').onclick = e => { if (e.target === $('pdfModal')) closePdf(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePdf(); });
 
 /* ---------------------------------------------------------------- viewer
    Plan: SVG via svg.js + svg.panzoom.js. Realistic + player: <canvas> with
