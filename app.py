@@ -528,7 +528,44 @@ def threadlist(job: str, name: str = 'design', palette: str = 'Madeira Rayon'):
 
 @app.get('/api/palettes')
 def palettes():
+    """[{'name', 'custom'}] — built-in Ink/Stitch brands plus user palettes."""
     return threads.available()
+
+
+@app.get('/api/palettes/{name}')
+def palette_detail(name: str):
+    try:
+        rows = threads.load(name)
+    except FileNotFoundError:
+        raise HTTPException(404, 'no palette named %r' % name)
+    return [{'name': n, 'number': num, 'hex': '#%02X%02X%02X' % (r, g, b)}
+            for r, g, b, n, num in rows]
+
+
+@app.post('/api/palettes')
+async def palette_create(data: dict):
+    """Add a thread brand: {'name': ..., 'threads': [{'name','number','hex'}]}."""
+    try:
+        name = threads.save_custom(data.get('name', ''), data.get('threads', []))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {'name': name, 'colors': len(threads.load(name))}
+
+
+@app.delete('/api/palettes/{name}')
+def palette_delete(name: str):
+    if not threads.delete_custom(name):
+        raise HTTPException(404, 'no custom palette named %r (built-in palettes '
+                                 'cannot be deleted)' % name)
+    return {'ok': True}
+
+
+@app.get('/api/match/{job}')
+def rematch(job: str, palette: str = 'Madeira Rayon'):
+    """Re-match a job's colour layers against another thread palette."""
+    meta = _load_meta(job)
+    layers = [{**L, 'rgb': tuple(L['rgb'])} for L in meta['layers']]
+    return threads.match_layers(layers, palette)
 
 
 # --------------------------------------------- business database (embTools)

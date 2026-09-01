@@ -103,7 +103,30 @@ def test_lettering_bad_input():
 
 def test_palettes():
     r = client.get('/api/palettes')
-    assert 'Madeira Rayon' in r.json()
+    names = [p['name'] for p in r.json()]
+    assert 'Madeira Rayon' in names
+    assert 'BAI Matte' in names          # seeded from the product colour card
+    assert len(names) > 70               # the full Ink/Stitch palette set
+    r = client.get('/api/palettes/BAI Matte')
+    rows = r.json()
+    assert r.status_code == 200 and len(rows) == 20
+    assert any(t['number'] == '8382' for t in rows)
+
+
+def test_custom_palette_crud_and_match(image_job):
+    job, _ = image_job
+    r = client.post('/api/palettes', json={'name': 'Test Brand', 'threads': [
+        {'name': 'Navy', 'number': 'T1', 'hex': '#1A3B69'},
+        {'name': 'Flame', 'number': 'T2', 'hex': '#A8201A'}]})
+    assert r.status_code == 200 and r.json()['colors'] == 2
+    assert any(p['name'] == 'Test Brand' and p['custom']
+               for p in client.get('/api/palettes').json())
+    m = client.get('/api/match/%s?palette=Test%%20Brand' % job).json()
+    assert all(t['palette'] == 'Test Brand' for t in m)
+    assert {t['thread_number'] for t in m} <= {'T1', 'T2'}
+    assert client.delete('/api/palettes/Test Brand').status_code == 200
+    assert client.delete('/api/palettes/Madeira Rayon').status_code == 404
+    assert client.post('/api/palettes', json={'name': 'x', 'threads': []}).status_code == 400
 
 
 def test_fill_methods():
