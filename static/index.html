@@ -109,11 +109,13 @@
   #stageEmpty p{margin:0;font-size:13.5px;line-height:1.6}
   .es-mark{font-size:34px}
   .toolbox{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:24;
-    display:flex;gap:8px;align-items:center;background:#fff;border-radius:14px;
+    display:flex;gap:7px;align-items:center;background:#fff;border-radius:14px;
     padding:8px 10px;box-shadow:0 10px 34px rgba(10,14,22,.24),0 0 0 1px #e8eaef;
-    max-width:94%;flex-wrap:wrap;justify-content:center}
-  .toolbox select{width:auto;padding:7px 32px 7px 10px}
+    flex-wrap:nowrap;white-space:nowrap}
+  .toolbox>*{flex:none}
+  .toolbox select{width:auto;padding:7px 28px 7px 10px}
   .toolbox .tgl{margin-left:0}
+  .stagehint{position:absolute;left:16px;bottom:22px;z-index:22;color:#79819a;font-size:11.5px}
   .tsep{width:1px;height:22px;background:var(--line2)}
   .floatbar{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);z-index:23;
     width:min(680px,92%);background:#fff;border-radius:14px;padding:9px 14px;margin:0;
@@ -195,11 +197,9 @@
 </head>
 <body>
 <header>
-  <div class="crumbs">Threads <span class="sep">›</span> <b id="crumbName">Artwork</b></div>
+  <div class="crumbs">Threads <span class="sep">›</span> <b id="crumbName">Create</b></div>
   <nav class="topnav">
-    <button id="tabImage" class="on">Artwork</button>
-    <button id="tabText">Lettering</button>
-    <button id="tabImport">Import</button>
+    <button id="tabImage" class="on">Create</button>
     <button id="tabBiz">Business</button>
   </nav>
   <div class="hact">
@@ -213,97 +213,73 @@
 <main>
   <div>
     <div class="card">
-      <!-- ============================== artwork -->
+      <!-- ============================== create: image / svg / machine file -->
       <div id="paneImage">
-        <h2>1 · Artwork</h2>
+        <h2>1 · Create</h2>
         <div class="drop" id="drop">
-          <div id="dropText">Click or drop an image<br><span class="muted">PNG with transparency works best</span></div>
+          <div id="dropText">Click or drop a file<br>
+            <span class="muted">PNG/JPG artwork · SVG (digitized like Ink/Stitch) ·<br>
+            any machine file (DST, PES, JEF, VP3, …)</span></div>
           <img id="thumb" class="hide">
         </div>
-        <input type="file" id="file" accept="image/*" class="hide">
-
-        <label>Thread colours</label>
-        <select id="colors">
-          <option>2</option><option selected>3</option><option>4</option>
-          <option>5</option><option>6</option>
-        </select>
-
-        <div class="row">
-          <div><label>Width (mm)</label><input type="number" id="width" value="90" step="1" min="10"></div>
-          <div><label>Hoop</label>
-            <select id="hoop">
-              <option value="100x100" selected>4" × 4"</option>
-              <option value="100x235">4" × 9.25"</option>
-              <option value="130x180">5" × 7"</option>
-              <option value="200x300">8" × 12"</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="row">
-          <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.28" max="0.5"></div>
-          <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
-        </div>
-
-        <div class="row">
-          <div><label>Fill method</label>
-            <select id="fillMethod">
-              <option value="tatami" selected>Tatami</option>
-              <option value="contour">Contour</option>
-              <option value="circular">Circular</option>
-            </select>
-          </div>
-          <div><label>Fill angle (°)</label><input type="number" id="fillAngle" value="65" step="5" min="0" max="180"></div>
-        </div>
-
-        <label><input type="checkbox" id="underlay" checked> Heavy underlay</label>
-        <label><input type="checkbox" id="autotune" checked> Auto-tune from QA</label>
-
-        <button id="go" class="wide" disabled>Digitize</button>
-      </div>
-
-      <!-- ============================== lettering -->
-      <div id="paneText" class="hide">
-        <h2>1 · Lettering</h2>
-        <label>Font <span class="muted">(Ink/Stitch embroidery fonts)</span></label>
-        <select id="font"></select>
-        <div class="fontprev"><img id="fontPrev" class="hide"><span id="fontMeta" class="muted"></span></div>
-
-        <label>Text</label>
-        <textarea id="text" placeholder="Type the text to stitch…"></textarea>
-
-        <div class="row3">
-          <div><label>Height (mm)</label><input type="number" id="theight" value="20" step="1" min="4"></div>
-          <div><label>Spacing (mm)</label><input type="number" id="tspacing" value="0" step="0.5"></div>
-          <div><label>Thread</label><input type="color" id="tcolor" value="#1a3b69" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
-        </div>
-
-        <button id="goText" class="wide">Stitch text</button>
-      </div>
-
-      <!-- ============================== import -->
-      <div id="paneImport" class="hide">
-        <h2>1 · Import</h2>
-        <div class="drop" id="dropImport">
-          <div>Click or drop a file<br><span class="muted">SVG (digitized like Ink/Stitch) or any machine file:<br>DST, PES, JEF, EXP, VP3, XXX, HUS, PEC, …</span></div>
-        </div>
-        <input type="file" id="fileImport" class="hide"
-               accept=".svg,.dst,.pes,.jef,.exp,.vp3,.xxx,.u01,.pec,.tbf,.hus,.pcs,.sew,.shv,.jpx,.dsb,.dsz,.csv,.json">
+        <input type="file" id="file" class="hide"
+               accept="image/*,.svg,.dst,.pes,.jef,.exp,.vp3,.xxx,.u01,.pec,.tbf,.hus,.pcs,.sew,.shv,.jpx,.dsb,.dsz,.csv,.json">
         <p class="muted" id="importName" style="margin:8px 0 0"></p>
 
-        <div class="row">
-          <div><label>SVG width (mm) <span class="muted">0 = natural</span></label>
-            <input type="number" id="importWidth" value="0" step="5" min="0"></div>
-          <div><label>SVG fill method</label>
-            <select id="importFill">
-              <option value="tatami" selected>Tatami</option>
-              <option value="contour">Contour</option>
-              <option value="circular">Circular</option>
-            </select>
+        <div id="setArt">
+          <label>Thread colours</label>
+          <select id="colors">
+            <option>2</option><option selected>3</option><option>4</option>
+            <option>5</option><option>6</option>
+          </select>
+
+          <div class="row">
+            <div><label>Width (mm)</label><input type="number" id="width" value="90" step="1" min="10"></div>
+            <div><label>Hoop</label>
+              <select id="hoop">
+                <option value="100x100" selected>4" × 4"</option>
+                <option value="100x235">4" × 9.25"</option>
+                <option value="130x180">5" × 7"</option>
+                <option value="200x300">8" × 12"</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.28" max="0.5"></div>
+            <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
+          </div>
+
+          <div class="row">
+            <div><label>Fill method</label>
+              <select id="fillMethod">
+                <option value="tatami" selected>Tatami</option>
+                <option value="contour">Contour</option>
+                <option value="circular">Circular</option>
+              </select>
+            </div>
+            <div><label>Fill angle (°)</label><input type="number" id="fillAngle" value="65" step="5" min="0" max="180"></div>
+          </div>
+
+          <label><input type="checkbox" id="underlay" checked> Heavy underlay</label>
+          <label><input type="checkbox" id="autotune" checked> Auto-tune from QA</label>
+        </div>
+
+        <div id="setSvg" class="hide">
+          <div class="row">
+            <div><label>SVG width (mm) <span class="muted">0 = natural</span></label>
+              <input type="number" id="importWidth" value="0" step="5" min="0"></div>
+            <div><label>SVG fill method</label>
+              <select id="importFill">
+                <option value="tatami" selected>Tatami</option>
+                <option value="contour">Contour</option>
+                <option value="circular">Circular</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <button id="goImport" class="wide" disabled>Import &amp; stitch</button>
+        <button id="go" class="wide" disabled>Digitize</button>
       </div>
 
       <!-- ============================== business (embTools) -->
@@ -430,14 +406,53 @@
       </select>
       <label class="tgl" title="Recolour previews with the matched brand threads">
         <input type="checkbox" id="trueColors"> true colours</label>
-      <span class="muted" id="viewerHint"></span>
       <span class="tsep"></span>
+      <button class="ghost mini" id="textBtn">T Text</button>
       <button class="ghost mini" id="designBtn" disabled>🎨 Design</button>
       <button class="ghost mini" id="detailsBtn" disabled>Details</button>
       <button class="ghost mini" id="exportBtn" disabled>Export</button>
     </div>
+    <span class="stagehint" id="viewerHint"></span>
   </section>
 </main>
+
+<div id="textPanel" class="dpanel hide" style="right:auto;left:460px">
+  <div class="dhead" id="textDrag" title="Drag to move · double-click to reset">
+    <span class="dots">⠿</span>
+    <span class="dcrumb">Text</span>
+    <button class="ghost mini" id="textClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+    <label style="margin-top:0">Font <span class="muted">(Ink/Stitch embroidery fonts)</span></label>
+    <select id="font"></select>
+    <div class="fontprev"><img id="fontPrev" class="hide"><span id="fontMeta" class="muted"></span></div>
+
+    <label>Text</label>
+    <textarea id="text" placeholder="Type the text to stitch…"></textarea>
+
+    <div class="row3">
+      <div><label>Height (mm)</label><input type="number" id="theight" value="20" step="1" min="4"></div>
+      <div><label>Spacing (mm)</label><input type="number" id="tspacing" value="0" step="0.5"></div>
+      <div><label>Thread</label><input type="color" id="tcolor" value="#1a3b69" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
+    </div>
+
+    <div class="row" id="placementRow">
+      <div><label>Placement</label>
+        <select id="txtPlacement">
+          <option value="new" selected>New design</option>
+          <option value="below">Below the design</option>
+          <option value="above">Above the design</option>
+          <option value="left">Left of the design</option>
+          <option value="right">Right of the design</option>
+          <option value="center">Centered on it</option>
+        </select>
+      </div>
+      <div><label>Gap (mm)</label><input type="number" id="txtGap" value="5" step="1" min="0"></div>
+    </div>
+
+    <button id="goText" class="wide">Stitch text</button>
+  </div>
+</div>
 
 <div id="detailsPanel" class="dpanel hide" style="right:410px">
   <div class="dhead" id="detailsDrag" title="Drag to move · double-click to reset">
@@ -475,6 +490,8 @@
       <option value="png">PNG — raster</option>
       <option value="zip">ZIP — all formats + worksheet</option>
     </select>
+    <label>Worksheet theme</label>
+    <select id="wsThemeSel"><option value="0">Default</option></select>
     <div class="row" style="margin-top:12px">
       <a id="dl"><button class="ghost" style="width:100%">Download</button></a>
       <button class="ghost" id="pdf">Preview worksheet</button>
@@ -521,6 +538,45 @@
     <p class="muted" style="margin:10px 0 0">A theme saves the current thread colours as a
       colourway you can apply to any design.</p>
     <button class="mini wide" id="dpToThreads">Edit thread colours →</button>
+    <button class="mini wide ghost" id="dpToWsheet" style="margin-top:8px">Worksheet appearance →</button>
+  </div>
+
+  <!-- worksheet appearance editor -->
+  <div class="dbody hide" id="dpWsheet">
+    <label style="margin-top:0">Theme</label>
+    <select id="wtList"><option value="0">New theme…</option></select>
+    <label>Name</label>
+    <input type="text" id="wtName" placeholder="e.g. Shop letterhead">
+
+    <div class="dprow" style="margin:14px 0 4px"><b>Logo</b>
+      <label class="tgl" style="margin-left:auto"><input type="checkbox" id="wtShow" checked> show on worksheet</label></div>
+    <div class="dprow">
+      <button class="ghost mini" id="wtLogoBtn">Upload logo…</button>
+      <input type="file" id="wtLogoFile" class="hide" accept="image/png,image/jpeg">
+      <img id="wtLogoPrev" class="hide" style="max-height:34px;max-width:120px;border-radius:6px;border:1px solid var(--line)">
+    </div>
+    <div class="row">
+      <div><label>Position</label>
+        <select id="wtPos"><option value="left">Top left</option><option value="right" selected>Top right</option></select></div>
+      <div><label>Height <span class="muted" id="wtLogoHVal">12 mm</span></label>
+        <input type="range" id="wtLogoH" min="5" max="25" value="12" style="padding:0;height:34px"></div>
+    </div>
+
+    <div class="row" style="margin-top:6px">
+      <div><label>Accent colour</label>
+        <input type="color" id="wtAccent" value="#12161c" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
+      <div><label>Font</label>
+        <select id="wtFont"><option selected>Helvetica</option><option>Times</option><option>Courier</option></select></div>
+    </div>
+    <label>Footer line</label>
+    <input type="text" id="wtFooter" placeholder="Your studio name · site · phone">
+
+    <div class="dprow" style="margin-top:14px">
+      <button class="ghost mini" id="wtDelete">Delete</button>
+      <button class="ghost mini" id="wtPreview">Preview</button>
+      <button class="mini" id="wtSave" style="margin-left:auto">Save changes</button>
+    </div>
+    <p class="muted" id="wtStatus" style="margin:8px 0 0"></p>
   </div>
 
   <!-- thread colour editor view -->
@@ -559,7 +615,7 @@ const $ = id => document.getElementById(id);
 let job = null, kind = null, fonts = [], lastThreads = [];
 
 /* ------------------------------------------------------------- tabs */
-const TABS = { tabImage: 'paneImage', tabText: 'paneText', tabImport: 'paneImport', tabBiz: 'paneBiz' };
+const TABS = { tabImage: 'paneImage', tabBiz: 'paneBiz' };
 Object.keys(TABS).forEach(t => $(t).onclick = () => setTab(t));
 function setTab(active) {
   Object.entries(TABS).forEach(([t, pane]) => {
@@ -745,19 +801,46 @@ function fontInfo() {
   $('fontMeta').textContent = `${lo}–${hi} mm` + (f.letter_case ? ` · ${f.letter_case}case only` : '');
 }
 
-/* ------------------------------------------------------------ artwork flow */
+/* --------------------------- create flow: image / svg / machine file */
+const MACHINE_EXTS = new Set(['dst','pes','jef','exp','vp3','xxx','u01','pec','tbf',
+  'hus','pcs','sew','shv','jpx','dsb','dsz','csv','json','10o','100','bro','dat',
+  'exy','fxy','gt','inb','ksm','max','mit','new','pcd','pcm','pcq','phb','phc',
+  'spx','stc','stx','tap','zhs','zxy','gcode','txt']);
+function classify(f) {
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'svg') return 'svg';
+  if (MACHINE_EXTS.has(ext)) return 'machine';
+  if (f.type.startsWith('image/') || ['png','jpg','jpeg','webp','gif','bmp'].includes(ext)) return 'image';
+  return 'machine';
+}
+
 $('drop').onclick = () => $('file').click();
 $('drop').ondragover = e => { e.preventDefault(); };
 $('drop').ondrop = e => { e.preventDefault(); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); };
 $('file').onchange = e => { if (e.target.files[0]) pick(e.target.files[0]); };
-$('colors').onchange = () => { if (window._f) pick(window._f); };
+$('colors').onchange = () => { if (window._f && window._fKind === 'image') pick(window._f); };
 
 async function pick(f) {
   window._f = f;
-  const r = new FileReader();
-  r.onload = ev => { $('thumb').src = ev.target.result; $('thumb').classList.remove('hide'); $('dropText').classList.add('hide'); };
-  r.readAsDataURL(f);
+  window._fKind = classify(f);
+  const kind = window._fKind;
+  $('setArt').classList.toggle('hide', kind !== 'image');
+  $('setSvg').classList.toggle('hide', kind !== 'svg');
+  $('importName').textContent = kind === 'image' ? '' : f.name;
+  $('go').textContent = kind === 'image' ? 'Digitize'
+    : kind === 'svg' ? 'Import & stitch' : 'Import';
+  $('layersCard').classList.toggle('hide', kind !== 'image');
 
+  if (kind === 'image' || kind === 'svg') {
+    const r = new FileReader();
+    r.onload = ev => { $('thumb').src = ev.target.result; $('thumb').classList.remove('hide'); $('dropText').classList.add('hide'); };
+    r.readAsDataURL(f);
+  } else {
+    $('thumb').classList.add('hide'); $('dropText').classList.remove('hide');
+  }
+
+  if (kind !== 'image') { $('go').disabled = false; return; }
+  $('go').disabled = true;
   const fd = new FormData();
   fd.append('image', f); fd.append('colors', $('colors').value);
   try {
@@ -775,28 +858,41 @@ async function pick(f) {
 }
 
 $('go').onclick = async () => {
-  const b = $('go'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Digitizing…';
-  const [hw, hh] = $('hoop').value.split('x');
-  const fd = new FormData();
-  fd.append('job', job); fd.append('colors', $('colors').value);
-  fd.append('width_mm', $('width').value);
-  fd.append('hoop_w', hw); fd.append('hoop_h', hh);
-  fd.append('density', $('density').value);
-  fd.append('max_satin', $('satin').value);
-  fd.append('heavy_underlay', $('underlay').checked);
-  fd.append('autotune', $('autotune').checked);
-  fd.append('fill_method', $('fillMethod').value);
-  fd.append('fill_angle', $('fillAngle').value);
-  fd.append('palette', $('palette').value);
+  const kind = window._fKind;
+  const b = $('go'); b.disabled = true;
+  b.innerHTML = '<span class="spin"></span>' + (kind === 'image' ? 'Digitizing…' : 'Importing…');
   try {
-    const res = await fetch('/api/digitize', { method: 'POST', body: fd });
+    let res;
+    if (kind === 'image') {
+      const [hw, hh] = $('hoop').value.split('x');
+      const fd = new FormData();
+      fd.append('job', job); fd.append('colors', $('colors').value);
+      fd.append('width_mm', $('width').value);
+      fd.append('hoop_w', hw); fd.append('hoop_h', hh);
+      fd.append('density', $('density').value);
+      fd.append('max_satin', $('satin').value);
+      fd.append('heavy_underlay', $('underlay').checked);
+      fd.append('autotune', $('autotune').checked);
+      fd.append('fill_method', $('fillMethod').value);
+      fd.append('fill_angle', $('fillAngle').value);
+      fd.append('palette', $('palette').value);
+      res = await fetch('/api/digitize', { method: 'POST', body: fd });
+    } else {
+      const fd = new FormData();
+      fd.append('design', window._f);
+      fd.append('width_mm', $('importWidth').value);
+      fd.append('fill_method', $('importFill').value);
+      fd.append('palette', $('palette').value);
+      res = await fetch('/api/import', { method: 'POST', body: fd });
+    }
     if (!res.ok) throw new Error((await res.json()).detail);
     show(await res.json());
   } catch (err) { alert(err.message); }
-  b.disabled = false; b.textContent = 'Digitize';
+  b.disabled = false;
+  b.textContent = kind === 'image' ? 'Digitize' : kind === 'svg' ? 'Import & stitch' : 'Import';
 };
 
-/* ----------------------------------------------------------- lettering flow */
+/* --------------------- Text tool: lettering, standalone or added on */
 $('goText').onclick = async () => {
   const b = $('goText'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Stitching…';
   const fd = new FormData();
@@ -806,37 +902,17 @@ $('goText').onclick = async () => {
   fd.append('letter_spacing_mm', $('tspacing').value);
   fd.append('color', $('tcolor').value);
   fd.append('palette', $('palette').value);
+  const placement = job ? $('txtPlacement').value : 'new';
+  fd.append('placement', placement);
+  fd.append('gap_mm', $('txtGap').value);
+  if (job && placement !== 'new') fd.append('job', job);
   try {
     const res = await fetch('/api/lettering', { method: 'POST', body: fd });
     if (!res.ok) throw new Error((await res.json()).detail);
     show(await res.json());
+    $('textPanel').classList.add('hide');
   } catch (err) { alert(err.message); }
   b.disabled = false; b.textContent = 'Stitch text';
-};
-
-/* ------------------------------------------------------------ import flow */
-$('dropImport').onclick = () => $('fileImport').click();
-$('dropImport').ondragover = e => { e.preventDefault(); };
-$('dropImport').ondrop = e => { e.preventDefault(); if (e.dataTransfer.files[0]) pickImport(e.dataTransfer.files[0]); };
-$('fileImport').onchange = e => { if (e.target.files[0]) pickImport(e.target.files[0]); };
-function pickImport(f) {
-  window._imp = f;
-  $('importName').textContent = f.name;
-  $('goImport').disabled = false;
-}
-$('goImport').onclick = async () => {
-  const b = $('goImport'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Importing…';
-  const fd = new FormData();
-  fd.append('design', window._imp);
-  fd.append('width_mm', $('importWidth').value);
-  fd.append('fill_method', $('importFill').value);
-  fd.append('palette', $('palette').value);
-  try {
-    const res = await fetch('/api/import', { method: 'POST', body: fd });
-    if (!res.ok) throw new Error((await res.json()).detail);
-    show(await res.json());
-  } catch (err) { alert(err.message); }
-  b.disabled = false; b.textContent = 'Import & stitch';
 };
 
 /* --------------------------------------------------------------- results */
@@ -903,7 +979,7 @@ function renderThreads() {
 }
 
 $('fmt').onchange = updateDl;
-['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient'].forEach(id => $(id).onchange = updateDl);
+['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient','wsThemeSel'].forEach(id => $(id).onchange = updateDl);
 let wsUrl = '';
 function updateDl() {
   if (!job) return;
@@ -915,6 +991,7 @@ function updateDl() {
     garment_qty: $('qQty').value, garment_base: $('qBase').value,
     markup_pct: $('qMarkup').value, discount_pct: $('qDiscount').value,
   });
+  q.set('wtheme', $('wsThemeSel').value || '0');
   wsUrl = `/api/worksheet/${job}.pdf?` + q;
   $('pdfTop').disabled = false;
 }
@@ -1309,6 +1386,16 @@ function makeDraggable(panel, handle) {
 makeDraggable($('detailsPanel'), $('detailsDrag'));
 makeDraggable($('exportPanel'), $('exportDrag'));
 makeDraggable($('designPanel'), $('dpDrag'));
+makeDraggable($('textPanel'), $('textDrag'));
+$('textBtn').onclick = () => {
+  const p = $('textPanel');
+  p.classList.toggle('hide');
+  if (!p.classList.contains('hide')) {
+    $('txtPlacement').disabled = !job;
+    if (!job) $('txtPlacement').value = 'new';
+  }
+};
+$('textClose').onclick = () => $('textPanel').classList.add('hide');
 $('detailsBtn').onclick = () => $('detailsPanel').classList.toggle('hide');
 $('exportBtn').onclick = () => $('exportPanel').classList.toggle('hide');
 $('detailsClose').onclick = () => $('detailsPanel').classList.add('hide');
@@ -1335,12 +1422,15 @@ function dpShow(view) {
   dpView = view;
   $('dpThemes').classList.toggle('hide', view !== 'themes');
   $('dpThreads').classList.toggle('hide', view !== 'threads');
+  $('dpWsheet').classList.toggle('hide', view !== 'wsheet');
   $('dpFoot').classList.toggle('hide', view !== 'threads');
-  $('dpBack').classList.toggle('hide', view !== 'threads');
+  $('dpBack').classList.toggle('hide', view === 'themes');
   $('dpCrumb').innerHTML = view === 'threads'
-    ? '<span class="dim">Design ›</span> Threads' : 'Design';
+    ? '<span class="dim">Design ›</span> Threads'
+    : view === 'wsheet' ? '<span class="dim">Design ›</span> Worksheet' : 'Design';
   if (view === 'threads') renderBlocks();
 }
+$('dpToWsheet').onclick = () => dpShow('wsheet');
 
 function effectiveColors() {
   return playerData.map((b, i) => pending[i] ||
@@ -1445,6 +1535,79 @@ $('dpRevert').onclick = () => {
   if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
   renderBlocks();
 };
+/* ------- worksheet appearance themes (Design › Worksheet) ------- */
+let wthemes = [], wtEditing = 0, wtLogoPending = null;
+async function loadWthemes(selectId) {
+  wthemes = await (await fetch('/api/wthemes')).json();
+  const opts = wthemes.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  $('wtList').innerHTML = '<option value="0">New theme…</option>' + opts;
+  $('wsThemeSel').innerHTML = '<option value="0">Default</option>' + opts;
+  if (selectId) { $('wtList').value = selectId; $('wsThemeSel').value = selectId; }
+  wtEdit(parseInt($('wtList').value) || 0);
+  updateDl();
+}
+function wtEdit(id) {
+  wtEditing = id; wtLogoPending = null;
+  const t = wthemes.find(x => x.id === id);
+  const c = t ? t.config : { accent: '#12161C', font: 'Helvetica', show_logo: true,
+                             logo_pos: 'right', logo_h_mm: 12, footer: '' };
+  $('wtName').value = t ? t.name : '';
+  $('wtAccent').value = c.accent.toLowerCase();
+  $('wtFont').value = c.font;
+  $('wtShow').checked = !!c.show_logo;
+  $('wtPos').value = c.logo_pos;
+  $('wtLogoH').value = c.logo_h_mm;
+  $('wtLogoHVal').textContent = c.logo_h_mm + ' mm';
+  $('wtFooter').value = c.footer;
+  $('wtDelete').disabled = !t;
+  $('wtLogoPrev').classList.toggle('hide', !(t && t.has_logo));
+  if (t && t.has_logo) $('wtLogoPrev').src = `/api/wthemes/${id}/logo?ts=${Date.now()}`;
+  $('wtStatus').textContent = '';
+}
+$('wtList').onchange = () => wtEdit(parseInt($('wtList').value) || 0);
+$('wtLogoH').oninput = () => $('wtLogoHVal').textContent = $('wtLogoH').value + ' mm';
+$('wtLogoBtn').onclick = () => $('wtLogoFile').click();
+$('wtLogoFile').onchange = e => {
+  if (!e.target.files[0]) return;
+  wtLogoPending = e.target.files[0];
+  $('wtLogoPrev').src = URL.createObjectURL(wtLogoPending);
+  $('wtLogoPrev').classList.remove('hide');
+};
+async function wtSaveNow() {
+  const fd = new FormData();
+  fd.append('name', $('wtName').value || 'Worksheet theme');
+  fd.append('wid', wtEditing);
+  fd.append('config', JSON.stringify({
+    accent: $('wtAccent').value, font: $('wtFont').value,
+    show_logo: $('wtShow').checked, logo_pos: $('wtPos').value,
+    logo_h_mm: parseFloat($('wtLogoH').value), footer: $('wtFooter').value,
+  }));
+  if (wtLogoPending) fd.append('logo', wtLogoPending);
+  const res = await fetch('/api/wthemes', { method: 'POST', body: fd });
+  const d = await res.json();
+  if (!res.ok) throw new Error(d.detail);
+  await loadWthemes(String(d.id));
+  $('wtStatus').textContent = 'saved';
+  return d.id;
+}
+$('wtSave').onclick = () => wtSaveNow().catch(e => alert(e.message));
+$('wtDelete').onclick = async () => {
+  if (!wtEditing) return;
+  if (!confirm('Delete this worksheet theme?')) return;
+  await fetch('/api/wthemes/' + wtEditing, { method: 'DELETE' });
+  await loadWthemes();
+};
+$('wtPreview').onclick = async () => {
+  if (!job) { alert('Digitize or import a design first — the preview needs one.'); return; }
+  try {
+    const id = await wtSaveNow();
+    $('wsThemeSel').value = String(id);
+    updateDl();
+    openPdf();
+  } catch (e) { alert(e.message); }
+};
+loadWthemes();
+
 $('dpSave').onclick = async () => {
   const b = $('dpSave'); b.disabled = true; b.textContent = 'Saving…';
   try {

@@ -295,7 +295,10 @@ async def letter(text: str = Form(...), font: str = Form(...),
                  height_mm: float = Form(0.0),
                  letter_spacing_mm: float = Form(0.0),
                  color: str = Form('#1A3B69'),
-                 palette: str = Form('Madeira Rayon')):
+                 palette: str = Form('Madeira Rayon'),
+                 job: str = Form(''),
+                 placement: str = Form('new'),
+                 gap_mm: float = Form(5.0)):
     text = text.strip('\n')
     if not text.strip():
         raise HTTPException(400, 'please type some text to stitch')
@@ -321,11 +324,55 @@ async def letter(text: str = Form(...), font: str = Form(...),
         traceback.print_exc()
         raise HTTPException(500, f'lettering failed: {e}')
 
-    job = uuid.uuid4().hex[:12]
     rgb = ((rgb_int >> 16) & 255, (rgb_int >> 8) & 255, rgb_int & 255)
-    layers = [{'name': 'Lettering', 'hex': '#%06X' % rgb_int, 'rgb': rgb}]
-    rep = basic_report(pat)
-    png = _store(job, pat, layers, rep, {'font': font, 'text': text}, kind='lettering')
+    letter_layer = {'name': 'Lettering', 'hex': '#%06X' % rgb_int, 'rgb': rgb}
+
+    if placement != 'new' and job:
+        # add the letters onto the existing design as a new colour block
+        base = _load_pattern(job)
+        meta = _load_meta(job)
+        pts = [(x, y) for x, y, c in base.stitches
+               if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)]
+        if not pts:
+            raise HTTPException(400, 'the current design has no stitches to add to')
+        xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
+        lpts = [(x, y) for x, y, c in pat.stitches
+                if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)]
+        lw = max(p[0] for p in lpts) - min(p[0] for p in lpts)
+        lh = max(p[1] for p in lpts) - min(p[1] for p in lpts)
+        gap = gap_mm * 10.0
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        dx, dy = cx, cy
+        if placement == 'below':
+            dy = max(ys) + gap + lh / 2
+        elif placement == 'above':
+            dy = min(ys) - gap - lh / 2
+        elif placement == 'left':
+            dx = min(xs) - gap - lw / 2
+        elif placement == 'right':
+            dx = max(xs) + gap + lw / 2
+        elif placement != 'center':
+            raise HTTPException(400, 'placement must be new, below, above, left, right or center')
+
+        base.stitches = [q for q in base.stitches if (q[2] & 0xFF) != pystitch.END]
+        base.add_thread(th)
+        base.color_change()
+        for x, y, c in pat.stitches:
+            if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP, pystitch.TRIM):
+                base.add_stitch_absolute(c & 0xFF, x + dx, y + dy)
+        base.end()
+        base.move_center_to_origin()
+        pat = base
+        layers = meta['layers'] + [letter_layer]
+        for L in layers:
+            L['rgb'] = tuple(L['rgb'])
+        rep = basic_report(pat)
+        png = _store(job, pat, layers, rep, meta.get('settings') or {}, kind=meta['kind'])
+    else:
+        job = uuid.uuid4().hex[:12]
+        layers = [letter_layer]
+        rep = basic_report(pat)
+        png = _store(job, pat, layers, rep, {'font': font, 'text': text}, kind='lettering')
 
     warnings = []
     if info['missing_chars']:
@@ -613,6 +660,43 @@ async def recolor(job: str, data: dict):
     return _native({'layers': layers, 'preview': _b64(png), 'threads': matches})
 
 
+# ------------------------------------- worksheet appearance themes (Design panel)
+@app.get('/api/wthemes')
+def wthemes_list():
+    return business.list_wthemes()
+
+
+@app.post('/api/wthemes')
+async def wtheme_save(name: str = Form(...), config: str = Form('{}'),
+                      wid: int = Form(0), logo: UploadFile = File(None)):
+    try:
+        cfg = json.loads(config)
+    except Exception:
+        raise HTTPException(400, 'config must be JSON')
+    logo_bytes = await logo.read() if logo is not None else None
+    if logo_bytes and len(logo_bytes) > 4 * 1024 * 1024:
+        raise HTTPException(400, 'logo must be under 4 MB')
+    new_id = business.save_wtheme(name, cfg, wid or None, logo_bytes)
+    if new_id is None:
+        raise HTTPException(404, 'no such worksheet theme')
+    return {'id': new_id}
+
+
+@app.delete('/api/wthemes/{wid}')
+def wtheme_delete(wid: int):
+    if not business.delete_wtheme(wid):
+        raise HTTPException(404, 'no such worksheet theme')
+    return {'ok': True}
+
+
+@app.get('/api/wthemes/{wid}/logo')
+def wtheme_logo(wid: int):
+    t = business.get_wtheme(wid)
+    if not t or not t.get('logo_path'):
+        raise HTTPException(404, 'this theme has no logo')
+    return FileResponse(t['logo_path'], media_type='image/png')
+
+
 # ------------------------------------------------- design themes (colourways)
 @app.get('/api/themes')
 def themes_list():
@@ -687,7 +771,7 @@ async def notes_set(kind: str, data: dict):
 
 @app.get('/api/worksheet/{job}.pdf')
 def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon',
-                  client: str = '', inline: bool = False,
+                  client: str = '', inline: bool = False, wtheme: int = 0,
                   setup: float = 0.0, price_per_1000: float = 0.0,
                   garment_qty: int = 0, garment_base: float = 0.0,
                   markup_pct: float = 0.0, discount_pct: float = 0.0):
@@ -707,11 +791,16 @@ def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon'
         quote_params = {'setup': setup, 'price_per_1000': price_per_1000,
                         'garment_qty': garment_qty, 'garment_base': garment_base,
                         'markup_pct': markup_pct, 'discount_pct': discount_pct}
+    theme = logo_path = None
+    if wtheme:
+        wt = business.get_wtheme(wtheme)
+        if wt:
+            theme, logo_path = wt['config'], wt.get('logo_path')
     out = os.path.join(d, 'worksheet.pdf')
     worksheet.build(out, pat, meta['report'], layers, thread_matches=matches,
                     preview_png=os.path.join(d, 'preview.png'),
                     design_name=name or 'design', quote_params=quote_params,
-                    client=client)
+                    client=client, theme=theme, logo_path=logo_path)
     fname = '%s-worksheet.pdf' % (name or 'design')
     if inline:
         # render in the browser's PDF viewer (the UI's preview modal)

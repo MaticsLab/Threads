@@ -40,6 +40,10 @@ def _db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL DEFAULT '',
         colors TEXT NOT NULL DEFAULT '[]')''')
+    con.execute('''CREATE TABLE IF NOT EXISTS wtheme (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL DEFAULT '',
+        config TEXT NOT NULL DEFAULT '{}')''')
     return con
 
 
@@ -117,6 +121,81 @@ def delete_theme(tid):
     with _lock, _db() as con:
         cur = con.execute('DELETE FROM theme WHERE id=?', (tid,))
         return cur.rowcount > 0
+
+
+# --------------------------------- worksheet appearance themes (Design panel)
+WT_FONTS = ('Helvetica', 'Times', 'Courier')
+
+
+def _wt_clean(config):
+    import re
+    c = config or {}
+    accent = str(c.get('accent', '#12161C'))
+    if not re.fullmatch(r'#[0-9a-fA-F]{6}', accent):
+        accent = '#12161C'
+    return {
+        'accent': accent.upper(),
+        'font': c.get('font') if c.get('font') in WT_FONTS else 'Helvetica',
+        'show_logo': bool(c.get('show_logo', True)),
+        'logo_pos': c.get('logo_pos') if c.get('logo_pos') in ('left', 'right') else 'right',
+        'logo_h_mm': max(5.0, min(25.0, float(c.get('logo_h_mm', 12) or 12))),
+        'footer': str(c.get('footer', '') or '')[:120],
+    }
+
+
+def _wt_logo(wid):
+    return os.path.join(DATA_DIR, 'wthemes', 'logo_%d' % wid)
+
+
+def list_wthemes():
+    import json
+    with _lock, _db() as con:
+        rows = con.execute('SELECT * FROM wtheme ORDER BY id DESC').fetchall()
+    out = []
+    for r in rows:
+        try:
+            cfg = _wt_clean(json.loads(r['config']))
+        except Exception:
+            cfg = _wt_clean({})
+        out.append({'id': r['id'], 'name': r['name'], 'config': cfg,
+                    'has_logo': os.path.exists(_wt_logo(r['id']))})
+    return out
+
+
+def save_wtheme(name, config, wid=None, logo_bytes=None):
+    import json
+    name = str(name or 'Worksheet theme').strip()[:64] or 'Worksheet theme'
+    cfg = json.dumps(_wt_clean(config))
+    with _lock, _db() as con:
+        if wid:
+            cur = con.execute('UPDATE wtheme SET name=?, config=? WHERE id=?',
+                              (name, cfg, wid))
+            if cur.rowcount == 0:
+                return None
+        else:
+            wid = con.execute('INSERT INTO wtheme (name, config) VALUES (?, ?)',
+                              (name, cfg)).lastrowid
+    if logo_bytes:
+        os.makedirs(os.path.join(DATA_DIR, 'wthemes'), exist_ok=True)
+        with open(_wt_logo(wid), 'wb') as f:
+            f.write(logo_bytes)
+    return wid
+
+
+def get_wtheme(wid):
+    for t in list_wthemes():
+        if t['id'] == wid:
+            t['logo_path'] = _wt_logo(wid) if t['has_logo'] else None
+            return t
+    return None
+
+
+def delete_wtheme(wid):
+    with _lock, _db() as con:
+        cur = con.execute('DELETE FROM wtheme WHERE id=?', (wid,))
+    if os.path.exists(_wt_logo(wid)):
+        os.remove(_wt_logo(wid))
+    return cur.rowcount > 0
 
 
 def get_note(kind):
