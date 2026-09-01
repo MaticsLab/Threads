@@ -47,8 +47,8 @@
   @media(max-width:1020px){main{grid-template-columns:1fr;overflow-y:auto}
     main>div{overflow:visible}}
 
-  .card{background:var(--surface);border:1px solid #eef0f3;
-    border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+  .card{background:#f1f2f5;border:1px solid #ebecf0;
+    border-radius:var(--r);padding:18px;box-shadow:none}
   .card+.card{margin-top:16px}
   .card h2{margin:0 0 14px;font-size:10.5px;letter-spacing:.11em;
     text-transform:uppercase;color:var(--muted);font-weight:700}
@@ -65,7 +65,7 @@
 
   .drop{border:1.5px dashed var(--line2);border-radius:12px;padding:26px 14px;
     text-align:center;cursor:pointer;color:var(--muted);font-size:13px;
-    background:#fafbfd;transition:border-color .12s,background .12s}
+    background:#fff;transition:border-color .12s,background .12s}
   .drop:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
   .drop img{max-width:100%;max-height:130px;border-radius:8px}
 
@@ -80,15 +80,16 @@
   button.mini{padding:6px 10px;font-size:12px;border-radius:9px}
   .wide{width:100%;margin-top:18px}
 
-  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#f0f1f4;
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#e5e7ec;
     padding:4px;border-radius:11px;margin-bottom:14px}
   .tabs button{background:transparent;color:var(--muted);box-shadow:none;padding:8px 4px;border-radius:8px}
   .tabs button:hover{background:#e6e8ee;color:var(--ink)}
   .tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
 
-  .chip{display:flex;align-items:center;gap:10px;padding:8px 10px;font-size:13px;
-    border-radius:10px}
-  .chip:hover{background:#f5f6f9}
+  .chip{display:flex;align-items:center;gap:10px;padding:9px 11px;font-size:13px;
+    border-radius:11px;background:#fff;margin-bottom:6px;
+    box-shadow:0 1px 2px rgba(16,24,40,.05)}
+  .chip:hover{box-shadow:0 0 0 2px var(--accent-soft),0 1px 2px rgba(16,24,40,.05)}
   .sw{width:20px;height:20px;border-radius:6px;border:1px solid rgba(0,0,0,.12);flex:none}
   .muted{color:var(--muted);font-size:12px}
   table{width:100%;border-collapse:collapse;font-size:13px}
@@ -99,8 +100,24 @@
   .pass{font-size:12.5px;padding:8px 0;border-bottom:1px solid #f0f2f6;color:#444}
   .pass b{color:var(--ink)}
 
-  .stage{position:relative;background:var(--stage);border-radius:14px;
-    height:clamp(400px, calc(100vh - 350px), 760px);overflow:hidden}
+  #work{position:relative;min-height:0;display:flex;overflow:visible}
+  .stage{position:relative;background:var(--stage);border-radius:16px;
+    flex:1;min-height:0;overflow:hidden}
+  #stageEmpty{position:absolute;inset:0;display:grid;place-content:center;gap:8px;
+    text-align:center;color:#aab1c2;padding:40px;max-width:560px;margin:0 auto}
+  #stageEmpty b{color:#e7eaf2;font-size:17px}
+  #stageEmpty p{margin:0;font-size:13.5px;line-height:1.6}
+  .es-mark{font-size:34px}
+  .toolbox{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:24;
+    display:flex;gap:8px;align-items:center;background:#fff;border-radius:14px;
+    padding:8px 10px;box-shadow:0 10px 34px rgba(10,14,22,.24),0 0 0 1px #e8eaef;
+    max-width:94%;flex-wrap:wrap;justify-content:center}
+  .toolbox select{width:auto;padding:7px 32px 7px 10px}
+  .toolbox .tgl{margin-left:0}
+  .tsep{width:1px;height:22px;background:var(--line2)}
+  .floatbar{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);z-index:23;
+    width:min(680px,92%);background:#fff;border-radius:14px;padding:9px 14px;margin:0;
+    box-shadow:0 10px 34px rgba(10,14,22,.24),0 0 0 1px #e8eaef}
   .stage>img{position:absolute;inset:0;margin:auto;max-width:94%;max-height:94%;border-radius:6px}
   .stage>svg,.stage>div>svg{width:100%;height:100%;display:block;cursor:grab}
   .vbar{display:flex;gap:6px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
@@ -115,7 +132,8 @@
   .player input[type=range]{flex:1;accent-color:var(--accent)}
   .dlrow{display:flex;gap:10px;margin-top:16px;align-items:end;flex-wrap:wrap}
   .dlrow>div{flex:1;min-width:150px}
-  details{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:#fbfcfe}
+  details{margin-top:14px;border:0;border-radius:12px;padding:10px 14px;background:#fff;
+    box-shadow:0 1px 2px rgba(16,24,40,.05)}
   details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
   .fontprev{display:flex;align-items:center;gap:10px;margin-top:8px;min-height:44px}
   .fontprev img{max-height:44px;max-width:100%;border-radius:6px;background:#fff;border:1px solid var(--line)}
@@ -135,11 +153,44 @@
   .sheet-head b{font-size:14px}
   .sheet iframe{flex:1;border:0;background:#525659}
 
+  /* ------------------------- floating Design panel (like the builder's) */
+  .dpanel{position:fixed;top:112px;right:46px;width:344px;max-height:calc(100vh - 250px);
+    background:#fff;border-radius:16px;z-index:55;display:flex;flex-direction:column;
+    overflow:hidden;box-shadow:0 12px 48px rgba(10,14,22,.28),0 0 0 1px #e8eaef}
+  .dhead{display:flex;align-items:center;gap:9px;padding:10px 12px;
+    border-bottom:1px solid var(--line);cursor:grab;user-select:none}
+  .dhead:active{cursor:grabbing}
+  .dots{color:#c2c6cf;font-size:15px;letter-spacing:-2px}
+  .dcrumb{font-weight:600;font-size:14px}
+  .dcrumb .dim{color:var(--muted);font-weight:500}
+  .dbody{padding:14px 16px;overflow-y:auto;scrollbar-width:thin}
+  .dbody h2{margin:0 0 10px;font-size:10.5px;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--muted);font-weight:700}
+  .dbody .chip{box-shadow:none;background:#f5f6f9;margin-bottom:5px}
+  .dprow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .dprow b{font-size:14px}
+  .theme-card{border:1px solid var(--line2);border-radius:12px;padding:10px 12px;
+    margin-bottom:10px;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+  .theme-card:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .theme-strip{display:flex;gap:4px;margin-bottom:8px}
+  .theme-strip span{flex:1;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.08)}
+  .theme-name{display:flex;align-items:center;font-size:13px;font-weight:600}
+  .blockrow{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;
+    cursor:pointer;border:1px solid transparent;font-size:13px}
+  .blockrow:hover{background:#f5f6f9}
+  .blockrow.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .swgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
+  .swgrid button{padding:0;height:28px;border-radius:7px;border:1px solid rgba(0,0,0,.12);
+    box-shadow:none;transition:transform .08s}
+  .swgrid button:hover{transform:scale(1.14);box-shadow:0 0 0 2px var(--accent)}
+  .dpfoot{display:flex;gap:8px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+  .dpfoot button:last-child{margin-left:auto}
+
   .spin{display:inline-block;width:13px;height:13px;border:2px solid #fff6;
     border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;
     vertical-align:-2px;margin-right:7px}
   @keyframes s{to{transform:rotate(360deg)}}
-  .hide{display:none}
+  .hide{display:none!important}
 </style>
 </head>
 <body>
@@ -346,98 +397,146 @@
     </div>
   </div>
 
-  <div>
-    <div class="card hide" id="out">
-      <h2>Result</h2>
-      <div id="warnings"></div>
-
-      <div class="vbar">
-        <button class="mode mini on" data-mode="photo">Preview</button>
-        <button class="mode mini" data-mode="plan">Stitch plan</button>
-        <button class="mode mini" data-mode="realistic">Realistic</button>
-        <button class="mode mini" data-mode="3d">3D</button>
-        <button class="mode mini" data-mode="density">Density</button>
-        <button class="mode mini" data-mode="player">▶ Player</button>
-        <label class="tgl"><input type="checkbox" id="trueColors"> true thread colours</label>
-        <span class="muted" id="viewerHint"></span>
-      </div>
-      <div class="stage" id="viewer"><img id="preview"></div>
-
-      <div class="player hide" id="playerBar">
-        <button class="mini" id="playBtn">▶</button>
-        <input type="range" id="playPos" min="0" max="1000" value="0">
-        <select id="playSpeed" style="width:auto">
-          <option value="200">1×</option><option value="700" selected>3.5×</option>
-          <option value="2000">10×</option><option value="6000">30×</option>
-        </select>
-        <span class="muted" id="playInfo" style="min-width:110px;text-align:right">0 st</span>
-      </div>
-
-      <div class="dlrow">
-        <div>
-          <label>Machine file</label>
-          <select id="fmt">
-            <option value="dst" selected>DST — Tajima</option>
-            <option value="pes">PES — Brother</option>
-            <option value="jef">JEF — Janome</option>
-            <option value="exp">EXP — Melco</option>
-            <option value="vp3">VP3 — Husqvarna</option>
-            <option value="xxx">XXX — Singer</option>
-            <option value="u01">U01 — Barudan</option>
-            <option value="pec">PEC — Brother</option>
-            <option value="tbf">TBF — Tajima</option>
-            <option value="csv">CSV — stitch list</option>
-            <option value="png">PNG — raster</option>
-            <option value="zip">ZIP — all formats + worksheet</option>
-          </select>
-        </div>
-        <a id="dl"><button class="ghost">Download</button></a>
-        <button class="ghost" id="pdf">Preview worksheet</button>
-      </div>
-
-      <details id="quoteBox">
-        <summary>Quote sheet (embTools) — printed on the worksheet</summary>
-        <div class="row3">
-          <div><label>Setup fee $</label><input type="number" id="qSetup" value="0" step="1"></div>
-          <div><label>$ / 1000 stitches</label><input type="number" id="qPrice" value="0" step="0.1"></div>
-          <div><label>Design name</label><input type="text" id="qName" value="design"></div>
-        </div>
-        <div class="row">
-          <div><label>Client (from Business book)</label><select id="qClient"><option value="">—</option></select></div>
-          <div></div>
-        </div>
-        <div class="row3">
-          <div><label>Garments qty</label><input type="number" id="qQty" value="0" step="1"></div>
-          <div><label>Garment base $</label><input type="number" id="qBase" value="0" step="0.5"></div>
-          <div><label>Markup / discount %</label>
-            <div class="row"><input type="number" id="qMarkup" value="0" step="1"><input type="number" id="qDiscount" value="0" step="1"></div>
-          </div>
-        </div>
-      </details>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:18px">
-        <div><h2>Specification</h2><table id="spec"></table></div>
-        <div>
-          <h2 id="rightColTitle">Auto-tune passes</h2><div id="passes"></div>
-          <h2 style="margin-top:16px">Threads</h2><div id="threadList"></div>
-        </div>
+  <section id="work">
+    <div class="stage" id="viewer">
+      <img id="preview" class="hide">
+      <div id="stageEmpty">
+        <div class="es-mark">🪡</div>
+        <b>The canvas shows your stitches here</b>
+        <p>Digitize artwork, stitch lettering, or import an SVG or machine file
+        from the panel on the left. Then explore it in 2D, realistic and 3D
+        views, recolour threads with the Design panel, and export.</p>
       </div>
     </div>
 
-    <div class="card" id="hint">
-      <h2>How it works</h2>
-      <p style="margin:0 0 10px"><b>Artwork:</b> every stroke narrower than the satin cap is
-        stitched as a true satin column on the stroke's perpendicular; anything wider gets a
-        tatami, contour or circular fill underneath. The finished file is measured — coverage,
-        gaps, stitch lengths, hoop clearance — and rebuilt until it passes.</p>
-      <p style="margin:0 0 10px"><b>Lettering:</b> text is sewn from Ink/Stitch embroidery
-        fonts with Ink/Stitch's rail-and-rung satin engine. <b>Import:</b> SVGs are digitized
-        like Inkscape files; machine files (DST, PES, …) convert to any other format.</p>
-      <p style="margin:0">Preview modes include a lit realistic view and full 3D. Thread
-        brands are matched by palette — add your own brand's colour card with ＋ Brand.</p>
+    <div class="player floatbar hide" id="playerBar">
+      <button class="mini" id="playBtn">▶</button>
+      <input type="range" id="playPos" min="0" max="1000" value="0">
+      <select id="playSpeed" style="width:auto">
+        <option value="200">1×</option><option value="700" selected>3.5×</option>
+        <option value="2000">10×</option><option value="6000">30×</option>
+      </select>
+      <span class="muted" id="playInfo" style="min-width:110px;text-align:right">0 st</span>
     </div>
-  </div>
+
+    <div class="toolbox">
+      <select id="viewSel" disabled title="View">
+        <option value="photo" selected>Preview</option>
+        <option value="plan">Stitch plan</option>
+        <option value="realistic">Realistic</option>
+        <option value="3d">3D</option>
+        <option value="density">Density</option>
+        <option value="player">▶ Player</option>
+      </select>
+      <label class="tgl" title="Recolour previews with the matched brand threads">
+        <input type="checkbox" id="trueColors"> true colours</label>
+      <span class="muted" id="viewerHint"></span>
+      <span class="tsep"></span>
+      <button class="ghost mini" id="designBtn" disabled>🎨 Design</button>
+      <button class="ghost mini" id="detailsBtn" disabled>Details</button>
+      <button class="ghost mini" id="exportBtn" disabled>Export</button>
+    </div>
+  </section>
 </main>
+
+<div id="detailsPanel" class="dpanel hide" style="right:410px">
+  <div class="dhead" id="detailsDrag" title="Drag to move · double-click to reset">
+    <span class="dots">⠿</span>
+    <span class="dcrumb">Details</span>
+    <button class="ghost mini" id="detailsClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+    <div id="warnings"></div>
+    <h2>Specification</h2><table id="spec"></table>
+    <h2 id="rightColTitle" style="margin-top:14px">Auto-tune passes</h2><div id="passes"></div>
+    <h2 style="margin-top:14px">Threads</h2><div id="threadList"></div>
+  </div>
+</div>
+
+<div id="exportPanel" class="dpanel hide" style="top:auto;bottom:96px">
+  <div class="dhead" id="exportDrag" title="Drag to move · double-click to reset">
+    <span class="dots">⠿</span>
+    <span class="dcrumb">Export</span>
+    <button class="ghost mini" id="exportClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+    <label style="margin-top:0">Machine file</label>
+    <select id="fmt">
+      <option value="dst" selected>DST — Tajima</option>
+      <option value="pes">PES — Brother</option>
+      <option value="jef">JEF — Janome</option>
+      <option value="exp">EXP — Melco</option>
+      <option value="vp3">VP3 — Husqvarna</option>
+      <option value="xxx">XXX — Singer</option>
+      <option value="u01">U01 — Barudan</option>
+      <option value="pec">PEC — Brother</option>
+      <option value="tbf">TBF — Tajima</option>
+      <option value="csv">CSV — stitch list</option>
+      <option value="png">PNG — raster</option>
+      <option value="zip">ZIP — all formats + worksheet</option>
+    </select>
+    <div class="row" style="margin-top:12px">
+      <a id="dl"><button class="ghost" style="width:100%">Download</button></a>
+      <button class="ghost" id="pdf">Preview worksheet</button>
+    </div>
+    <details id="quoteBox">
+      <summary>Quote sheet (embTools) — printed on the worksheet</summary>
+      <div class="row3">
+        <div><label>Setup fee $</label><input type="number" id="qSetup" value="0" step="1"></div>
+        <div><label>$ / 1000 stitches</label><input type="number" id="qPrice" value="0" step="0.1"></div>
+        <div><label>Design name</label><input type="text" id="qName" value="design"></div>
+      </div>
+      <div class="row">
+        <div><label>Client (from Business book)</label><select id="qClient"><option value="">—</option></select></div>
+        <div></div>
+      </div>
+      <div class="row3">
+        <div><label>Garments qty</label><input type="number" id="qQty" value="0" step="1"></div>
+        <div><label>Garment base $</label><input type="number" id="qBase" value="0" step="0.5"></div>
+        <div><label>Markup / discount %</label>
+          <div class="row"><input type="number" id="qMarkup" value="0" step="1"><input type="number" id="qDiscount" value="0" step="1"></div>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div id="designPanel" class="dpanel hide">
+  <div class="dhead" id="dpDrag" title="Drag to move · double-click to reset">
+    <span class="dots">⠿</span>
+    <span class="dcrumb" id="dpCrumb">Design</span>
+    <button class="ghost mini" id="dpBack" style="margin-left:auto">‹ Themes</button>
+    <button class="ghost mini" id="dpClose">✕</button>
+  </div>
+
+  <!-- my themes view -->
+  <div class="dbody" id="dpThemes">
+    <div class="dprow"><b>My themes</b>
+      <button class="ghost mini" id="themeNewBtn" style="margin-left:auto">＋</button></div>
+    <div id="themeNewRow" class="dprow hide">
+      <input type="text" id="themeName" placeholder="Theme name">
+      <button class="mini" id="themeSave">Save</button>
+    </div>
+    <div id="themeList"></div>
+    <p class="muted" style="margin:10px 0 0">A theme saves the current thread colours as a
+      colourway you can apply to any design.</p>
+    <button class="mini wide" id="dpToThreads">Edit thread colours →</button>
+  </div>
+
+  <!-- thread colour editor view -->
+  <div class="dbody hide" id="dpThreads">
+    <div id="dpBlocks"></div>
+    <label>Brand</label>
+    <select id="dpBrand"></select>
+    <div class="swgrid" id="dpSwatches"></div>
+    <p class="muted" id="dpSwatchHint" style="margin:8px 0 0"></p>
+  </div>
+  <div class="dpfoot hide" id="dpFoot">
+    <button class="ghost mini" id="dpRevert">Revert</button>
+    <button class="ghost mini" id="dpSaveTheme">Save as theme</button>
+    <button class="mini" id="dpSave">Save changes</button>
+  </div>
+</div>
 
 <div id="pdfModal" class="modal hide">
   <div class="sheet">
@@ -745,9 +844,10 @@ let previewSrc = '';
 function show(d) {
   job = d.job; kind = d.kind;
   const r = d.report;
-  $('hint').classList.add('hide');
-  $('out').classList.remove('hide');
+  $('stageEmpty').classList.add('hide');
+  ['viewSel', 'designBtn', 'detailsBtn', 'exportBtn'].forEach(id => $(id).disabled = false);
   $('warnings').innerHTML = (d.warnings || []).map(w => `<div class="warn">${w}</div>`).join('');
+  $('detailsBtn').textContent = (d.warnings || []).length ? `Details (${d.warnings.length}!)` : 'Details';
   previewSrc = d.preview;
   $('preview').src = previewSrc;
   lastThreads = d.threads || [];
@@ -788,6 +888,8 @@ function show(d) {
   renderThreads();
   updateDl();
   planCache = {}; stopPlayer(); playerData = null; bounds = null; playN = 0;
+  pending = {}; selBlock = null;
+  $('designPanel').classList.add('hide');
   if (window.Stitch3D) window.Stitch3D.dispose();
   setMode('photo');
   $('rtStitches').value = r.stitches; runtimeCalc();
@@ -845,14 +947,16 @@ let planCache = {}, canvas = null, playerData = null, playing = false,
 let cnv = null, cctx = null, view = { s: 1, ox: 0, oy: 0 }, bounds = null;
 const LIGHT_ANG = -Math.PI * 0.75;      // light from the top-left
 
-document.querySelectorAll('.vbar .mode').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('viewSel').onchange = () => setMode($('viewSel').value);
 $('trueColors').onchange = () => {
   spriteCache.clear();
   drawFrame();
   if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
 };
 
+let pending = {}, selBlock = null;      // Design panel edits, per colour block
 function blockColor(bi) {
+  if (pending[bi]) return pending[bi].hex;
   if ($('trueColors').checked && lastThreads[bi] && lastThreads[bi].thread_hex)
     return lastThreads[bi].thread_hex;
   return playerData ? playerData[bi].color : '#000000';
@@ -860,12 +964,13 @@ function blockColor(bi) {
 
 function setMode(mode) {
   curMode = mode;
-  document.querySelectorAll('.vbar .mode').forEach(b =>
-    b.classList.toggle('on', b.dataset.mode === mode));
+  $('viewSel').value = mode;
   $('playerBar').classList.toggle('hide', mode !== 'player');
   $('viewerHint').textContent =
-    mode === '3d' ? 'drag to orbit · scroll to zoom' :
-    (mode === 'photo' || mode === 'density') ? '' : 'scroll to zoom · drag to pan';
+    mode === '3d' ? 'drag to orbit' :
+    mode === 'plan' ? 'scroll pans · pinch zooms' :
+    (mode === 'photo' || mode === 'density') ? '' :
+    'click a thread to recolour';
   stopPlayer();
   clearSvg(); removeCanvas();
   if (window.Stitch3D) window.Stitch3D.dispose();
@@ -896,7 +1001,28 @@ async function loadPlanSvg() {
   for (const ch of doc.children) inner += ser.serializeToString(ch);
   canvas = SVG().addTo('#viewer').attr('viewBox', doc.getAttribute('viewBox')).size('100%', '100%');
   canvas.svg(inner);
-  canvas.panZoom({ zoomMin: 0.3, zoomMax: 60, zoomFactor: 0.18 });
+  canvas.panZoom({ zoomMin: 0.3, zoomMax: 80, zoomFactor: 0.18 });
+  const origW = canvas.viewbox().width;
+  canvas.node.addEventListener('wheel', e => {
+    e.preventDefault();
+    e.stopImmediatePropagation();            // supersede the plugin's wheel-zoom
+    const vb = canvas.viewbox();
+    const rect = canvas.node.getBoundingClientRect();
+    const upp = vb.width / rect.width;       // svg units per CSS px
+    const k = e.deltaMode === 1 ? 16 : 1;
+    if (e.ctrlKey || e.metaKey) {
+      const dy = Math.max(-50, Math.min(50, e.deltaY * k));
+      let f = Math.exp(dy * 0.01);
+      f = Math.max(origW / 150 / vb.width, Math.min(origW * 3 / vb.width, f));
+      const mx = vb.x + (e.clientX - rect.left) * upp;
+      const my = vb.y + (e.clientY - rect.top) * upp;
+      canvas.viewbox(mx - (mx - vb.x) * f, my - (my - vb.y) * f,
+                     vb.width * f, vb.height * f);
+    } else {
+      canvas.viewbox(vb.x + e.deltaX * k * upp, vb.y + e.deltaY * k * upp,
+                     vb.width, vb.height);
+    }
+  }, { passive: false, capture: true });
 }
 
 async function loadStitches() {
@@ -934,6 +1060,7 @@ function ensureCanvas() {
 function fitView() {
   const w = bounds.maxx - bounds.minx || 1, h = bounds.maxy - bounds.miny || 1;
   view.s = Math.min(cnv._w / w, cnv._h / h) * 0.92;
+  view.fit = view.s;
   view.ox = (cnv._w - w * view.s) / 2 - bounds.minx * view.s;
   view.oy = (cnv._h - h * view.s) / 2 - bounds.miny * view.s;
 }
@@ -1055,29 +1182,75 @@ function drawFrame() {
   }
 }
 
+function zoomAt(mx, my, f) {
+  const lo = (view.fit || 1) * 0.08, hi = (view.fit || 1) * 150;
+  f = Math.max(lo / view.s, Math.min(hi / view.s, f));
+  view.ox = mx - (mx - view.ox) * f;
+  view.oy = my - (my - view.oy) * f;
+  view.s *= f;
+}
+
 function bindPanZoom(el) {
-  let dragging = false, lx = 0, ly = 0;
+  let dragging = false, lx = 0, ly = 0, moved = 0;
+  /* MacBook-trackpad-native: two-finger scroll pans, pinch (ctrlKey) or
+     cmd+scroll zooms at the cursor, drag pans, double-click refits */
   el.addEventListener('wheel', e => {
     e.preventDefault();
-    if (!e.deltaY) return;
-    const f = e.deltaY < 0 ? 1.18 : 1 / 1.18;
-    const r = el.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-    view.ox = mx - (mx - view.ox) * f;
-    view.oy = my - (my - view.oy) * f;
-    view.s *= f;
+    const k = e.deltaMode === 1 ? 16 : 1;
+    if (e.ctrlKey || e.metaKey) {
+      const dy = Math.max(-50, Math.min(50, e.deltaY * k));
+      const r = el.getBoundingClientRect();
+      zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-dy * 0.01));
+    } else {
+      view.ox -= e.deltaX * k;
+      view.oy -= e.deltaY * k;
+    }
     requestAnimationFrame(drawFrame);
   }, { passive: false });
+  el.addEventListener('dblclick', () => { fitView(); drawFrame(); });
   el.addEventListener('pointerdown', e => {
-    dragging = true; lx = e.clientX; ly = e.clientY;
+    dragging = true; moved = 0; lx = e.clientX; ly = e.clientY;
     el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing';
   });
   el.addEventListener('pointermove', e => {
     if (!dragging) return;
+    moved += Math.abs(e.clientX - lx) + Math.abs(e.clientY - ly);
     view.ox += e.clientX - lx; view.oy += e.clientY - ly;
     lx = e.clientX; ly = e.clientY;
     requestAnimationFrame(drawFrame);
   });
-  el.addEventListener('pointerup', () => { dragging = false; el.style.cursor = 'grab'; });
+  el.addEventListener('pointerup', e => {
+    dragging = false; el.style.cursor = 'grab';
+    if (moved < 5) canvasPick(el, e);          // a click, not a pan
+  });
+}
+
+/* click a thread on the canvas -> select its colour block in the Design panel */
+function canvasPick(el, e) {
+  if (!playerData) return;
+  const r = el.getBoundingClientRect();
+  const wx = (e.clientX - r.left - view.ox) / view.s;
+  const wy = (e.clientY - r.top - view.oy) / view.s;
+  const limit = Math.max(2.5, 8 / view.s);
+  let best = null, bd = limit * limit;
+  for (let bi = 0; bi < playerData.length; bi++) {
+    for (const run of playerData[bi].runs) {
+      for (let k = 1; k < run.length; k++) {
+        const x1 = run[k - 1][0], y1 = run[k - 1][1], x2 = run[k][0], y2 = run[k][1];
+        const dx = x2 - x1, dy = y2 - y1;
+        const L2 = dx * dx + dy * dy;
+        let t = L2 ? ((wx - x1) * dx + (wy - y1) * dy) / L2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        const qx = x1 + t * dx - wx, qy = y1 + t * dy - wy;
+        const d2 = qx * qx + qy * qy;
+        if (d2 < bd) { bd = d2; best = bi; }
+      }
+    }
+  }
+  if (best !== null) {
+    selBlock = best;
+    openDesign('threads');
+  }
 }
 
 /* stitch player controls (embTools stitch run, drawn on the canvas) */
@@ -1112,6 +1285,186 @@ function stopPlayer() {
 window.addEventListener('resize', () => {
   if (cnv && playerData) { ensureCanvas(); fitView(); drawFrame(); }
 });
+
+/* --------------------------------- popouts: draggable floating panels */
+function makeDraggable(panel, handle) {
+  let sx, sy, ox, oy, dragging = false;
+  handle.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    dragging = true; sx = e.clientX; sy = e.clientY;
+    const r = panel.getBoundingClientRect(); ox = r.left; oy = r.top;
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    panel.style.left = (ox + e.clientX - sx) + 'px';
+    panel.style.top = (oy + e.clientY - sy) + 'px';
+    panel.style.right = 'auto'; panel.style.bottom = 'auto';
+  });
+  handle.addEventListener('pointerup', () => { dragging = false; });
+  handle.addEventListener('dblclick', () => {
+    panel.style.left = panel.style.top = panel.style.right = panel.style.bottom = '';
+  });
+}
+makeDraggable($('detailsPanel'), $('detailsDrag'));
+makeDraggable($('exportPanel'), $('exportDrag'));
+makeDraggable($('designPanel'), $('dpDrag'));
+$('detailsBtn').onclick = () => $('detailsPanel').classList.toggle('hide');
+$('exportBtn').onclick = () => $('exportPanel').classList.toggle('hide');
+$('detailsClose').onclick = () => $('detailsPanel').classList.add('hide');
+$('exportClose').onclick = () => $('exportPanel').classList.add('hide');
+$('dpClose').onclick = () => $('designPanel').classList.add('hide');
+
+/* --------------------------- Design panel: themes + thread recolouring */
+let dpView = 'themes';
+$('designBtn').onclick = () => {
+  if ($('designPanel').classList.contains('hide')) openDesign('themes');
+  else $('designPanel').classList.add('hide');
+};
+$('dpBack').onclick = () => dpShow('themes');
+$('dpToThreads').onclick = () => dpShow('threads');
+
+async function openDesign(view) {
+  if (!job) return;
+  await loadStitches();
+  $('designPanel').classList.remove('hide');
+  await Promise.all([renderThemes(), renderDpBrand()]);
+  dpShow(view || 'themes');
+}
+function dpShow(view) {
+  dpView = view;
+  $('dpThemes').classList.toggle('hide', view !== 'themes');
+  $('dpThreads').classList.toggle('hide', view !== 'threads');
+  $('dpFoot').classList.toggle('hide', view !== 'threads');
+  $('dpBack').classList.toggle('hide', view !== 'threads');
+  $('dpCrumb').innerHTML = view === 'threads'
+    ? '<span class="dim">Design ›</span> Threads' : 'Design';
+  if (view === 'threads') renderBlocks();
+}
+
+function effectiveColors() {
+  return playerData.map((b, i) => pending[i] ||
+    { hex: blockColor(i),
+      name: lastThreads[i] ? lastThreads[i].thread_name : '',
+      number: lastThreads[i] ? lastThreads[i].thread_number : '',
+      palette: lastThreads[i] ? lastThreads[i].palette : '' });
+}
+
+/* ------- themes (saved colourways) ------- */
+async function renderThemes() {
+  const themes = await (await fetch('/api/themes')).json();
+  $('themeList').innerHTML = themes.map(t =>
+    `<div class="theme-card" data-id="${t.id}">
+       <div class="theme-strip">${t.colors.slice(0, 8).map(c =>
+         `<span style="background:${c.hex}"></span>`).join('')}</div>
+       <div class="theme-name">${t.name}
+         <button class="ghost mini" data-del="${t.id}" style="margin-left:auto">✕</button>
+       </div>
+     </div>`).join('') ||
+    '<p class="muted">No themes yet — set thread colours, then “Save as theme”.</p>';
+  document.querySelectorAll('#themeList .theme-card').forEach(el => {
+    el.onclick = async e => {
+      if (e.target.closest('[data-del]')) return;
+      const t = themes.find(x => x.id == el.dataset.id);
+      playerData.forEach((b, i) => {
+        pending[i] = { ...t.colors[i % t.colors.length] };
+      });
+      spriteCache.clear();
+      if (curMode === 'photo' || curMode === 'density') setMode('realistic');
+      else drawFrame();
+      if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
+      dpShow('threads');
+    };
+  });
+  document.querySelectorAll('#themeList [data-del]').forEach(b => b.onclick = async e => {
+    e.stopPropagation();
+    await fetch('/api/themes/' + b.dataset.del, { method: 'DELETE' });
+    renderThemes();
+  });
+}
+$('themeNewBtn').onclick = () => $('themeNewRow').classList.toggle('hide');
+$('themeSave').onclick = async () => {
+  const res = await fetch('/api/themes', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: $('themeName').value || 'Theme',
+                           colors: effectiveColors() }) });
+  if (res.ok) { $('themeName').value = ''; $('themeNewRow').classList.add('hide'); renderThemes(); }
+};
+$('dpSaveTheme').onclick = () => {
+  dpShow('themes');
+  $('themeNewRow').classList.remove('hide');
+  $('themeName').focus();
+};
+
+/* ------- thread editor: blocks + brand swatches ------- */
+function renderBlocks() {
+  $('dpBlocks').innerHTML = playerData.map((b, i) => {
+    const hex = blockColor(i);
+    const label = pending[i] && pending[i].name ? pending[i].name
+      : (lastThreads[i] ? lastThreads[i].thread_name : '');
+    return `<div class="blockrow ${i === selBlock ? 'sel' : ''}" data-bi="${i}">
+      <span class="sw" style="background:${hex}"></span>
+      <span>Block ${i + 1}${label ? ' · ' + label : ''}</span>
+      <span class="muted" style="margin-left:auto">${hex}</span></div>`;
+  }).join('');
+  document.querySelectorAll('#dpBlocks .blockrow').forEach(el =>
+    el.onclick = () => { selBlock = +el.dataset.bi; renderBlocks(); });
+  $('dpSwatchHint').textContent = selBlock === null
+    ? 'Pick a block above (or click a thread on the canvas), then a swatch.'
+    : `Recolouring block ${selBlock + 1} — pick a swatch.`;
+}
+async function renderDpBrand() {
+  const cur = $('dpBrand').value || $('palette').value;
+  $('dpBrand').innerHTML = $('palette').innerHTML;
+  $('dpBrand').value = paletteList.some(p => p.name === cur) ? cur : $('palette').value;
+  await renderSwatches();
+}
+$('dpBrand').onchange = renderSwatches;
+async function renderSwatches() {
+  const brand = $('dpBrand').value;
+  const rows = await (await fetch('/api/palettes/' + encodeURIComponent(brand))).json();
+  $('dpSwatches').innerHTML = rows.map((t, i) =>
+    `<button data-i="${i}" style="background:${t.hex}"
+       title="${t.name}${t.number ? ' #' + t.number : ''}"></button>`).join('');
+  document.querySelectorAll('#dpSwatches button').forEach(b => b.onclick = () => {
+    if (selBlock === null) selBlock = 0;
+    const t = rows[+b.dataset.i];
+    pending[selBlock] = { hex: t.hex, name: t.name, number: t.number, palette: brand };
+    spriteCache.clear();
+    if (curMode === 'photo' || curMode === 'density') setMode('realistic');
+    else drawFrame();
+    if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
+    renderBlocks();
+  });
+}
+
+/* ------- revert / persist ------- */
+$('dpRevert').onclick = () => {
+  pending = {}; spriteCache.clear();
+  drawFrame();
+  if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
+  renderBlocks();
+};
+$('dpSave').onclick = async () => {
+  const b = $('dpSave'); b.disabled = true; b.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/recolor/' + job, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ layers: effectiveColors(), palette: $('palette').value }) });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const d = await res.json();
+    playerData.forEach((blk, i) => { blk.color = d.layers[i].hex; });
+    lastThreads = d.threads; renderThreads();
+    previewSrc = d.preview;
+    if (curMode === 'photo') $('preview').src = previewSrc;
+    pending = {}; planCache = {}; spriteCache.clear();
+    drawFrame();
+    if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
+    renderBlocks();
+  } catch (err) { alert(err.message); }
+  b.disabled = false; b.textContent = 'Save changes';
+};
+
 </script>
 </body>
 </html>

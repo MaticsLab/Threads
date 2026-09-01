@@ -36,6 +36,10 @@ def _db():
     con.execute('''CREATE TABLE IF NOT EXISTS note (
         kind TEXT PRIMARY KEY CHECK(kind IN ('notes','quotes','todo')),
         text TEXT NOT NULL DEFAULT '')''')
+    con.execute('''CREATE TABLE IF NOT EXISTS theme (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL DEFAULT '',
+        colors TEXT NOT NULL DEFAULT '[]')''')
     return con
 
 
@@ -71,6 +75,47 @@ def update_contact(kind, cid, data):
 def delete_contact(kind, cid):
     with _lock, _db() as con:
         cur = con.execute('DELETE FROM contact WHERE id=? AND kind=?', (cid, kind))
+        return cur.rowcount > 0
+
+
+# ------------------------------------------------ design themes (colourways)
+def list_themes():
+    import json
+    with _lock, _db() as con:
+        rows = con.execute('SELECT * FROM theme ORDER BY id DESC').fetchall()
+    out = []
+    for r in rows:
+        try:
+            colors = json.loads(r['colors'])
+        except Exception:
+            colors = []
+        out.append({'id': r['id'], 'name': r['name'], 'colors': colors})
+    return out
+
+
+def add_theme(name, colors):
+    import json
+    clean = []
+    for c in colors[:64]:
+        hexv = str(c.get('hex', '')).lstrip('#')
+        if len(hexv) != 6:
+            continue
+        clean.append({'hex': '#' + hexv.upper(),
+                      'name': str(c.get('name', '') or '')[:64],
+                      'number': str(c.get('number', '') or '')[:16],
+                      'palette': str(c.get('palette', '') or '')[:80]})
+    if not clean:
+        raise ValueError('a theme needs at least one colour')
+    with _lock, _db() as con:
+        cur = con.execute('INSERT INTO theme (name, colors) VALUES (?, ?)',
+                          (str(name or 'Theme').strip()[:64] or 'Theme',
+                           json.dumps(clean)))
+        return cur.lastrowid
+
+
+def delete_theme(tid):
+    with _lock, _db() as con:
+        cur = con.execute('DELETE FROM theme WHERE id=?', (tid,))
         return cur.rowcount > 0
 
 
