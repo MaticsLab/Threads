@@ -27,6 +27,19 @@ INK = HexColor('#12161c')
 MUTED = HexColor('#6b7480')
 LINE = HexColor('#c9ced4')
 
+# appearance themes (Design panel -> Worksheet): reportlab's built-in faces
+FONTS = {'Helvetica': ('Helvetica', 'Helvetica-Bold'),
+         'Times': ('Times-Roman', 'Times-Bold'),
+         'Courier': ('Courier', 'Courier-Bold')}
+
+
+def _apply_theme(c, theme, logo_path):
+    t = theme or {}
+    c._body, c._bold = FONTS.get(t.get('font', 'Helvetica'), FONTS['Helvetica'])
+    c._accent = HexColor(t.get('accent', '#12161C'))
+    c._theme = t
+    c._logo = logo_path if (logo_path and t.get('show_logo', True)) else None
+
 
 def block_stats(pattern):
     """Per colour block: stitches, trims, stops (jumps left untrimmed)."""
@@ -53,7 +66,7 @@ def _est_time(stitches, spm=700):
 
 def _text(c, x, y, s, size=9, bold=False, color=INK, align='left'):
     c.setFillColor(color)
-    font = 'Helvetica-Bold' if bold else 'Helvetica'
+    font = getattr(c, '_bold', 'Helvetica-Bold') if bold else getattr(c, '_body', 'Helvetica')
     c.setFont(font, size)
     if align == 'right':
         c.drawRightString(x, y, str(s))
@@ -64,19 +77,41 @@ def _text(c, x, y, s, size=9, bold=False, color=INK, align='left'):
 
 
 def _header(c, title, subtitle):
-    _text(c, MARGIN, PAGE_H - MARGIN, title, 16, bold=True)
-    _text(c, MARGIN, PAGE_H - MARGIN - 14, subtitle, 9, color=MUTED)
-    _text(c, PAGE_W - MARGIN, PAGE_H - MARGIN, datetime.date.today().isoformat(),
+    from reportlab.lib.utils import ImageReader
+    t = getattr(c, '_theme', {}) or {}
+    x_title = MARGIN
+    date_x = PAGE_W - MARGIN
+    if getattr(c, '_logo', None) and os.path.exists(c._logo):
+        try:
+            img = ImageReader(c._logo)
+            iw, ih = img.getSize()
+            lh = float(t.get('logo_h_mm', 12)) * mm
+            lw = lh * iw / max(ih, 1)
+            if t.get('logo_pos', 'right') == 'left':
+                c.drawImage(img, MARGIN, PAGE_H - MARGIN - lh + 11, lw, lh,
+                            preserveAspectRatio=True, anchor='nw', mask='auto')
+                x_title = MARGIN + lw + 5 * mm
+            else:
+                c.drawImage(img, PAGE_W - MARGIN - lw, PAGE_H - MARGIN - lh + 11,
+                            lw, lh, preserveAspectRatio=True, anchor='nw', mask='auto')
+                date_x = PAGE_W - MARGIN - lw - 4 * mm
+        except Exception:
+            pass
+    _text(c, x_title, PAGE_H - MARGIN, title, 16, bold=True)
+    _text(c, x_title, PAGE_H - MARGIN - 14, subtitle, 9, color=MUTED)
+    _text(c, date_x, PAGE_H - MARGIN, datetime.date.today().isoformat(),
           9, color=MUTED, align='right')
-    c.setStrokeColor(LINE)
-    c.setLineWidth(0.7)
+    c.setStrokeColor(getattr(c, '_accent', INK))
+    c.setLineWidth(1.1)
     c.line(MARGIN, PAGE_H - MARGIN - 22, PAGE_W - MARGIN, PAGE_H - MARGIN - 22)
 
 
 def _footer(c):
     c.setStrokeColor(LINE)
     c.line(MARGIN, MARGIN, PAGE_W - MARGIN, MARGIN)
+    t = getattr(c, '_theme', {}) or {}
     _text(c, MARGIN, MARGIN - 10,
+          t.get('footer') or
           'StitchForge worksheet — layout after the Ink/Stitch print worksheet (inkstitch.org)',
           7, color=MUTED)
     _text(c, PAGE_W - MARGIN, MARGIN - 10, 'page %d' % c.getPageNumber(),
@@ -104,7 +139,8 @@ def quote(stitches, setup=0.0, price_per_1000=0.0, garment_qty=0, garment_base=0
 
 
 def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
-          design_name='design', quote_params=None, spm=700, client=''):
+          design_name='design', quote_params=None, spm=700, client='',
+          theme=None, logo_path=None):
     """Write the worksheet PDF to `path`.
 
     report: engine.qa_report dict (or the lighter lettering report).
@@ -113,6 +149,7 @@ def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
     """
     c = Canvas(path, pagesize=A4)
     c.setTitle('%s — embroidery worksheet' % design_name)
+    _apply_theme(c, theme, logo_path)
 
     # ---------------------------------------------------- page 1: overview
     _header(c, design_name, 'Embroidery worksheet — client overview')
@@ -160,7 +197,7 @@ def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
 
     # colour palette
     y = min(y, y_top - img_h) - 24
-    _text(c, MARGIN, y, 'THREAD SEQUENCE', 9, bold=True)
+    _text(c, MARGIN, y, 'THREAD SEQUENCE', 9, bold=True, color=c._accent)
     y -= 6
     c.setStrokeColor(LINE)
     c.line(MARGIN, y, PAGE_W - MARGIN, y)
@@ -182,7 +219,7 @@ def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
     if quote_params:
         q = quote(stitches, **quote_params)
         y -= 14
-        _text(c, MARGIN, y, 'QUOTE', 9, bold=True)
+        _text(c, MARGIN, y, 'QUOTE', 9, bold=True, color=c._accent)
         y -= 6
         c.setStrokeColor(LINE)
         c.line(MARGIN, y, PAGE_W - MARGIN, y)

@@ -206,3 +206,40 @@ def test_notes():
     assert client.put('/api/notes/todo', json={'text': 'hoop the caps'}).status_code == 200
     assert client.get('/api/notes/todo').json()['text'] == 'hoop the caps'
     assert client.get('/api/notes/nope').status_code == 404
+
+
+def test_wthemes_and_themed_worksheet(image_job):
+    job, _ = image_job
+    r = client.post('/api/wthemes', data={
+        'name': 'Letterhead', 'wid': 0,
+        'config': '{"accent": "#A8201A", "font": "Times", "footer": "Studio X"}'},
+        files={'logo': ('l.png', _test_png(), 'image/png')})
+    assert r.status_code == 200
+    wid = r.json()['id']
+    themes = client.get('/api/wthemes').json()
+    assert any(t['id'] == wid and t['has_logo'] and t['config']['font'] == 'Times'
+               for t in themes)
+    assert client.get('/api/wthemes/%d/logo' % wid).status_code == 200
+    r = client.get('/api/worksheet/%s.pdf?wtheme=%d' % (job, wid))
+    assert r.status_code == 200 and r.content[:4] == b'%PDF'
+    assert client.delete('/api/wthemes/%d' % wid).status_code == 200
+
+
+def test_lettering_append():
+    r = client.post('/api/analyze',
+                    files={'image': ('t.png', _test_png(), 'image/png')},
+                    data={'colors': 2})
+    job = r.json()['job']
+    r = client.post('/api/digitize', data={
+        'job': job, 'colors': 2, 'width_mm': 50, 'autotune': False,
+        'heavy_underlay': False, 'density': 0.4})
+    base = r.json()['report']
+    r = client.post('/api/lettering', data={
+        'text': 'Hi', 'font': 'geneva_simple', 'height_mm': 12,
+        'color': '#188652', 'job': job, 'placement': 'below'})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d['job'] == job
+    assert d['report']['stitches'] > base['stitches']
+    assert d['report']['colour_changes'] == base['colour_changes'] + 1
+    assert d['report']['height_mm'] > base['height_mm']

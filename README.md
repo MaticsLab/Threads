@@ -146,10 +146,21 @@ Notes for the Containers runtime:
   preview, stitch plan and worksheet (`POST /api/recolor/{job}`). Save
   colourways as named **themes** and apply them to any design
   (`/api/themes`).
-- **Canvas workspace** — the whole right side is the canvas: a floating
-  toolbox at the bottom switches views and opens Details / Export / Design
-  as draggable popouts. Trackpad-native navigation: two-finger scroll pans,
-  pinch or ⌘-scroll zooms at the cursor, double-click refits.
+- **Canvas workspace** — the whole right side is the canvas: a single-row
+  floating toolbox at the bottom switches views and opens Text / Design /
+  Details / Export as draggable popouts. One **Create** tab takes any file —
+  PNG/JPG artwork, SVG, or a machine file — and shows only the settings that
+  apply. Trackpad-native navigation: two-finger scroll pans, pinch or
+  ⌘-scroll zooms at the cursor, double-click refits.
+- **Text tool** — lettering is a canvas add-on: type text and place it
+  below/above/beside/centered on the current design (appended as a new
+  colour block, `POST /api/lettering` with `job` + `placement`), or start a
+  standalone lettering design.
+- **Worksheet appearance themes** — builder-style themes for the printed
+  worksheet: logo upload with show/hide, position and height, accent colour,
+  font family (Helvetica/Times/Courier) and a custom footer line. Edited in
+  Design › Worksheet, stored server-side (`/api/wthemes`), picked per-export
+  in the Export popout, previewed inline.
 - **Business tools (embTools)** — client & vendor database, notes / quote
   log / to-do panes, quote sheet on the worksheet, run-time calculator and
   the full unit-conversion set (mm⇄in, cm⇄in, px⇄mm, pt⇄in).
@@ -222,6 +233,7 @@ DELETE /api/palettes/{name}      remove a custom brand
 GET  /api/match/{job}?palette=   re-match a job's colours to another brand
 POST /api/recolor/{job}          persist new thread colours everywhere
 GET/POST/DELETE /api/themes[/{id}]   saved colourways (design themes)
+GET/POST/DELETE /api/wthemes[/{id}]  worksheet appearance themes (+ /{id}/logo)
 GET  /api/download/{job}?fmt=    dst pes jef exp vp3 xxx u01 pec tbf csv json txt gcode png
                                  or zip (all formats + threadlist + worksheet + plan)
 GET  /api/plan/{job}.svg         stitch plan SVG (?realistic=true for the lit preview)
