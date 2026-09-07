@@ -8,3 +8,4 @@ shapely>=2.0
 scikit-image>=0.22
 svgelements>=1.9
 reportlab>=4.0
+anthropic>=1.4

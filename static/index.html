@@ -454,6 +454,10 @@
       </div>
       <button class="ghost mini" id="vlDelete" style="margin-top:10px">Delete layer</button>
     </div>
+    <div class="dprow" style="margin-top:10px">
+      <button class="ghost mini" id="vecNames">✨ AI names</button>
+      <span class="muted" id="vecNameStatus"></span>
+    </div>
     <p class="muted" id="vecHint" style="margin:10px 0 0">Layers sew top to bottom. Click a
       shape on the canvas or a row to select; nothing is stitched until you stitch.</p>
     <button class="mini wide" id="vecStitch">Stitch layers →</button>
@@ -1753,6 +1757,7 @@ $('penStitch').onclick = async () => {
 
 /* ================= AI layers: vector-first editing ================= */
 let vecLayers = [], vecSel = null, vecViewInit = false, vecPathCache = null;
+let vecImageJob = null, vecAI = false;
 
 $('goLayers').onclick = async () => {
   if (!window._f || window._fKind !== 'image') return;
@@ -1766,9 +1771,13 @@ $('goLayers').onclick = async () => {
     if (!res.ok) throw new Error((await res.json()).detail);
     const d = await res.json();
     vecLayers = d.layers; vecSel = null; vecViewInit = false; vecPathCache = null;
+    vecImageJob = d.image_job; vecAI = d.ai_names_available;
+    $('vecNames').classList.toggle('hide', !vecAI);
+    $('vecNameStatus').textContent = '';
     $('layersPanel').classList.remove('hide');
     renderVecList();
     setMode('vector');
+    if (vecAI) nameLayersAI();          // semantic names arrive in the background
   } catch (err) { alert(err.message); }
   b.disabled = false; b.textContent = '✨ AI layers — edit before stitching';
 };
@@ -1895,6 +1904,32 @@ $('vlDelete').onclick = () => {
   vecSel = null; vecPathCache = null;
   renderVecList(); drawFrame();
 };
+/* semantic layer names from the vision model */
+async function nameLayersAI() {
+  if (!vecLayers.length || !vecImageJob) return;
+  const b = $('vecNames');
+  b.disabled = true;
+  $('vecNameStatus').textContent = 'naming layers…';
+  try {
+    const res = await fetch('/api/name_layers', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_job: vecImageJob, layers: vecLayers }) });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail);
+    let applied = 0;
+    vecLayers.forEach(L => {
+      const n = d.names[String(L.id)];
+      if (n) { L.name = n; applied++; }
+    });
+    $('vecNameStatus').textContent = applied ? `named ${applied} layers` : 'no names returned';
+    renderVecList();
+  } catch (err) {
+    $('vecNameStatus').textContent = err.message;
+  }
+  b.disabled = false;
+}
+$('vecNames').onclick = nameLayersAI;
+
 $('vecStitch').onclick = async () => {
   if (!vecLayers.length) return;
   const b = $('vecStitch'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Stitching…';

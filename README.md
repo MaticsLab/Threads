@@ -161,6 +161,14 @@ Notes for the Containers runtime:
   a set width, or running stitch; undo/finish/clear, then Stitch It builds
   the pattern (`POST /api/pen`). iPad-ready: Apple Pencil draws, one finger
   pans, two fingers pinch-zoom.
+- **AI layer naming** — with an Anthropic API key configured, a vision model
+  (Claude) looks at the artwork next to a numbered map of the extracted
+  layers and names each one by what it depicts ("Heads", "Arms ring",
+  "Letter S") — automatically after extraction, or on demand with ✨ AI
+  names. Set `ANTHROPIC_API_KEY` in the server environment (Railway:
+  service → Variables; Cloudflare: `npx wrangler secret put
+  ANTHROPIC_API_KEY` — the worker passes it into the container). Without a
+  key the heuristic names stay and the button hides.
 - **AI layers** — the app looks at the artwork and builds editable vector
   layers the way a digitizer would: every connected region is one object
   (linked arms stay a single shape), similar round shapes are grouped, each
@@ -244,6 +252,7 @@ POST /api/lettering              text + font -> stitched lettering
 POST /api/import                 SVG (digitized) or any machine embroidery file
 POST /api/pen                    manual digitizing (traced shapes -> stitches)
 POST /api/vectorize              image -> editable vector layers (no stitches yet)
+POST /api/name_layers            vision-model names for the extracted layers
 POST /api/stitch_layers          sew the arranged layers into a design
 GET  /api/fonts                  bundled fonts (+ /api/fonts/{id}/preview.png)
 GET  /api/palettes               thread palettes [{name, custom}]
