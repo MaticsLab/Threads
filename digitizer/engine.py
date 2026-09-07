@@ -67,7 +67,17 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
             travel = unary_union(core.mask_to_polys(comp, scale))
             if travel.is_empty:
                 continue
-            columns = core.build_columns(comp, scale, max_half_px)
+            # Uniform satin per object: only a component that is a narrow
+            # stroke everywhere gets skeleton satin columns (satin flows along
+            # the stroke). A wide or mixed shape is sewn as one piece with a
+            # single stitch direction instead of a patchwork of columns and
+            # differently-angled fills.
+            dt_comp = cv2.distanceTransform(comp // 255, cv2.DIST_L2, 5)
+            comp_width_mm = 2 * float(dt_comp.max()) * scale
+            if comp_width_mm <= p.max_satin * 0.95:
+                columns = core.build_columns(comp, scale, max_half_px)
+            else:
+                columns = []
 
             covered = np.zeros_like(comp)
             th_px = max(3, int(round(0.42 / scale)))

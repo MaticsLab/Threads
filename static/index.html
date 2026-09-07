@@ -179,6 +179,10 @@
   .theme-name{display:flex;align-items:center;font-size:13px;font-weight:600}
   .blockrow{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;
     cursor:pointer;border:1px solid transparent;font-size:13px}
+  .blockrow .rowbtn{padding:2px 6px;font-size:11px;border-radius:6px;background:#fff;
+    color:var(--muted);border:1px solid var(--line2);box-shadow:none}
+  .blockrow .rowbtn:hover{color:var(--ink);border-color:#c8ccd6}
+  .blockrow.off{opacity:.45}
   .blockrow:hover{background:#f5f6f9}
   .blockrow.sel{border-color:var(--accent);background:var(--accent-soft)}
   .swgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:8px}
@@ -258,7 +262,7 @@
                 <option value="circular">Circular</option>
               </select>
             </div>
-            <div><label>Fill angle (°)</label><input type="number" id="fillAngle" value="65" step="5" min="0" max="180"></div>
+            <div><label>Fill angle <span class="muted">(65 = auto)</span></label><input type="number" id="fillAngle" value="65" step="5" min="0" max="180"></div>
           </div>
 
           <label><input type="checkbox" id="underlay" checked> Heavy underlay</label>
@@ -280,6 +284,7 @@
         </div>
 
         <button id="go" class="wide" disabled>Digitize</button>
+        <button id="goLayers" class="wide ghost hide" style="margin-top:8px">✨ AI layers — edit before stitching</button>
       </div>
 
       <!-- ============================== business (embTools) -->
@@ -403,10 +408,11 @@
         <option value="3d">3D</option>
         <option value="density">Density</option>
         <option value="player">▶ Player</option>
+        <option value="digitize">✏️ Digitize</option>
+        <option value="vector">Layers view</option>
       </select>
-      <label class="tgl" title="Recolour previews with the matched brand threads">
-        <input type="checkbox" id="trueColors"> true colours</label>
       <span class="tsep"></span>
+      <button class="ghost mini" id="penBtn">✏️ Pen</button>
       <button class="ghost mini" id="textBtn">T Text</button>
       <button class="ghost mini" id="designBtn" disabled>🎨 Design</button>
       <button class="ghost mini" id="detailsBtn" disabled>Details</button>
@@ -415,6 +421,94 @@
     <span class="stagehint" id="viewerHint"></span>
   </section>
 </main>
+
+<div id="layersPanel" class="dpanel hide" style="right:auto;left:440px">
+  <div class="dhead" id="layersDrag" title="Drag to move · double-click to reset">
+    <span class="dots">⠿</span>
+    <span class="dcrumb">Layers</span>
+    <button class="ghost mini" id="layersClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+    <div id="vecList"></div>
+    <div id="vecParams" class="hide" style="border-top:1px solid var(--line);margin-top:10px;padding-top:6px">
+      <label style="margin-top:4px">Layer name</label>
+      <input type="text" id="vlName">
+      <div class="row">
+        <div><label>Stitch</label>
+          <select id="vlStitch">
+            <option value="auto" selected>Auto (satin/fill + border)</option>
+            <option value="fill">Fill only</option>
+            <option value="outline">Satin outline</option>
+            <option value="run">Running outline</option>
+          </select></div>
+        <div><label>Thread</label>
+          <input type="color" id="vlColor" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
+      </div>
+      <div class="row3">
+        <div><label>Fill</label>
+          <select id="vlMethod"><option selected>tatami</option><option>contour</option><option>circular</option></select></div>
+        <div><label>Angle <span class="muted">auto/°</span></label>
+          <input type="text" id="vlAngle" value="auto"></div>
+        <div><label>Density</label>
+          <input type="number" id="vlDensity" value="0.4" step="0.05" min="0.25" max="3"></div>
+      </div>
+      <button class="ghost mini" id="vlDelete" style="margin-top:10px">Delete layer</button>
+    </div>
+    <p class="muted" id="vecHint" style="margin:10px 0 0">Layers sew top to bottom. Click a
+      shape on the canvas or a row to select; nothing is stitched until you stitch.</p>
+    <button class="mini wide" id="vecStitch">Stitch layers →</button>
+  </div>
+</div>
+
+<div id="penPanel" class="dpanel hide" style="right:auto;left:440px">
+  <div class="dhead" id="penDrag" title="Drag to move · double-click to reset">
+    <span class="dots">⠿</span>
+    <span class="dcrumb">Pen digitizer</span>
+    <button class="ghost mini" id="penClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+    <div class="row">
+      <div><label style="margin-top:0">Stitch</label>
+        <select id="penMode">
+          <option value="pairs" selected>Satin — rail pairs</option>
+          <option value="center">Satin — centreline</option>
+          <option value="run">Running stitch</option>
+        </select>
+      </div>
+      <div><label style="margin-top:0">Thread</label>
+        <input type="color" id="penColor" value="#1a3b69" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
+    </div>
+    <div class="row">
+      <div><label>Width (mm) <span class="muted">centreline</span></label>
+        <input type="number" id="penWidth" value="3" step="0.5" min="0.6" max="12"></div>
+      <div><label>Density (mm)</label>
+        <input type="number" id="penSpacing" value="0.4" step="0.05" min="0.25" max="3"></div>
+    </div>
+
+    <div class="dprow" style="margin:14px 0 4px"><b>Trace image</b></div>
+    <div class="dprow">
+      <button class="ghost mini" id="penImgBtn">Load image…</button>
+      <input type="file" id="penImgFile" class="hide" accept="image/*">
+      <span class="muted" id="penImgName"></span>
+    </div>
+    <div class="row">
+      <div><label>Opacity <span class="muted" id="penOpVal">35%</span></label>
+        <input type="range" id="penOpacity" min="5" max="100" value="35" style="padding:0;height:34px"></div>
+      <div><label>Image width (mm)</label>
+        <input type="number" id="penImgW" value="90" step="5" min="10"></div>
+    </div>
+
+    <div class="dprow" style="margin-top:14px">
+      <button class="ghost mini" id="penUndo">⌫ Undo</button>
+      <button class="ghost mini" id="penFinishBtn">Finish shape</button>
+      <button class="ghost mini" id="penClear">Clear</button>
+    </div>
+    <p class="muted" id="penHint" style="margin:8px 0 0">Click on the canvas to add points.
+      Rail pairs alternate left/right — the satin appears from the 4th point.
+      Double-click or Finish ends a shape; ⌫ removes the last point.</p>
+    <button class="mini wide" id="penStitch">Stitch it →</button>
+  </div>
+</div>
 
 <div id="textPanel" class="dpanel hide" style="right:auto;left:460px">
   <div class="dhead" id="textDrag" title="Drag to move · double-click to reset">
@@ -829,6 +923,7 @@ async function pick(f) {
   $('importName').textContent = kind === 'image' ? '' : f.name;
   $('go').textContent = kind === 'image' ? 'Digitize'
     : kind === 'svg' ? 'Import & stitch' : 'Import';
+  $('goLayers').classList.toggle('hide', kind !== 'image');
   $('layersCard').classList.toggle('hide', kind !== 'image');
 
   if (kind === 'image' || kind === 'svg') {
@@ -1025,17 +1120,12 @@ let cnv = null, cctx = null, view = { s: 1, ox: 0, oy: 0 }, bounds = null;
 const LIGHT_ANG = -Math.PI * 0.75;      // light from the top-left
 
 $('viewSel').onchange = () => setMode($('viewSel').value);
-$('trueColors').onchange = () => {
-  spriteCache.clear();
-  drawFrame();
-  if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
-};
 
 let pending = {}, selBlock = null;      // Design panel edits, per colour block
 function blockColor(bi) {
   if (pending[bi]) return pending[bi].hex;
-  if ($('trueColors').checked && lastThreads[bi] && lastThreads[bi].thread_hex)
-    return lastThreads[bi].thread_hex;
+  // always show the matched brand thread — how it will actually be sewn
+  if (lastThreads[bi] && lastThreads[bi].thread_hex) return lastThreads[bi].thread_hex;
   return playerData ? playerData[bi].color : '#000000';
 }
 
@@ -1046,6 +1136,8 @@ function setMode(mode) {
   $('viewerHint').textContent =
     mode === '3d' ? 'drag to orbit' :
     mode === 'plan' ? 'scroll pans · pinch zooms' :
+    mode === 'digitize' ? 'click adds a point · double-click finishes · ⌫ undoes' :
+    mode === 'vector' ? 'click a shape to select its layer' :
     (mode === 'photo' || mode === 'density') ? '' :
     'click a thread to recolour';
   stopPlayer();
@@ -1057,6 +1149,20 @@ function setMode(mode) {
     return;
   }
   $('preview').classList.add('hide');
+  if (mode === 'digitize') {
+    $('stageEmpty').classList.add('hide');
+    ensureCanvas();
+    penEnsureView();
+    drawFrame();
+    return;
+  }
+  if (mode === 'vector') {
+    $('stageEmpty').classList.add('hide');
+    ensureCanvas();
+    vecEnsureView();
+    drawFrame();
+    return;
+  }
   if (mode === 'plan') { loadPlanSvg(); return; }
   if (mode === '3d') { init3d(); return; }
   initStitchView(mode);                 // realistic | player
@@ -1193,18 +1299,33 @@ function threadSprite(color, bin) {
 }
 
 function drawFrame() {
-  if (!cctx || !playerData) return;
+  if (!cctx) return;
+  const isPen = curMode === 'digitize';
+  const isVec = curMode === 'vector';
+  if (!isPen && !isVec && !playerData) return;
   const dpr = cnv._dpr;
   cctx.setTransform(1, 0, 0, 1, 0, 0);
   cctx.clearRect(0, 0, cnv.width, cnv.height);
+  cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
+
+  if (isPen && penImg) {
+    const w = penImgWpx(), h = w * penImg.height / penImg.width;
+    cctx.globalAlpha = (parseInt($('penOpacity').value) || 35) / 100;
+    cctx.drawImage(penImg, 0, 0, w, h);
+    cctx.globalAlpha = 1;
+  }
+
+  if (isVec) { drawVectorLayers(); return; }
+  const data = isPen ? penBlocks() : playerData;
+  const colorAt = isPen ? (bi => data[bi].color) : blockColor;
   const W = 1.8;                                    // thread width, CSS px (~0.48mm)
-  const sprites = curMode === 'realistic' && view.s >= 1.15;
+  const sprites = (curMode === 'realistic' || isPen) && view.s >= 1.15;
 
   if (sprites) {
     const a = view.s * dpr;
-    for (let bi = 0; bi < playerData.length; bi++) {
-      const col = blockColor(bi);
-      for (const r of playerData[bi].runs) {
+    for (let bi = 0; bi < data.length; bi++) {
+      const col = colorAt(bi);
+      for (const r of data[bi].runs) {
         for (let k = 1; k < r.length; k++) {
           const px = r[k - 1][0], py = r[k - 1][1];
           const dx = r[k][0] - px, dy = r[k][1] - py;
@@ -1220,13 +1341,12 @@ function drawFrame() {
         }
       }
     }
-    cctx.setTransform(1, 0, 0, 1, 0, 0);
-  } else {
     cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
+  } else {
     cctx.lineCap = 'round'; cctx.lineJoin = 'round';
     let left = curMode === 'player' ? playN : Infinity;
-    for (let bi = 0; bi < playerData.length; bi++) {
-      const b = playerData[bi], col = blockColor(bi);
+    for (let bi = 0; bi < data.length; bi++) {
+      const b = data[bi], col = colorAt(bi);
       const paths = new Path2D();
       let any = false;
       for (const r of b.runs) {
@@ -1238,7 +1358,7 @@ function drawFrame() {
         for (let i = 1; i < take; i++) paths.lineTo(r[i][0], r[i][1]);
       }
       if (!any) { if (curMode === 'player' && left <= 0) break; continue; }
-      if (curMode === 'realistic') {
+      if (curMode === 'realistic' || isPen) {
         cctx.strokeStyle = shade(col, 0.55); cctx.lineWidth = W;
         cctx.stroke(paths);
         cctx.save(); cctx.translate(-W * 0.10, -W * 0.16);
@@ -1252,6 +1372,8 @@ function drawFrame() {
       if (curMode === 'player' && left <= 0) break;
     }
   }
+
+  if (isPen) drawPenMarkers();
 
   if (curMode === 'player') {
     $('playInfo').textContent = `${Math.floor(playN).toLocaleString()} / ${playTotal.toLocaleString()} st`;
@@ -1268,7 +1390,10 @@ function zoomAt(mx, my, f) {
 }
 
 function bindPanZoom(el) {
-  let dragging = false, lx = 0, ly = 0, moved = 0;
+  let dragging = false, lx = 0, ly = 0, moved = 0, downType = 'mouse';
+  const ptrs = new Map();               // active pointers, for touch pinch
+  let pinch = null;
+
   /* MacBook-trackpad-native: two-finger scroll pans, pinch (ctrlKey) or
      cmd+scroll zooms at the cursor, drag pans, double-click refits */
   el.addEventListener('wheel', e => {
@@ -1284,30 +1409,85 @@ function bindPanZoom(el) {
     }
     requestAnimationFrame(drawFrame);
   }, { passive: false });
-  el.addEventListener('dblclick', () => { fitView(); drawFrame(); });
+  el.addEventListener('dblclick', () => {
+    if (curMode === 'digitize') { penFinish(); return; }
+    fitView(); drawFrame();
+  });
+
   el.addEventListener('pointerdown', e => {
-    dragging = true; moved = 0; lx = e.clientX; ly = e.clientY;
-    el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing';
+    e.preventDefault();
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (ptrs.size === 2) {
+      // two fingers on an iPad: pinch to zoom, drag to pan
+      const [a, b] = [...ptrs.values()];
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]),
+                mx: (a[0] + b[0]) / 2, my: (a[1] + b[1]) / 2 };
+      dragging = false;
+      return;
+    }
+    dragging = true; moved = 0; downType = e.pointerType;
+    lx = e.clientX; ly = e.clientY;
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    el.style.cursor = 'grabbing';
   });
   el.addEventListener('pointermove', e => {
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      const r = el.getBoundingClientRect();
+      if (pinch.d > 8) zoomAt(mx - r.left, my - r.top, d / pinch.d);
+      view.ox += mx - pinch.mx; view.oy += my - pinch.my;
+      pinch = { d, mx, my };
+      requestAnimationFrame(drawFrame);
+      return;
+    }
+    if (curMode === 'digitize' && !dragging) {
+      penCursor = worldPos(el, e);
+      requestAnimationFrame(drawFrame);
+    }
     if (!dragging) return;
     moved += Math.abs(e.clientX - lx) + Math.abs(e.clientY - ly);
+    if (curMode === 'digitize' && downType === 'pen') {
+      // Apple Pencil sketches points; it never pans (fingers do)
+      penCursor = worldPos(el, e);
+      requestAnimationFrame(drawFrame);
+      lx = e.clientX; ly = e.clientY;
+      return;
+    }
     view.ox += e.clientX - lx; view.oy += e.clientY - ly;
     lx = e.clientX; ly = e.clientY;
     requestAnimationFrame(drawFrame);
   });
-  el.addEventListener('pointerup', e => {
+  const up = e => {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    if (!dragging) return;
     dragging = false; el.style.cursor = 'grab';
-    if (moved < 5) canvasPick(el, e);          // a click, not a pan
-  });
+    const isPenTap = curMode === 'digitize' &&
+      (moved < 5 || (downType === 'pen' && moved < 24));
+    if (isPenTap) { penAdd(el, e); return; }
+    if (moved < 5) {
+      if (curMode === 'digitize') penAdd(el, e);
+      else if (curMode === 'vector') vecPick(el, e);
+      else canvasPick(el, e);
+    }
+  };
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinch = null; dragging = false; });
+}
+
+function worldPos(el, e) {
+  const r = el.getBoundingClientRect();
+  return [(e.clientX - r.left - view.ox) / view.s,
+          (e.clientY - r.top - view.oy) / view.s];
 }
 
 /* click a thread on the canvas -> select its colour block in the Design panel */
 function canvasPick(el, e) {
   if (!playerData) return;
-  const r = el.getBoundingClientRect();
-  const wx = (e.clientX - r.left - view.ox) / view.s;
-  const wy = (e.clientY - r.top - view.oy) / view.s;
+  const [wx, wy] = worldPos(el, e);
   const limit = Math.max(2.5, 8 / view.s);
   let best = null, bd = limit * limit;
   for (let bi = 0; bi < playerData.length; bi++) {
@@ -1362,6 +1542,373 @@ function stopPlayer() {
 window.addEventListener('resize', () => {
   if (cnv && playerData) { ensureCanvas(); fitView(); drawFrame(); }
 });
+
+/* ================= Pen digitizer: manual satin tracing ================= */
+const PXMM = 96 / 25.4;
+let penShapes = [], penCur = null, penCursor = null, penImg = null, penViewInit = false;
+
+function penImgWpx() { return (parseFloat($('penImgW').value) || 90) * PXMM; }
+
+$('penBtn').onclick = () => {
+  $('penPanel').classList.remove('hide');
+  if (!penImg && window._f && window._fKind === 'image') penLoadImage(window._f);
+  setMode('digitize');
+};
+$('penClose').onclick = () => $('penPanel').classList.add('hide');
+makeDraggable($('penPanel'), $('penDrag'));
+
+$('penImgBtn').onclick = () => $('penImgFile').click();
+$('penImgFile').onchange = e => { if (e.target.files[0]) penLoadImage(e.target.files[0]); };
+function penLoadImage(f) {
+  const img = new Image();
+  img.onload = () => {
+    penImg = img; penViewInit = false;
+    if (curMode === 'digitize') { penEnsureView(); drawFrame(); }
+  };
+  img.src = URL.createObjectURL(f);
+  $('penImgName').textContent = f.name || '';
+}
+$('penOpacity').oninput = () => {
+  $('penOpVal').textContent = $('penOpacity').value + '%';
+  if (curMode === 'digitize') drawFrame();
+};
+$('penImgW').onchange = () => {
+  penViewInit = false;
+  if (curMode === 'digitize') { penEnsureView(); drawFrame(); }
+};
+
+function penEnsureView() {
+  if (penViewInit && view.fit) return;
+  penViewInit = true;
+  const w = penImg ? penImgWpx() : 100 * PXMM;
+  const h = penImg ? w * penImg.height / penImg.width : 100 * PXMM;
+  view.s = Math.min(cnv._w / (w * 1.12), cnv._h / (h * 1.12));
+  view.fit = view.s;
+  view.ox = (cnv._w - w * view.s) / 2;
+  view.oy = (cnv._h - h * view.s) / 2;
+}
+
+/* stitch math — client twin of inkstitchlib/pen.py, in world px */
+function penResample(pts, step) {
+  if (pts.length < 2) return pts.slice();
+  const seg = [0];
+  for (let i = 1; i < pts.length; i++)
+    seg.push(seg[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = seg[seg.length - 1];
+  if (total < 1e-6) return [pts[0]];
+  const n = Math.max(1, Math.round(total / Math.max(step, 0.5)));
+  const out = [];
+  let j = 0;
+  for (let k = 0; k <= n; k++) {
+    const t = total * k / n;
+    while (j < pts.length - 2 && seg[j + 1] < t) j++;
+    const f = (t - seg[j]) / Math.max(seg[j + 1] - seg[j], 1e-9);
+    out.push([pts[j][0] + (pts[j + 1][0] - pts[j][0]) * f,
+              pts[j][1] + (pts[j + 1][1] - pts[j][1]) * f]);
+  }
+  return out;
+}
+function penPairZig(pts, spacing) {
+  if (pts.length < 4) return [];
+  const m = pts.slice(0, pts.length - (pts.length % 2));
+  const L = [], R = [];
+  for (let i = 0; i < m.length; i += 2) { L.push(m[i]); R.push(m[i + 1]); }
+  const out = [];
+  let side = 0;
+  for (let i = 0; i < L.length - 1; i++) {
+    const span = Math.max(
+      Math.hypot(L[i + 1][0] - L[i][0], L[i + 1][1] - L[i][1]),
+      Math.hypot(R[i + 1][0] - R[i][0], R[i + 1][1] - R[i][1]));
+    const n = Math.max(1, Math.round(span / Math.max(spacing, 0.4)));
+    const last = i === L.length - 2;
+    for (let k = 0; k < n + (last ? 1 : 0); k++) {
+      const t = k / n;
+      const a = [L[i][0] + (L[i + 1][0] - L[i][0]) * t, L[i][1] + (L[i + 1][1] - L[i][1]) * t];
+      const b = [R[i][0] + (R[i + 1][0] - R[i][0]) * t, R[i][1] + (R[i + 1][1] - R[i][1]) * t];
+      out.push(side === 0 ? a : b);
+      side ^= 1;
+    }
+  }
+  return out;
+}
+function penCenterZig(pts, width, spacing) {
+  const p = penResample(pts, Math.max(spacing, 0.4));
+  if (p.length < 2) return [];
+  const out = [];
+  let side = 1;
+  for (let i = 0; i < p.length; i++) {
+    const a = p[Math.max(0, i - 1)], b = p[Math.min(p.length - 1, i + 1)];
+    let dx = b[0] - a[0], dy = b[1] - a[1];
+    const n = Math.hypot(dx, dy) || 1;
+    out.push([p[i][0] - dy / n * width / 2 * side, p[i][1] + dx / n * width / 2 * side]);
+    side = -side;
+  }
+  return out;
+}
+function shapeRuns(sh, extraPt) {
+  const pts = extraPt ? [...sh.points, extraPt] : sh.points;
+  if (sh.mode === 'run') return [penResample(pts, sh.run_len_mm * PXMM)];
+  const zz = sh.mode === 'pairs'
+    ? penPairZig(pts, sh.spacing_mm * PXMM)
+    : penCenterZig(pts, sh.width_mm * PXMM, sh.spacing_mm * PXMM);
+  return [zz];
+}
+function penBlocks() {
+  const blocks = [];
+  const push = (color, runs) => {
+    runs = runs.filter(r => r.length > 1);
+    if (!runs.length) return;
+    const last = blocks[blocks.length - 1];
+    if (last && last.color === color) last.runs.push(...runs);
+    else blocks.push({ color, runs });
+  };
+  for (const sh of penShapes) push(sh.color, shapeRuns(sh));
+  if (penCur) push(penCur.color, shapeRuns(penCur, penCursor));
+  return blocks;
+}
+function drawPenMarkers() {
+  if (!penCur) return;
+  const r = 4 / view.s;
+  cctx.lineWidth = 1.5 / view.s;
+  penCur.points.forEach((p, i) => {
+    cctx.beginPath(); cctx.arc(p[0], p[1], r, 0, 7);
+    cctx.fillStyle = penCur.mode === 'pairs' ? (i % 2 ? '#f59e0b' : '#60a5fa') : '#60a5fa';
+    cctx.fill();
+    cctx.strokeStyle = '#fff'; cctx.stroke();
+  });
+  if (penCursor && penCur.points.length) {
+    const a = penCur.points[penCur.points.length - 1];
+    cctx.setLineDash([4 / view.s, 4 / view.s]);
+    cctx.beginPath(); cctx.moveTo(a[0], a[1]); cctx.lineTo(penCursor[0], penCursor[1]);
+    cctx.strokeStyle = '#93c5fd'; cctx.stroke();
+    cctx.setLineDash([]);
+  }
+}
+function penAdd(el, e) {
+  const p = worldPos(el, e);
+  if (!penCur) penCur = {
+    mode: $('penMode').value, color: $('penColor').value,
+    width_mm: parseFloat($('penWidth').value) || 3,
+    spacing_mm: parseFloat($('penSpacing').value) || 0.4,
+    run_len_mm: 2.5, points: [],
+  };
+  penCur.points.push(p);
+  penHintUpdate(); drawFrame();
+}
+function penFinish() {
+  if (!penCur) return;
+  const pts = penCur.points;
+  while (pts.length > 1 &&
+         Math.hypot(pts[pts.length - 1][0] - pts[pts.length - 2][0],
+                    pts[pts.length - 1][1] - pts[pts.length - 2][1]) < 2) pts.pop();
+  const need = penCur.mode === 'pairs' ? 4 : 2;
+  if (pts.length >= need) penShapes.push(penCur);
+  penCur = null; penCursor = null;
+  penHintUpdate(); drawFrame();
+}
+function penUndoStep() {
+  if (penCur && penCur.points.length) {
+    penCur.points.pop();
+    if (!penCur.points.length) penCur = null;
+  } else penShapes.pop();
+  penHintUpdate(); drawFrame();
+}
+$('penFinishBtn').onclick = penFinish;
+$('penUndo').onclick = penUndoStep;
+$('penClear').onclick = () => { penShapes = []; penCur = null; penHintUpdate(); drawFrame(); };
+function penHintUpdate() {
+  const n = penCur ? penCur.points.length : 0;
+  $('penHint').textContent = penCur
+    ? `${n} point${n === 1 ? '' : 's'} — ` +
+      (penCur.mode === 'pairs' ? (n % 2 ? 'next: right rail' : 'next: left rail')
+                               : 'keep tracing') + ' · double-click to finish'
+    : `${penShapes.length} shape${penShapes.length === 1 ? '' : 's'} ready — click the canvas to start the next, or Stitch it.`;
+}
+document.addEventListener('keydown', e => {
+  if (curMode !== 'digitize') return;
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.key === 'Backspace') { e.preventDefault(); penUndoStep(); }
+  else if (e.key === 'Enter') penFinish();
+  else if (e.key === 'Escape') { penCur = null; penCursor = null; drawFrame(); }
+});
+$('penStitch').onclick = async () => {
+  penFinish();
+  if (!penShapes.length) { alert('Trace at least one shape first.'); return; }
+  const b = $('penStitch'); b.disabled = true; b.textContent = 'Stitching…';
+  try {
+    const res = await fetch('/api/pen', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ palette: $('palette').value, shapes: penShapes.map(sh => ({
+        mode: sh.mode, color: sh.color, width_mm: sh.width_mm,
+        spacing_mm: sh.spacing_mm, run_len_mm: sh.run_len_mm,
+        points: sh.points.map(p => [+(p[0] / PXMM).toFixed(3), +(p[1] / PXMM).toFixed(3)]),
+      })) }) });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    penShapes = []; penCur = null;
+    $('penPanel').classList.add('hide');
+    show(await res.json());
+  } catch (err) { alert(err.message); }
+  b.disabled = false; b.textContent = 'Stitch it →';
+};
+
+/* ================= AI layers: vector-first editing ================= */
+let vecLayers = [], vecSel = null, vecViewInit = false, vecPathCache = null;
+
+$('goLayers').onclick = async () => {
+  if (!window._f || window._fKind !== 'image') return;
+  const b = $('goLayers'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Reading the artwork…';
+  const fd = new FormData();
+  fd.append('image', window._f);
+  fd.append('colors', $('colors').value);
+  fd.append('width_mm', $('width').value);
+  try {
+    const res = await fetch('/api/vectorize', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const d = await res.json();
+    vecLayers = d.layers; vecSel = null; vecViewInit = false; vecPathCache = null;
+    $('layersPanel').classList.remove('hide');
+    renderVecList();
+    setMode('vector');
+  } catch (err) { alert(err.message); }
+  b.disabled = false; b.textContent = '✨ AI layers — edit before stitching';
+};
+$('layersClose').onclick = () => $('layersPanel').classList.add('hide');
+makeDraggable($('layersPanel'), $('layersDrag'));
+
+function vecPaths() {
+  if (vecPathCache) return vecPathCache;
+  vecPathCache = vecLayers.map(L => {
+    const p = new Path2D();
+    for (const poly of L.polys) {
+      for (const ring of [poly.shell, ...(poly.holes || [])]) {
+        if (!ring || ring.length < 3) continue;
+        p.moveTo(ring[0][0] * PXMM, ring[0][1] * PXMM);
+        for (let i = 1; i < ring.length; i++) p.lineTo(ring[i][0] * PXMM, ring[i][1] * PXMM);
+        p.closePath();
+      }
+    }
+    return p;
+  });
+  return vecPathCache;
+}
+function vecEnsureView() {
+  if (vecViewInit && view.fit) return;
+  vecViewInit = true;
+  let mx = 1e18, my = 1e18, Mx = -1e18, My = -1e18;
+  vecLayers.forEach(L => L.polys.forEach(poly => poly.shell.forEach(p => {
+    const x = p[0] * PXMM, y = p[1] * PXMM;
+    if (x < mx) mx = x; if (x > Mx) Mx = x;
+    if (y < my) my = y; if (y > My) My = y;
+  })));
+  const w = Math.max(Mx - mx, 1), h = Math.max(My - my, 1);
+  view.s = Math.min(cnv._w / (w * 1.12), cnv._h / (h * 1.12));
+  view.fit = view.s;
+  view.ox = (cnv._w - w * view.s) / 2 - mx * view.s;
+  view.oy = (cnv._h - h * view.s) / 2 - my * view.s;
+}
+function drawVectorLayers() {
+  const paths = vecPaths();
+  vecLayers.forEach((L, i) => {
+    if (!L.visible) return;
+    cctx.globalAlpha = 0.92;
+    cctx.fillStyle = L.color;
+    cctx.fill(paths[i], 'evenodd');
+    cctx.globalAlpha = 1;
+  });
+  if (vecSel !== null && vecLayers[vecSel] && vecLayers[vecSel].visible) {
+    cctx.lineWidth = 2.2 / view.s;
+    cctx.strokeStyle = '#3b82f6';
+    cctx.stroke(paths[vecSel]);
+  }
+}
+function vecPick(el, e) {
+  const r = el.getBoundingClientRect(), dpr = cnv._dpr;
+  const dx = (e.clientX - r.left) * dpr, dy = (e.clientY - r.top) * dpr;
+  cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
+  const paths = vecPaths();
+  for (let i = vecLayers.length - 1; i >= 0; i--) {
+    if (!vecLayers[i].visible) continue;
+    if (cctx.isPointInPath(paths[i], dx, dy, 'evenodd')) {
+      vecSel = i;
+      $('layersPanel').classList.remove('hide');
+      renderVecList(); drawFrame();
+      return;
+    }
+  }
+  vecSel = null; renderVecList(); drawFrame();
+}
+function renderVecList() {
+  $('vecList').innerHTML = vecLayers.map((L, i) =>
+    `<div class="blockrow ${i === vecSel ? 'sel' : ''} ${L.visible ? '' : 'off'}" data-i="${i}">
+       <span class="sw" style="background:${L.color}"></span>
+       <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${L.name}</span>
+       <button class="rowbtn" data-eye="${i}" title="show/hide">${L.visible ? '👁' : '·'}</button>
+       <button class="rowbtn" data-up="${i}" title="sew earlier">↑</button>
+       <button class="rowbtn" data-dn="${i}" title="sew later">↓</button>
+     </div>`).join('');
+  document.querySelectorAll('#vecList .blockrow').forEach(el => el.onclick = e => {
+    if (e.target.closest('.rowbtn')) return;
+    vecSel = +el.dataset.i; renderVecList(); drawFrame();
+  });
+  document.querySelectorAll('#vecList [data-eye]').forEach(b => b.onclick = () => {
+    const L = vecLayers[+b.dataset.eye]; L.visible = !L.visible;
+    renderVecList(); drawFrame();
+  });
+  const move = (i, d) => {
+    const j = i + d;
+    if (j < 0 || j >= vecLayers.length) return;
+    [vecLayers[i], vecLayers[j]] = [vecLayers[j], vecLayers[i]];
+    if (vecSel === i) vecSel = j; else if (vecSel === j) vecSel = i;
+    vecPathCache = null;
+    renderVecList(); drawFrame();
+  };
+  document.querySelectorAll('#vecList [data-up]').forEach(b => b.onclick = () => move(+b.dataset.up, -1));
+  document.querySelectorAll('#vecList [data-dn]').forEach(b => b.onclick = () => move(+b.dataset.dn, 1));
+
+  const L = vecSel !== null ? vecLayers[vecSel] : null;
+  $('vecParams').classList.toggle('hide', !L);
+  if (L) {
+    $('vlName').value = L.name;
+    $('vlColor').value = L.color.toLowerCase();
+    $('vlStitch').value = L.params.stitch;
+    $('vlMethod').value = L.params.fill_method;
+    $('vlAngle').value = String(L.params.angle);
+    $('vlDensity').value = L.params.density;
+  }
+}
+function vlApply() {
+  if (vecSel === null) return;
+  const L = vecLayers[vecSel];
+  L.name = $('vlName').value || L.name;
+  L.color = $('vlColor').value.toUpperCase();
+  L.params.stitch = $('vlStitch').value;
+  L.params.fill_method = $('vlMethod').value;
+  const a = $('vlAngle').value.trim();
+  L.params.angle = (a === '' || a === 'auto') ? 'auto' : (parseFloat(a) || 'auto');
+  L.params.density = parseFloat($('vlDensity').value) || 0.4;
+  renderVecList(); drawFrame();
+}
+['vlName', 'vlColor', 'vlStitch', 'vlMethod', 'vlAngle', 'vlDensity'].forEach(id => $(id).onchange = vlApply);
+$('vlDelete').onclick = () => {
+  if (vecSel === null) return;
+  vecLayers.splice(vecSel, 1);
+  vecSel = null; vecPathCache = null;
+  renderVecList(); drawFrame();
+};
+$('vecStitch').onclick = async () => {
+  if (!vecLayers.length) return;
+  const b = $('vecStitch'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Stitching…';
+  try {
+    const res = await fetch('/api/stitch_layers', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ layers: vecLayers, palette: $('palette').value }) });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    $('layersPanel').classList.add('hide');
+    show(await res.json());
+  } catch (err) { alert(err.message); }
+  b.disabled = false; b.textContent = 'Stitch layers →';
+};
+
 
 /* --------------------------------- popouts: draggable floating panels */
 function makeDraggable(panel, handle) {
