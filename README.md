@@ -156,6 +156,23 @@ Notes for the Containers runtime:
   below/above/beside/centered on the current design (appended as a new
   colour block, `POST /api/lettering` with `job` + `placement`), or start a
   standalone lettering design.
+- **Pen digitizer** — trace over a dimmed reference image and watch the
+  satin form live: rail-pair satin (click L, R, L, R…), centreline satin at
+  a set width, or running stitch; undo/finish/clear, then Stitch It builds
+  the pattern (`POST /api/pen`). iPad-ready: Apple Pencil draws, one finger
+  pans, two fingers pinch-zoom.
+- **AI layers** — the app looks at the artwork and builds editable vector
+  layers the way a digitizer would: every connected region is one object
+  (linked arms stay a single shape), similar round shapes are grouped, each
+  large shape and letter gets its own layer. Reorder, hide, rename, recolour
+  and set per-layer stitch parameters (auto/fill/outline/run, fill method,
+  angle, density) — stitches (and therefore the DST) are only made when you
+  hit *Stitch layers* (`/api/vectorize` → `/api/stitch_layers`).
+- **Uniform satin per object** — the auto engine gives each connected object
+  one treatment: pure narrow strokes get flowing satin columns; anything
+  wider is sewn with a single stitch direction (its own principal axis) plus
+  the satin border — no more patchwork angles inside one shape. Fill angle
+  65 means auto; any other value overrides.
 - **Worksheet appearance themes** — builder-style themes for the printed
   worksheet: logo upload with show/hide, position and height, accent colour,
   font family (Helvetica/Times/Courier) and a custom footer line. Edited in
@@ -225,6 +242,9 @@ POST /api/analyze                image + colour count -> layers
 POST /api/digitize               digitize an analyzed upload (fill_method, fill_angle, ...)
 POST /api/lettering              text + font -> stitched lettering
 POST /api/import                 SVG (digitized) or any machine embroidery file
+POST /api/pen                    manual digitizing (traced shapes -> stitches)
+POST /api/vectorize              image -> editable vector layers (no stitches yet)
+POST /api/stitch_layers          sew the arranged layers into a design
 GET  /api/fonts                  bundled fonts (+ /api/fonts/{id}/preview.png)
 GET  /api/palettes               thread palettes [{name, custom}]
 GET  /api/palettes/{name}        a palette's colours

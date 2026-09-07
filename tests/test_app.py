@@ -243,3 +243,60 @@ def test_lettering_append():
     assert d['report']['stitches'] > base['stitches']
     assert d['report']['colour_changes'] == base['colour_changes'] + 1
     assert d['report']['height_mm'] > base['height_mm']
+
+
+def test_pen_digitize():
+    shapes = [
+        {'mode': 'pairs', 'color': '#A8201A', 'spacing_mm': 0.4,
+         'points': [[0, 0], [0, 6], [10, 0.5], [10, 6.5], [20, 0], [20, 6]]},
+        {'mode': 'center', 'color': '#1A3B69', 'width_mm': 3, 'spacing_mm': 0.4,
+         'points': [[0, 20], [15, 24], [30, 20]]},
+        {'mode': 'run', 'color': '#188652', 'points': [[0, 40], [30, 40]]},
+    ]
+    r = client.post('/api/pen', json={'shapes': shapes})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d['kind'] == 'pen'
+    assert d['pen_info']['blocks'] == 3
+    assert d['report']['stitches'] > 100
+    assert client.get('/api/download/%s?fmt=dst' % d['job']).status_code == 200
+    assert client.post('/api/pen', json={'shapes': []}).status_code == 400
+    assert client.post('/api/pen', json={'shapes': [
+        {'mode': 'pairs', 'points': [[0, 0], [1, 1]]}]}).status_code == 400
+
+
+def test_vectorize_and_stitch_layers():
+    import math
+    from PIL import Image as PImage, ImageDraw as PDraw
+    im = PImage.new('RGBA', (600, 600), (0, 0, 0, 0))
+    d = PDraw.Draw(im)
+    d.ellipse([80, 80, 520, 520], outline=(26, 59, 105, 255), width=60)
+    for k in range(6):
+        a = k * math.pi / 3
+        x, y = 300 + 270 * math.cos(a), 300 + 270 * math.sin(a)
+        d.ellipse([x - 28, y - 28, x + 28, y + 28], fill=(26, 59, 105, 255))
+    d.rectangle([250, 260, 350, 340], fill=(240, 180, 40, 255))
+    buf = io.BytesIO()
+    im.save(buf, 'PNG')
+
+    r = client.post('/api/vectorize',
+                    files={'image': ('ring.png', buf.getvalue(), 'image/png')},
+                    data={'colors': 2, 'width_mm': 80})
+    assert r.status_code == 200, r.text
+    lyrs = r.json()['layers']
+    names = [L['name'] for L in lyrs]
+    # the connected ring is one object; the round heads are grouped
+    assert any('round ×' in n for n in names)
+    assert any('shape 1' in n for n in names)
+    assert all(len(L['polys']) >= 1 for L in lyrs)
+
+    r = client.post('/api/stitch_layers', json={'layers': lyrs})
+    assert r.status_code == 200, r.text
+    d2 = r.json()
+    assert d2['kind'] == 'layers'
+    assert d2['report']['stitches'] > 500
+    assert client.get('/api/download/%s?fmt=pes' % d2['job']).status_code == 200
+    # hiding every layer is an error, not a crash
+    for L in lyrs:
+        L['visible'] = False
+    assert client.post('/api/stitch_layers', json={'layers': lyrs}).status_code == 400

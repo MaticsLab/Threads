@@ -29,7 +29,8 @@ import numpy as np
 import pystitch
 
 from digitizer import segment, engine, render, core
-from inkstitchlib import stitch_svg, threads, lettering, worksheet, svginput, business
+from inkstitchlib import stitch_svg, threads, lettering, worksheet, svginput, business, pen
+from inkstitchlib import layers as veclayers
 from inkstitchlib import density as density_map
 
 JOBS = os.path.join(tempfile.gettempdir(), 'stitchforge_jobs')
@@ -467,6 +468,83 @@ async def import_file(design: UploadFile = File(...),
     png = _store(job, pat, layers, rep, info, kind=kind)
     return _native({'job': job, 'kind': kind, 'report': rep, 'import_info': info,
                     'threads': threads.match_layers(layers, palette),
+                    'warnings': [], 'preview': _b64(png)})
+
+
+# ------------------------------------------- AI layers (vector-first design)
+@app.post('/api/vectorize')
+async def vectorize(image: UploadFile = File(...), colors: int = Form(4),
+                    width_mm: float = Form(90.0)):
+    """Look at the artwork and return editable vector layers — connected
+    regions as single objects, similar round shapes grouped, one layer per
+    large shape. No stitches are made until /api/stitch_layers."""
+    job = uuid.uuid4().hex[:12]
+    d = _job_dir(job, must_exist=False)
+    os.makedirs(d, exist_ok=True)
+    src = os.path.join(d, 'src' + os.path.splitext(image.filename or '.png')[1])
+    with open(src, 'wb') as f:
+        f.write(await image.read())
+    try:
+        lyrs, w, h = veclayers.vectorize(src, max(1, min(8, colors)),
+                                         max(10.0, min(400.0, width_mm)))
+    except veclayers.LayerError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f'vectorizing failed: {e}')
+    return _native({'layers': lyrs, 'width_mm': round(w, 1), 'height_mm': round(h, 1)})
+
+
+@app.post('/api/stitch_layers')
+async def stitch_layers(data: dict):
+    """Sew the arranged layers into a design (this is when stitches exist)."""
+    lyrs = data.get('layers') or []
+    if not isinstance(lyrs, list) or not lyrs:
+        raise HTTPException(400, 'no layers to stitch')
+    if len(lyrs) > 80:
+        raise HTTPException(400, 'too many layers (max 80)')
+    try:
+        pat, block_layers = veclayers.stitch(lyrs)
+    except veclayers.LayerError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f'stitching layers failed: {e}')
+
+    job = uuid.uuid4().hex[:12]
+    rep = basic_report(pat)
+    png = _store(job, pat, block_layers, rep, {'layers': len(lyrs)}, kind='layers')
+    return _native({'job': job, 'kind': 'layers', 'report': rep,
+                    'layer_info': {'layers': len(lyrs), 'blocks': len(block_layers)},
+                    'threads': threads.match_layers(block_layers,
+                                                    data.get('palette', 'Madeira Rayon')),
+                    'warnings': [], 'preview': _b64(png)})
+
+
+# --------------------------------------------------- pen (manual digitizing)
+@app.post('/api/pen')
+async def pen_digitize(data: dict):
+    """Build a design from shapes traced with the pen tool (points in mm)."""
+    shapes = data.get('shapes') or []
+    if not isinstance(shapes, list) or not shapes:
+        raise HTTPException(400, 'no shapes to stitch')
+    if len(shapes) > 200:
+        raise HTTPException(400, 'too many shapes (max 200)')
+    try:
+        pat, layers = pen.build(shapes)
+    except pen.PenError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f'pen digitizing failed: {e}')
+
+    job = uuid.uuid4().hex[:12]
+    rep = basic_report(pat)
+    png = _store(job, pat, layers, rep,
+                 {'shapes': len(shapes)}, kind='pen')
+    return _native({'job': job, 'kind': 'pen', 'report': rep,
+                    'pen_info': {'shapes': len(shapes), 'blocks': len(layers)},
+                    'threads': threads.match_layers(layers, data.get('palette', 'Madeira Rayon')),
                     'warnings': [], 'preview': _b64(png)})
 
 
