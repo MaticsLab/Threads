@@ -10,6 +10,8 @@ export class StitchForgeContainer extends Container {
   // jobs live in the container's memory/tmp; keep it warm for a working
   // session so preview/export/worksheet links stay valid between clicks
   sleepAfter = "1h";
+  // AI layer naming: set the secret with `npx wrangler secret put ANTHROPIC_API_KEY`
+  envVars = { ANTHROPIC_API_KEY: this.env.ANTHROPIC_API_KEY ?? "" };
 }
 
 export default {

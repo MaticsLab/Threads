@@ -31,6 +31,7 @@ import pystitch
 from digitizer import segment, engine, render, core
 from inkstitchlib import stitch_svg, threads, lettering, worksheet, svginput, business, pen
 from inkstitchlib import layers as veclayers
+from inkstitchlib import ai_naming
 from inkstitchlib import density as density_map
 
 JOBS = os.path.join(tempfile.gettempdir(), 'stitchforge_jobs')
@@ -492,7 +493,35 @@ async def vectorize(image: UploadFile = File(...), colors: int = Form(4),
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, f'vectorizing failed: {e}')
-    return _native({'layers': lyrs, 'width_mm': round(w, 1), 'height_mm': round(h, 1)})
+    return _native({'layers': lyrs, 'width_mm': round(w, 1), 'height_mm': round(h, 1),
+                    'image_job': job, 'ai_names_available': ai_naming.available()})
+
+
+@app.post('/api/name_layers')
+async def name_layers(data: dict):
+    """Ask the vision model to name the extracted layers semantically."""
+    if not ai_naming.available():
+        raise HTTPException(503, 'AI naming needs an Anthropic API key on the '
+                                 'server — set ANTHROPIC_API_KEY and restart')
+    image_job = str(data.get('image_job') or '')
+    lyrs = data.get('layers') or []
+    if not lyrs:
+        raise HTTPException(400, 'no layers to name')
+    d = _job_dir(image_job)
+    src = None
+    for fn in os.listdir(d):
+        if fn.startswith('src'):
+            src = os.path.join(d, fn)
+    if not src:
+        raise HTTPException(404, 'the vectorized image is no longer on the server — re-run AI layers')
+    try:
+        names = ai_naming.name_layers(src, lyrs)
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f'naming failed: {e}')
+    return {'names': {str(k): v for k, v in names.items()}}
 
 
 @app.post('/api/stitch_layers')

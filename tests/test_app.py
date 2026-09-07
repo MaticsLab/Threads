@@ -300,3 +300,71 @@ def test_vectorize_and_stitch_layers():
     for L in lyrs:
         L['visible'] = False
     assert client.post('/api/stitch_layers', json={'layers': lyrs}).status_code == 400
+
+
+def _ring_png():
+    im = Image.new('RGBA', (400, 400), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([100, 100, 340, 340], outline=(26, 59, 105, 255), width=45)
+    d.ellipse([10, 10, 70, 70], fill=(26, 59, 105, 255))
+    buf = io.BytesIO()
+    im.save(buf, 'PNG')
+    return buf.getvalue()
+
+
+def test_ai_naming_unavailable(monkeypatch):
+    from inkstitchlib import ai_naming
+    monkeypatch.setattr(ai_naming, 'available', lambda: False)
+    r = client.post('/api/vectorize',
+                    files={'image': ('r.png', _ring_png(), 'image/png')},
+                    data={'colors': 1, 'width_mm': 60})
+    assert r.status_code == 200
+    d = r.json()
+    assert d['ai_names_available'] is False
+    assert d['image_job']
+    r = client.post('/api/name_layers',
+                    json={'image_job': d['image_job'], 'layers': d['layers']})
+    assert r.status_code == 503
+    assert 'ANTHROPIC_API_KEY' in r.json()['detail']
+
+
+def test_ai_naming_with_mocked_model(monkeypatch):
+    from inkstitchlib import ai_naming
+
+    r = client.post('/api/vectorize',
+                    files={'image': ('r.png', _ring_png(), 'image/png')},
+                    data={'colors': 1, 'width_mm': 60})
+    d = r.json()
+    lyrs = d['layers']
+    ids = [L['id'] for L in lyrs]
+
+    class FakeBlock:
+        type = 'text'
+        text = 'Here you go: {"%d": "Ring", "%d": "Head"}' % (ids[0], ids[-1])
+
+    class FakeResponse:
+        stop_reason = 'end_turn'
+        content = [FakeBlock()]
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            # the request must carry both images and the layer listing
+            blocks = kwargs['messages'][0]['content']
+            assert sum(1 for b in blocks if b['type'] == 'image') == 2
+            assert 'JSON' in blocks[-1]['text']
+            return FakeResponse()
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            self.messages = FakeMessages()
+
+    import anthropic
+    monkeypatch.setattr(ai_naming, 'available', lambda: True)
+    monkeypatch.setattr(anthropic, 'Anthropic', FakeClient)
+
+    r = client.post('/api/name_layers',
+                    json={'image_job': d['image_job'], 'layers': lyrs})
+    assert r.status_code == 200, r.text
+    names = r.json()['names']
+    assert names[str(ids[0])] == 'Ring'
+    assert names[str(ids[-1])] == 'Head'
