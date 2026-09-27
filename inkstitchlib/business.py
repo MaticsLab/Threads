@@ -40,6 +40,19 @@ def _db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL DEFAULT '',
         colors TEXT NOT NULL DEFAULT '[]')''')
+    con.execute('''CREATE TABLE IF NOT EXISTS design (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER,
+        name TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'draft',
+        notes TEXT NOT NULL DEFAULT '',
+        kind TEXT NOT NULL DEFAULT '',
+        stitches INTEGER NOT NULL DEFAULT 0,
+        width_mm REAL NOT NULL DEFAULT 0,
+        height_mm REAL NOT NULL DEFAULT 0,
+        colors TEXT NOT NULL DEFAULT '[]',
+        created TEXT NOT NULL DEFAULT '',
+        updated TEXT NOT NULL DEFAULT '')''')
     con.execute('''CREATE TABLE IF NOT EXISTS wtheme (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL DEFAULT '',
@@ -79,7 +92,149 @@ def update_contact(kind, cid, data):
 def delete_contact(kind, cid):
     with _lock, _db() as con:
         cur = con.execute('DELETE FROM contact WHERE id=? AND kind=?', (cid, kind))
+        if kind == 'client' and cur.rowcount:
+            # a client's designs stay in the library, unassigned
+            con.execute('UPDATE design SET client_id=NULL WHERE client_id=?', (cid,))
         return cur.rowcount > 0
+
+
+def get_contact(kind, cid):
+    with _lock, _db() as con:
+        r = con.execute('SELECT * FROM contact WHERE id=? AND kind=?', (cid, kind)).fetchone()
+    return dict(r) if r else None
+
+
+def client_summaries():
+    """Clients with their design count and last design activity."""
+    with _lock, _db() as con:
+        rows = con.execute(
+            '''SELECT c.*, COUNT(d.id) AS design_count, MAX(d.updated) AS last_design
+               FROM contact c LEFT JOIN design d ON d.client_id = c.id
+               WHERE c.kind='client' GROUP BY c.id
+               ORDER BY c.name COLLATE NOCASE ASC''').fetchall()
+    return [dict(r) for r in rows]
+
+
+# ------------------------------------------- design library (per client)
+# Saved designs outlive the in-memory/tmp jobs: each one keeps its machine
+# file, metadata and preview under DATA_DIR/designs/<id>/ and is restored
+# into a working job when opened.
+DESIGN_STATUSES = ('draft', 'approved', 'in_production', 'done')
+DESIGN_FILES = ('design.dst', 'meta.json', 'preview.png')
+
+
+def design_dir(did):
+    return os.path.join(DATA_DIR, 'designs', str(int(did)))
+
+
+def _design_row(r):
+    import json
+    d = dict(r)
+    try:
+        d['colors'] = json.loads(d['colors'])
+    except Exception:
+        d['colors'] = []
+    return d
+
+
+def list_designs(client_id=None, unassigned=False):
+    q = 'SELECT * FROM design'
+    args = ()
+    if unassigned:
+        q += ' WHERE client_id IS NULL'
+    elif client_id is not None:
+        q += ' WHERE client_id=?'
+        args = (client_id,)
+    q += ' ORDER BY updated DESC, id DESC'
+    with _lock, _db() as con:
+        rows = con.execute(q, args).fetchall()
+    return [_design_row(r) for r in rows]
+
+
+def get_design(did):
+    with _lock, _db() as con:
+        r = con.execute('SELECT * FROM design WHERE id=?', (did,)).fetchone()
+    return _design_row(r) if r else None
+
+
+def _now():
+    import datetime
+    return datetime.datetime.now().isoformat(timespec='seconds')
+
+
+def _clean_client(con, client_id):
+    if client_id in (None, '', 0, '0'):
+        return None
+    cid = int(client_id)
+    r = con.execute("SELECT id FROM contact WHERE id=? AND kind='client'", (cid,)).fetchone()
+    if not r:
+        raise ValueError('unknown client')
+    return cid
+
+
+def save_design(src_dir, name, client_id=None, did=None, summary=None):
+    """Copy a job's files into the library (new design, or overwrite `did`)."""
+    import json
+    import shutil
+    summary = summary or {}
+    name = str(name or 'Untitled design').strip()[:120] or 'Untitled design'
+    now = _now()
+    vals = (name, summary.get('kind', ''), int(summary.get('stitches', 0)),
+            float(summary.get('width_mm', 0)), float(summary.get('height_mm', 0)),
+            json.dumps(summary.get('colors', [])[:64]))
+    with _lock, _db() as con:
+        cid = _clean_client(con, client_id)
+        if did:
+            cur = con.execute(
+                '''UPDATE design SET name=?, kind=?, stitches=?, width_mm=?, height_mm=?,
+                   colors=?, client_id=?, updated=? WHERE id=?''', vals + (cid, now, did))
+            if cur.rowcount == 0:
+                raise KeyError('unknown design')
+        else:
+            did = con.execute(
+                '''INSERT INTO design (name, kind, stitches, width_mm, height_mm, colors,
+                   client_id, created, updated) VALUES (?,?,?,?,?,?,?,?,?)''',
+                vals + (cid, now, now)).lastrowid
+    out = design_dir(did)
+    os.makedirs(out, exist_ok=True)
+    for fn in DESIGN_FILES:
+        p = os.path.join(src_dir, fn)
+        if os.path.exists(p):
+            shutil.copyfile(p, os.path.join(out, fn))
+    return did
+
+
+def update_design(did, data):
+    sets, args = [], []
+    with _lock, _db() as con:
+        if 'name' in data:
+            sets.append('name=?')
+            args.append(str(data['name'] or '').strip()[:120] or 'Untitled design')
+        if 'status' in data:
+            if data['status'] not in DESIGN_STATUSES:
+                raise ValueError('status must be one of %s' % ', '.join(DESIGN_STATUSES))
+            sets.append('status=?'); args.append(data['status'])
+        if 'notes' in data:
+            sets.append('notes=?'); args.append(str(data['notes'] or '')[:5000])
+        if 'client_id' in data:
+            sets.append('client_id=?'); args.append(_clean_client(con, data['client_id']))
+        if not sets:
+            return get_design_unlocked(con, did) is not None
+        sets.append('updated=?'); args.append(_now())
+        cur = con.execute('UPDATE design SET %s WHERE id=?' % ', '.join(sets), args + [did])
+        return cur.rowcount > 0
+
+
+def get_design_unlocked(con, did):
+    return con.execute('SELECT id FROM design WHERE id=?', (did,)).fetchone()
+
+
+def delete_design(did):
+    import shutil
+    with _lock, _db() as con:
+        cur = con.execute('DELETE FROM design WHERE id=?', (did,))
+    shutil.rmtree(design_dir(did), ignore_errors=True)
+    return cur.rowcount > 0
 
 
 # ------------------------------------------------ design themes (colourways)
