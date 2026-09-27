@@ -226,9 +226,7 @@
         <h2>1 · Create</h2>
         <div class="drop" id="drop">
           <div id="dropText">Click or drop a file<br>
-            <span class="muted">PNG/JPG artwork · SVG (digitized like Ink/Stitch;<br>
-            pick several to combine them, positions kept) ·<br>
-            any machine file (DST, PES, JEF, VP3, …)</span></div>
+            <span class="muted">PNG · JPG · SVG · DST · PES · JEF · VP3 …</span></div>
           <img id="thumb" class="hide">
         </div>
         <input type="file" id="file" class="hide" multiple
@@ -300,9 +298,6 @@
             </div>
             <div><label>Gap (mm)</label><input type="number" id="importGap" value="5" step="1" min="0"></div>
           </div>
-          <p class="muted" style="margin:6px 0 0">SVGs keep where they sit on their page, so layers
-            exported from the same artboard line up. <b>Keep SVG position</b> sews the new SVG at
-            the same scale and page position as the design's first SVG (width is ignored).</p>
         </div>
 
         <button id="go" class="wide" disabled>Digitize</button>
@@ -340,11 +335,9 @@
           <button id="bizSave">Add</button>
           <button id="bizDelete" class="ghost" disabled>Delete</button>
         </div>
-        <p class="muted" style="margin:8px 0 0">Click an entry to edit it; the selected
-          client's name is printed on the worksheet PDF.</p>
       </div>
 
-      <label style="margin-top:16px">Thread palette <span class="muted">(brand used for thread names &amp; true colours)</span></label>
+      <label style="margin-top:16px">Thread palette</label>
       <div class="palrow">
         <select id="palette"></select>
         <button class="mini ghost" id="palAdd" title="Add a thread brand">＋ Brand</button>
@@ -383,8 +376,6 @@
     <div class="card hide" id="layersCard">
       <h2>Colour layers</h2>
       <div id="layers"></div>
-      <p class="muted" style="margin:11px 0 0">Sewn lightest first so darker outline
-        colours cover the seams.</p>
     </div>
 
     <div class="card">
@@ -405,10 +396,7 @@
       <img id="preview" class="hide">
       <div id="stageEmpty">
         <div class="es-mark">🪡</div>
-        <b>The canvas shows your stitches here</b>
-        <p>Digitize artwork, stitch lettering, or import an SVG or machine file
-        from the panel on the left. Then explore it in 2D, realistic and 3D
-        views, recolour threads with the Design panel, and export.</p>
+        <b>No design yet</b>
       </div>
     </div>
 
@@ -480,8 +468,6 @@
       <button class="ghost mini" id="vecNames">✨ AI names</button>
       <span class="muted" id="vecNameStatus"></span>
     </div>
-    <p class="muted" id="vecHint" style="margin:10px 0 0">Layers sew top to bottom. Click a
-      shape on the canvas or a row to select; nothing is stitched until you stitch.</p>
     <button class="mini wide" id="vecStitch">Stitch layers →</button>
   </div>
 </div>
@@ -529,9 +515,7 @@
       <button class="ghost mini" id="penFinishBtn">Finish shape</button>
       <button class="ghost mini" id="penClear">Clear</button>
     </div>
-    <p class="muted" id="penHint" style="margin:8px 0 0">Click on the canvas to add points.
-      Rail pairs alternate left/right — the satin appears from the 4th point.
-      Double-click or Finish ends a shape; ⌫ removes the last point.</p>
+    <p class="muted" id="penHint" style="margin:8px 0 0"></p>
     <button class="mini wide" id="penStitch">Stitch it →</button>
   </div>
 </div>
@@ -543,7 +527,7 @@
     <button class="ghost mini" id="textClose" style="margin-left:auto">✕</button>
   </div>
   <div class="dbody">
-    <label style="margin-top:0">Font <span class="muted">(Ink/Stitch embroidery fonts)</span></label>
+    <label style="margin-top:0">Font</label>
     <select id="font"></select>
     <div class="fontprev"><img id="fontPrev" class="hide"><span id="fontMeta" class="muted"></span></div>
 
@@ -662,8 +646,6 @@
       <button class="mini" id="themeSave">Save</button>
     </div>
     <div id="themeList"></div>
-    <p class="muted" style="margin:10px 0 0">A theme saves the current thread colours as a
-      colourway you can apply to any design.</p>
     <button class="mini wide" id="dpToThreads">Edit thread colours →</button>
     <button class="mini wide ghost" id="dpToWsheet" style="margin-top:8px">Worksheet appearance →</button>
   </div>
@@ -732,7 +714,6 @@
       <select id="svClient"><option value="">— Unassigned —</option></select>
       <label>Design name</label>
       <input type="text" id="svName" placeholder="e.g. Front chest logo">
-      <p class="muted" id="svHint" style="margin:10px 0 0"></p>
       <div class="row" style="margin-top:16px">
         <button class="ghost" id="svAsNew">Save as new</button>
         <button id="svSave">Save</button>
@@ -806,7 +787,7 @@ async function bizLoad() {
   $('bizList').innerHTML = rows.map(r =>
     `<div class="chip" style="cursor:pointer" data-id="${r.id}">
        <span>${r.name}</span><span class="muted" style="margin-left:auto">${r.business_name || r.email || ''}</span>
-     </div>`).join('') || '<p class="muted">Empty — add the first entry below.</p>';
+     </div>`).join('') || '<p class="muted">No entries yet</p>';
   document.querySelectorAll('#bizList .chip').forEach(el => el.onclick = () => bizEdit(rows.find(r => r.id == el.dataset.id)));
   if ($('bizKind').value === 'client') {
     $('qClient').innerHTML = '<option value="">—</option>' +
@@ -1800,9 +1781,8 @@ function penHintUpdate() {
   const n = penCur ? penCur.points.length : 0;
   $('penHint').textContent = penCur
     ? `${n} point${n === 1 ? '' : 's'} — ` +
-      (penCur.mode === 'pairs' ? (n % 2 ? 'next: right rail' : 'next: left rail')
-                               : 'keep tracing') + ' · double-click to finish'
-    : `${penShapes.length} shape${penShapes.length === 1 ? '' : 's'} ready — click the canvas to start the next, or Stitch it.`;
+      (penCur.mode === 'pairs' ? (n % 2 ? 'right rail' : 'left rail') : 'tracing')
+    : penShapes.length ? `${penShapes.length} shape${penShapes.length === 1 ? '' : 's'}` : '';
 }
 document.addEventListener('keydown', e => {
   if (curMode !== 'digitize') return;
@@ -2109,7 +2089,7 @@ async function renderThemes() {
          <button class="ghost mini" data-del="${t.id}" style="margin-left:auto">✕</button>
        </div>
      </div>`).join('') ||
-    '<p class="muted">No themes yet — set thread colours, then “Save as theme”.</p>';
+'';
   document.querySelectorAll('#themeList .theme-card').forEach(el => {
     el.onclick = async e => {
       if (e.target.closest('[data-del]')) return;
@@ -2158,8 +2138,8 @@ function renderBlocks() {
   document.querySelectorAll('#dpBlocks .blockrow').forEach(el =>
     el.onclick = () => { selBlock = +el.dataset.bi; renderBlocks(); });
   $('dpSwatchHint').textContent = selBlock === null
-    ? 'Pick a block above (or click a thread on the canvas), then a swatch.'
-    : `Recolouring block ${selBlock + 1} — pick a swatch.`;
+    ? ''
+    : `Block ${selBlock + 1}`;
 }
 async function renderDpBrand() {
   const cur = $('dpBrand').value || $('palette').value;
@@ -2307,8 +2287,6 @@ $('saveTop').onclick = async () => {
   $('svName').value = libDesign ? libDesign.name : ($('qName').value !== 'design' ? $('qName').value : '');
   $('svSave').textContent = libDesign ? 'Save changes' : 'Save';
   $('svAsNew').classList.toggle('hide', !libDesign);
-  $('svHint').textContent = libDesign ? `Save changes overwrites “${libDesign.name}”; Save as new keeps both.`
-    : 'The design, its colours and preview are kept in the client’s library on the Clients page.';
   $('saveModal').classList.remove('hide');
   setTimeout(() => $('svName').focus(), 30);
 };

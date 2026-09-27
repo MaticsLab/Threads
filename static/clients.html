@@ -357,7 +357,7 @@ function renderList() {
       <div class="tx"><div class="nm">${esc(c.name)}</div>
         <div class="sub">${esc(c.business_name || c.email || (c.last_design ? 'Updated ' + ago(c.last_design) : 'No designs yet'))}</div></div>
       <span class="count">${c.design_count}</span></div>`).join('')
-    || `<p class="muted" style="padding:6px 10px">${clients.length ? 'No matches.' : 'No clients yet — add your first one.'}</p>`;
+    || `<p class="muted" style="padding:6px 10px">${clients.length ? 'No matches.' : 'No clients yet'}</p>`;
   document.querySelectorAll('[data-sel]').forEach(el => el.onclick = () => select(el.dataset.sel));
 }
 
@@ -404,8 +404,7 @@ function renderContent() {
   } else {
     hero = `<div class="hero"><div style="flex:1">
       <h1>${sel === 'none' ? 'Unassigned designs' : 'All designs'}</h1>
-      <div class="biz">${sel === 'none' ? 'Saved designs not linked to a client — open one to assign it.'
-        : 'Every design saved from the studio, newest first.'}</div></div>
+</div>
       <div class="acts"><button class="ghost" id="heroAddClient">Add client</button></div></div>`;
   }
   const n = s => list.filter(d => d.status === s).length;
@@ -432,7 +431,7 @@ function renderContent() {
     ? `<div class="grid">${cards}${filter === 'all' ? newCard : ''}</div>
        ${!shown.length && filter !== 'all' ? '<p class="muted" style="margin-top:4px">No designs with this status.</p>' : ''}`
     : `<div class="empty"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#b6bcc7" stroke-width="1.6"><path d="M4 16c3-8 5-8 8 0s5 8 8 0"/></svg>
-        <h3>No saved designs yet</h3><p>Create a design in the studio and use <b>Save to client</b> to keep it here.</p>
+        <h3>No saved designs yet</h3>
         <a class="btn" href="/studio" style="margin-top:8px">Open the studio</a></div>`;
   $('content').innerHTML = hero + stats +
     `<div class="bar"><h2>Designs</h2><div class="seg">${segs}</div></div>` + body;

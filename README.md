@@ -132,9 +132,16 @@ Notes for the Containers runtime:
   matched from real palettes (Madeira, Isacord, Gunold, Brother) and a
   quote sheet ported from embTools.
 - **SVG digitizing** — upload an SVG and it's digitized the way Ink/Stitch
-  digitizes Inkscape files: fills (even-odd, holes kept), running-stitch /
-  zigzag strokes, and real satin columns for paths carrying
+  digitizes Inkscape files: fills (nonzero / even-odd fill rules, holes
+  kept), running-stitch / zigzag strokes (strokes wider than the satin cap
+  become a fill band), and real satin columns for paths carrying
   `inkstitch:satin_column` attributes (angle, spacing, bean repeats honoured).
+  Exports from Illustrator, Canva, Figma and PDF converters work as drawn:
+  `<style>` classes, `<use>`/`<symbol>` glyph placement, nested transforms,
+  gradients (sewn as their average colour), clip-paths, `paint-order` and
+  opacity are honoured; text and embedded pictures are reported so you can
+  outline the text or upload the picture instead. Same-colour pieces are
+  sewn in one colour block whenever nothing in between would cover them.
   SVGs keep their page position: pick several SVGs exported from the same
   artboard and they're sewn into one design exactly where they were drawn,
   or add an SVG onto the current design later (Create › *Add to* › *keep

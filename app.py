@@ -504,6 +504,7 @@ async def import_file(design: List[UploadFile] = File(...),
     base_frame = (base_meta.get('settings') or {}).get('frame') if adding else None
 
     new_job = job if adding else uuid.uuid4().hex[:12]
+    svg_warnings = []
     info = {}
     frame = None
     if exts[0] == '.svg':
@@ -514,6 +515,7 @@ async def import_file(design: List[UploadFile] = File(...),
         layers = []
         info = {'elements': 0, 'satin_columns': 0, 'fills': 0, 'strokes': 0,
                 'files': []}
+        svg_warnings = []
         for f, name in zip(design, names):
             data = await f.read()
             try:
@@ -539,6 +541,8 @@ async def import_file(design: List[UploadFile] = File(...),
             for k in ('elements', 'satin_columns', 'fills', 'strokes'):
                 info[k] += inf[k]
             info['files'].append(name)
+            svg_warnings += [('%s: %s' % (name, w)) if len(names) > 1 else w
+                             for w in inf.get('warnings', [])]
             info.setdefault('natural_width_mm', inf['natural_width_mm'])
         if len(names) > 1:
             for i, L in enumerate(layers):
@@ -625,7 +629,7 @@ async def import_file(design: List[UploadFile] = File(...),
     png = _store(job, pat, layers, rep, settings_out, kind=kind)
     return _native({'job': job, 'kind': kind, 'report': rep, 'import_info': info,
                     'threads': threads.match_layers(layers, palette),
-                    'warnings': [], 'preview': _b64(png)})
+                    'warnings': svg_warnings, 'preview': _b64(png)})
 
 
 # ------------------------------------------- AI layers (vector-first design)
