@@ -17,6 +17,7 @@ import sys
 import tempfile
 import traceback
 import uuid
+from typing import List
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(APP_DIR, 'third_party'))
@@ -130,12 +131,98 @@ def _store(job, pat, layers, report, settings, kind='image'):
     png = render.preview(pat, [tuple(L['rgb']) for L in layers], os.path.join(d, 'preview.png'))
     with open(os.path.join(d, 'plan.svg'), 'w') as f:
         f.write(stitch_svg.render(pat, realistic=False))
+    # a design extended in place (text / SVG added) must not serve old renders
+    for stale in ('realistic.svg', 'density.png', 'design.zip'):
+        try:
+            os.remove(os.path.join(d, stale))
+        except FileNotFoundError:
+            pass
     meta = {'kind': kind, 'report': report, 'settings': settings,
             'layers': [{'name': L['name'], 'hex': L['hex'], 'rgb': list(L['rgb'])}
                        for L in layers]}
     with open(os.path.join(d, 'meta.json'), 'w') as f:
         json.dump(_native(meta), f)
     return png
+
+
+# ------------------------------------------- combining designs + page frame
+# A design's "frame" records where its page (the SVG artboard it came from)
+# sits in pattern coordinates, so SVGs exported from the same artboard can be
+# added later and land exactly where they were drawn:
+#   settings['frame'] = {'origin': [x, y] (0.1 mm, page top-left),
+#                        'scale': size multiplier, 'page': [w_mm, h_mm]}
+SEW_CMDS = (pystitch.STITCH, pystitch.JUMP, pystitch.TRIM)
+
+
+def _extent(pat):
+    pts = [(x, y) for x, y, c in pat.stitches
+           if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)]
+    if not pts:
+        return None
+    xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _recenter(pat, frame=None):
+    """Move the design's centre to the origin, carrying the frame along."""
+    ext = _extent(pat)
+    if ext is None:
+        return frame
+    cx = round((ext[0] + ext[2]) / 2.0)
+    cy = round((ext[1] + ext[3]) / 2.0)
+    pat.translate(-cx, -cy)
+    if frame:
+        frame = dict(frame)
+        frame['origin'] = [frame['origin'][0] - cx, frame['origin'][1] - cy]
+    return frame
+
+
+def _place_offset(base, add, placement, gap_mm):
+    """Offset that puts `add` below/above/left/right of/centred on `base`."""
+    b, a = _extent(base), _extent(add)
+    if b is None:
+        raise HTTPException(400, 'the current design has no stitches to add to')
+    if a is None:
+        raise HTTPException(400, 'nothing to add')
+    gap = gap_mm * 10.0
+    aw, ah = a[2] - a[0], a[3] - a[1]
+    acx, acy = (a[0] + a[2]) / 2, (a[1] + a[3]) / 2
+    cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    if placement == 'below':
+        cy = b[3] + gap + ah / 2
+    elif placement == 'above':
+        cy = b[1] - gap - ah / 2
+    elif placement == 'left':
+        cx = b[0] - gap - aw / 2
+    elif placement == 'right':
+        cx = b[2] + gap + aw / 2
+    elif placement != 'center':
+        raise HTTPException(400, 'placement must be new, keep, below, above, '
+                                 'left, right or center')
+    return cx - acx, cy - acy
+
+
+def _merge(base, add, dx=0.0, dy=0.0, first_block=False):
+    """Append every colour block of `add` to `base`, shifted by (dx, dy).
+    With first_block the base is empty and add's first thread starts it."""
+    base.stitches = [q for q in base.stitches if (q[2] & 0xFF) != pystitch.END]
+    for i, th in enumerate(add.threadlist):
+        base.add_thread(th)
+    if not first_block:
+        base.color_change()
+    for x, y, c in add.stitches:
+        k = c & 0xFF
+        if k in SEW_CMDS or k == pystitch.COLOR_CHANGE:
+            base.add_stitch_absolute(k, x + dx, y + dy)
+    base.end()
+    return base
+
+
+def _job_layers(meta):
+    layers = meta['layers']
+    for L in layers:
+        L['rgb'] = tuple(L['rgb'])
+    return layers
 
 
 def basic_report(pat):
@@ -333,43 +420,16 @@ async def letter(text: str = Form(...), font: str = Form(...),
         # add the letters onto the existing design as a new colour block
         base = _load_pattern(job)
         meta = _load_meta(job)
-        pts = [(x, y) for x, y, c in base.stitches
-               if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)]
-        if not pts:
-            raise HTTPException(400, 'the current design has no stitches to add to')
-        xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
-        lpts = [(x, y) for x, y, c in pat.stitches
-                if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)]
-        lw = max(p[0] for p in lpts) - min(p[0] for p in lpts)
-        lh = max(p[1] for p in lpts) - min(p[1] for p in lpts)
-        gap = gap_mm * 10.0
-        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
-        dx, dy = cx, cy
-        if placement == 'below':
-            dy = max(ys) + gap + lh / 2
-        elif placement == 'above':
-            dy = min(ys) - gap - lh / 2
-        elif placement == 'left':
-            dx = min(xs) - gap - lw / 2
-        elif placement == 'right':
-            dx = max(xs) + gap + lw / 2
-        elif placement != 'center':
-            raise HTTPException(400, 'placement must be new, below, above, left, right or center')
-
-        base.stitches = [q for q in base.stitches if (q[2] & 0xFF) != pystitch.END]
-        base.add_thread(th)
-        base.color_change()
-        for x, y, c in pat.stitches:
-            if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP, pystitch.TRIM):
-                base.add_stitch_absolute(c & 0xFF, x + dx, y + dy)
-        base.end()
-        base.move_center_to_origin()
+        dx, dy = _place_offset(base, pat, placement if placement != 'keep' else 'center', gap_mm)
+        _merge(base, pat, dx, dy)
+        settings = dict(meta.get('settings') or {})
+        frame = _recenter(base, settings.get('frame'))
+        if frame:
+            settings['frame'] = frame
         pat = base
-        layers = meta['layers'] + [letter_layer]
-        for L in layers:
-            L['rgb'] = tuple(L['rgb'])
+        layers = _job_layers(meta) + [letter_layer]
         rep = basic_report(pat)
-        png = _store(job, pat, layers, rep, meta.get('settings') or {}, kind=meta['kind'])
+        png = _store(job, pat, layers, rep, settings, kind=meta['kind'])
     else:
         job = uuid.uuid4().hex[:12]
         layers = [letter_layer]
@@ -405,38 +465,86 @@ FALLBACK_COLORS = [(26, 59, 105), (168, 32, 26), (240, 180, 40), (29, 122, 76),
 
 
 @app.post('/api/import')
-async def import_file(design: UploadFile = File(...),
+async def import_file(design: List[UploadFile] = File(...),
                       width_mm: float = Form(0.0),
                       fill_method: str = Form('tatami'),
                       fill_angle: float = Form(65.0),
                       density: float = Form(0.35),
-                      palette: str = Form('Madeira Rayon')):
-    """Ink/Stitch style input: read any embroidery file, or digitize an SVG."""
-    name = design.filename or 'design'
-    ext = os.path.splitext(name)[1].lower()
-    data = await design.read()
-    job = uuid.uuid4().hex[:12]
-    d = _job_dir(job, must_exist=False)
-    os.makedirs(d, exist_ok=True)
+                      palette: str = Form('Madeira Rayon'),
+                      job: str = Form(''),
+                      placement: str = Form('new'),
+                      gap_mm: float = Form(5.0)):
+    """Ink/Stitch style input: read any embroidery file, or digitize SVGs.
 
+    Several SVGs in one upload are sewn into one design, each where it sits
+    on its page (files exported from the same artboard stay registered).
+    With `job` and a placement other than 'new' the result is added onto
+    that design: 'keep' puts SVGs at their page position (the page lines up
+    with the design's own SVG page, or is centred on the design if it has
+    none), below/above/left/right/center place it next to the design."""
+    if not design:
+        raise HTTPException(400, 'no file uploaded')
+    if len(design) > 30:
+        raise HTTPException(400, 'too many files (max 30)')
+    names = [f.filename or 'design' for f in design]
+    exts = [os.path.splitext(n)[1].lower() for n in names]
+    if len(design) > 1 and any(e != '.svg' for e in exts):
+        raise HTTPException(400, 'several files can only be combined when they '
+                                 'are all SVGs — import machine files one at a time')
+    adding = bool(job) and placement != 'new'
+    base_meta = _load_meta(job) if adding else None
+    base_frame = (base_meta.get('settings') or {}).get('frame') if adding else None
+
+    new_job = job if adding else uuid.uuid4().hex[:12]
     info = {}
-    if ext == '.svg':
-        try:
-            pat, layers, info = svginput.digitize_svg(
-                data, width_mm=width_mm or None, fill_method=fill_method,
-                fill_angle=fill_angle, row_spacing=density)
-        except svginput.SvgError as e:
-            raise HTTPException(400, str(e))
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(500, f'SVG digitizing failed: {e}')
+    frame = None
+    if exts[0] == '.svg':
+        # one scale for every file: the design's own frame when adding with
+        # 'keep', else the first file's (width_mm applies to the first file)
+        scale = base_frame['scale'] if (adding and placement == 'keep' and base_frame) else None
+        pat = None
+        layers = []
+        info = {'elements': 0, 'satin_columns': 0, 'fills': 0, 'strokes': 0,
+                'files': []}
+        for f, name in zip(design, names):
+            data = await f.read()
+            try:
+                p, lyr, inf = svginput.digitize_svg(
+                    data, width_mm=(width_mm or None) if scale is None else None,
+                    scale=scale, fill_method=fill_method, fill_angle=fill_angle,
+                    row_spacing=density, center=False)
+            except svginput.SvgError as e:
+                raise HTTPException(400, '%s: %s' % (name, e))
+            except Exception as e:
+                traceback.print_exc()
+                raise HTTPException(500, f'SVG digitizing failed ({name}): {e}')
+            if scale is None:
+                scale = inf['scale']
+            if frame is None:
+                frame = {'origin': [0.0, 0.0], 'scale': scale,
+                         'page': [inf['page_w_mm'], inf['page_h_mm']]}
+            if pat is None:
+                pat = p
+            else:
+                _merge(pat, p)
+            layers += lyr
+            for k in ('elements', 'satin_columns', 'fills', 'strokes'):
+                info[k] += inf[k]
+            info['files'].append(name)
+            info.setdefault('natural_width_mm', inf['natural_width_mm'])
+        if len(names) > 1:
+            for i, L in enumerate(layers):
+                L['name'] = 'Colour %d' % (i + 1)
         kind = 'svg'
-    elif ext in IMPORT_EXTS:
-        src = os.path.join(d, 'import' + ext)
-        with open(src, 'wb') as f:
+    elif exts[0] in IMPORT_EXTS:
+        ext = exts[0]
+        data = await design[0].read()
+        tmp = os.path.join(_job_dir(new_job, must_exist=False), 'import' + ext)
+        os.makedirs(os.path.dirname(tmp), exist_ok=True)
+        with open(tmp, 'wb') as f:
             f.write(data)
         try:
-            pat = pystitch.read(src)
+            pat = pystitch.read(tmp)
             if pat is None or not pat.stitches:
                 raise ValueError('no stitches found in the file')
         except Exception as e:
@@ -460,13 +568,53 @@ async def import_file(design: UploadFile = File(...),
             th.description = L['name']
             pat.add_thread(th)
         kind = 'import'
-        info = {'source_format': ext.lstrip('.'), 'filename': name}
+        info = {'source_format': ext.lstrip('.'), 'filename': names[0]}
     else:
         raise HTTPException(400, 'unsupported file type %r — upload an SVG or a '
-                                 'machine embroidery file' % ext)
+                                 'machine embroidery file' % exts[0])
+
+    if adding:
+        base = _load_pattern(job)
+        if placement == 'keep':
+            if frame is None:
+                dx = dy = 0.0      # machine file: its own origin is its home
+            elif base_frame:
+                dx, dy = base_frame['origin']
+            else:
+                # the design has no page yet: centre this page on it, and
+                # adopt it so later SVGs from the same artboard register
+                b = _extent(base)
+                if b is None:
+                    raise HTTPException(400, 'the current design has no stitches to add to')
+                pw, ph = frame['page'][0] * 10.0, (frame['page'][1] or 0) * 10.0
+                a = _extent(pat)
+                if not ph:
+                    ph = (a[1] + a[3]) if a else 0.0
+                dx = (b[0] + b[2]) / 2 - pw / 2
+                dy = (b[1] + b[3]) / 2 - ph / 2
+                base_frame = dict(frame, origin=[dx, dy])
+        else:
+            dx, dy = _place_offset(base, pat, placement, gap_mm)
+            if base_frame is None and frame is not None:
+                base_frame = dict(frame, origin=[dx, dy])
+        _merge(base, pat, dx, dy)
+        settings = dict(base_meta.get('settings') or {})
+        base_frame = _recenter(base, base_frame)
+        if base_frame:
+            settings['frame'] = base_frame
+        pat = base
+        layers = _job_layers(base_meta) + layers
+        kind = base_meta['kind']
+        settings_out = settings
+    else:
+        job = new_job
+        frame = _recenter(pat, frame)
+        settings_out = dict(info)
+        if frame:
+            settings_out['frame'] = frame
 
     rep = basic_report(pat)
-    png = _store(job, pat, layers, rep, info, kind=kind)
+    png = _store(job, pat, layers, rep, settings_out, kind=kind)
     return _native({'job': job, 'kind': kind, 'report': rep, 'import_info': info,
                     'threads': threads.match_layers(layers, palette),
                     'warnings': [], 'preview': _b64(png)})
@@ -640,9 +788,10 @@ def _zip_export(job):
             z.write(plan, 'stitch_plan.svg')
         try:
             pdf = os.path.join(d, 'worksheet.pdf')
+            preview, saved_at = _sheet_preview(d, pat, layers)
             worksheet.build(pdf, pat, meta['report'], layers, thread_matches=matches,
-                            preview_png=os.path.join(d, 'preview.png'),
-                            design_name='design')
+                            preview_png=preview, design_name='design',
+                            saved_at=saved_at)
             z.write(pdf, 'worksheet.pdf')
         except Exception:
             pass
@@ -876,12 +1025,24 @@ async def notes_set(kind: str, data: dict):
     return {'ok': True}
 
 
+def _sheet_preview(d, pat, layers):
+    """Production worksheet artwork: printed on white with shaded strands,
+    plus the time the design was last saved."""
+    import datetime
+    out = os.path.join(d, 'worksheet_preview.png')
+    render.preview(pat, [tuple(L['rgb']) for L in layers], out,
+                   px_wide=1600, bg=(255, 255, 255), shade=True)
+    saved = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(d, 'meta.json')))
+    return out, saved
+
+
 @app.get('/api/worksheet/{job}.pdf')
 def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon',
                   client: str = '', inline: bool = False, wtheme: int = 0,
                   setup: float = 0.0, price_per_1000: float = 0.0,
                   garment_qty: int = 0, garment_base: float = 0.0,
-                  markup_pct: float = 0.0, discount_pct: float = 0.0):
+                  markup_pct: float = 0.0, discount_pct: float = 0.0,
+                  layout: str = 'production', title: str = ''):
     d = _job_dir(job)
     pat = _load_pattern(job)
     meta = _load_meta(job)
@@ -904,10 +1065,15 @@ def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon'
         if wt:
             theme, logo_path = wt['config'], wt.get('logo_path')
     out = os.path.join(d, 'worksheet.pdf')
+    if layout == 'classic':
+        preview, saved_at = os.path.join(d, 'preview.png'), None
+    else:
+        preview, saved_at = _sheet_preview(d, pat, layers)
     worksheet.build(out, pat, meta['report'], layers, thread_matches=matches,
-                    preview_png=os.path.join(d, 'preview.png'),
+                    preview_png=preview,
                     design_name=name or 'design', quote_params=quote_params,
-                    client=client, theme=theme, logo_path=logo_path)
+                    client=client, theme=theme, logo_path=logo_path,
+                    layout=layout, saved_at=saved_at, title=title)
     fname = '%s-worksheet.pdf' % (name or 'design')
     if inline:
         # render in the browser's PDF viewer (the UI's preview modal)

@@ -222,11 +222,12 @@
         <h2>1 · Create</h2>
         <div class="drop" id="drop">
           <div id="dropText">Click or drop a file<br>
-            <span class="muted">PNG/JPG artwork · SVG (digitized like Ink/Stitch) ·<br>
+            <span class="muted">PNG/JPG artwork · SVG (digitized like Ink/Stitch;<br>
+            pick several to combine them, positions kept) ·<br>
             any machine file (DST, PES, JEF, VP3, …)</span></div>
           <img id="thumb" class="hide">
         </div>
-        <input type="file" id="file" class="hide"
+        <input type="file" id="file" class="hide" multiple
                accept="image/*,.svg,.dst,.pes,.jef,.exp,.vp3,.xxx,.u01,.pec,.tbf,.hus,.pcs,.sew,.shv,.jpx,.dsb,.dsz,.csv,.json">
         <p class="muted" id="importName" style="margin:8px 0 0"></p>
 
@@ -281,6 +282,23 @@
               </select>
             </div>
           </div>
+          <div class="row">
+            <div><label>Add to</label>
+              <select id="importPlacement">
+                <option value="new" selected>New design</option>
+                <option value="keep">Design · keep SVG position</option>
+                <option value="center">Design · centered</option>
+                <option value="below">Design · below</option>
+                <option value="above">Design · above</option>
+                <option value="left">Design · left</option>
+                <option value="right">Design · right</option>
+              </select>
+            </div>
+            <div><label>Gap (mm)</label><input type="number" id="importGap" value="5" step="1" min="0"></div>
+          </div>
+          <p class="muted" style="margin:6px 0 0">SVGs keep where they sit on their page, so layers
+            exported from the same artboard line up. <b>Keep SVG position</b> sews the new SVG at
+            the same scale and page position as the design's first SVG (width is ignored).</p>
         </div>
 
         <button id="go" class="wide" disabled>Digitize</button>
@@ -588,8 +606,15 @@
       <option value="png">PNG — raster</option>
       <option value="zip">ZIP — all formats + worksheet</option>
     </select>
-    <label>Worksheet theme</label>
-    <select id="wsThemeSel"><option value="0">Default</option></select>
+    <div class="row">
+      <div><label>Worksheet layout</label>
+        <select id="wsLayout">
+          <option value="production" selected>Production worksheet</option>
+          <option value="classic">Classic (overview + operator)</option>
+        </select></div>
+      <div><label>Worksheet theme</label>
+        <select id="wsThemeSel"><option value="0">Default</option></select></div>
+    </div>
     <div class="row" style="margin-top:12px">
       <a id="dl"><button class="ghost" style="width:100%">Download</button></a>
       <button class="ghost" id="pdf">Preview worksheet</button>
@@ -710,7 +735,7 @@
 <script type="module" src="/static/viewer3d.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-let job = null, kind = null, fonts = [], lastThreads = [];
+let job = null, kind = null, fonts = [], lastThreads = [], rev = 0;  // rev busts caches when a job is extended in place
 
 /* ------------------------------------------------------------- tabs */
 const TABS = { tabImage: 'paneImage', tabBiz: 'paneBiz' };
@@ -914,17 +939,32 @@ function classify(f) {
 
 $('drop').onclick = () => $('file').click();
 $('drop').ondragover = e => { e.preventDefault(); };
-$('drop').ondrop = e => { e.preventDefault(); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); };
-$('file').onchange = e => { if (e.target.files[0]) pick(e.target.files[0]); };
+$('drop').ondrop = e => { e.preventDefault(); pickMany(e.dataTransfer.files); };
+$('file').onchange = e => { pickMany(e.target.files); e.target.value = ''; };
+// several files are combined only when they're all SVGs (positions kept)
+function pickMany(list) {
+  const files = Array.from(list || []);
+  if (!files.length) return;
+  const svgs = files.filter(f => classify(f) === 'svg');
+  window._files = svgs.length > 1 && svgs.length === files.length ? svgs : [files[0]];
+  if (files.length > 1 && window._files.length === 1)
+    alert('Only SVG files can be combined — using ' + files[0].name);
+  pick(window._files[0]);
+}
 $('colors').onchange = () => { if (window._f && window._fKind === 'image') pick(window._f); };
 
 async function pick(f) {
   window._f = f;
+  if (!window._files || !window._files.includes(f)) window._files = [f];
   window._fKind = classify(f);
   const kind = window._fKind;
   $('setArt').classList.toggle('hide', kind !== 'image');
   $('setSvg').classList.toggle('hide', kind !== 'svg');
-  $('importName').textContent = kind === 'image' ? '' : f.name;
+  $('importName').textContent = kind === 'image' ? ''
+    : window._files.length > 1 ? `${window._files.length} SVGs: ` + window._files.map(x => x.name).join(', ')
+    : f.name;
+  $('importPlacement').disabled = !job;
+  if (!job) $('importPlacement').value = 'new';
   $('go').textContent = kind === 'image' ? 'Digitize'
     : kind === 'svg' ? 'Import & stitch' : 'Import';
   $('goLayers').classList.toggle('hide', kind !== 'image');
@@ -978,7 +1018,11 @@ $('go').onclick = async () => {
       res = await fetch('/api/digitize', { method: 'POST', body: fd });
     } else {
       const fd = new FormData();
-      fd.append('design', window._f);
+      (window._files || [window._f]).forEach(x => fd.append('design', x));
+      const placement = job && kind === 'svg' ? $('importPlacement').value : 'new';
+      fd.append('placement', placement);
+      fd.append('gap_mm', $('importGap').value);
+      if (placement !== 'new') fd.append('job', job);
       fd.append('width_mm', $('importWidth').value);
       fd.append('fill_method', $('importFill').value);
       fd.append('palette', $('palette').value);
@@ -1017,7 +1061,8 @@ $('goText').onclick = async () => {
 /* --------------------------------------------------------------- results */
 let previewSrc = '';
 function show(d) {
-  job = d.job; kind = d.kind;
+  job = d.job; kind = d.kind; rev++;
+  $('importPlacement').disabled = false;
   const r = d.report;
   $('stageEmpty').classList.add('hide');
   ['viewSel', 'designBtn', 'detailsBtn', 'exportBtn'].forEach(id => $(id).disabled = false);
@@ -1078,7 +1123,7 @@ function renderThreads() {
 }
 
 $('fmt').onchange = updateDl;
-['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient','wsThemeSel'].forEach(id => $(id).onchange = updateDl);
+['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient','wsThemeSel','wsLayout'].forEach(id => $(id).onchange = updateDl);
 let wsUrl = '';
 function updateDl() {
   if (!job) return;
@@ -1091,6 +1136,7 @@ function updateDl() {
     markup_pct: $('qMarkup').value, discount_pct: $('qDiscount').value,
   });
   q.set('wtheme', $('wsThemeSel').value || '0');
+  q.set('layout', $('wsLayout').value);
   wsUrl = `/api/worksheet/${job}.pdf?` + q;
   $('pdfTop').disabled = false;
 }
@@ -1148,7 +1194,7 @@ function setMode(mode) {
   clearSvg(); removeCanvas();
   if (window.Stitch3D) window.Stitch3D.dispose();
   if (mode === 'photo' || mode === 'density') {
-    $('preview').src = mode === 'density' ? `/api/density/${job}.png` : previewSrc;
+    $('preview').src = mode === 'density' ? `/api/density/${job}.png?v=${rev}` : previewSrc;
     $('preview').classList.remove('hide');
     return;
   }
@@ -1177,7 +1223,7 @@ function removeCanvas() { if (cnv) { cnv.remove(); cnv = null; cctx = null; } }
 
 async function loadPlanSvg() {
   if (!planCache.p) {
-    const res = await fetch(`/api/plan/${job}.svg`);
+    const res = await fetch(`/api/plan/${job}.svg?v=${rev}`);
     planCache.p = await res.text();
   }
   if (curMode !== 'plan') return;
@@ -1214,7 +1260,7 @@ async function loadPlanSvg() {
 
 async function loadStitches() {
   if (!playerData) {
-    playerData = await (await fetch(`/api/stitches/${job}`)).json();
+    playerData = await (await fetch(`/api/stitches/${job}?v=${rev}`)).json();
     playTotal = playerData.reduce((n, b) => n + b.runs.reduce((m, r) => m + r.length, 0), 0);
     let minx = 1e18, miny = 1e18, maxx = -1e18, maxy = -1e18;
     playerData.forEach(b => b.runs.forEach(r => r.forEach(p => {
@@ -2202,7 +2248,7 @@ $('dpSave').onclick = async () => {
     lastThreads = d.threads; renderThreads();
     previewSrc = d.preview;
     if (curMode === 'photo') $('preview').src = previewSrc;
-    pending = {}; planCache = {}; spriteCache.clear();
+    pending = {}; planCache = {}; spriteCache.clear(); rev++;
     drawFrame();
     if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
     renderBlocks();
