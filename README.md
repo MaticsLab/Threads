@@ -124,6 +124,11 @@ Notes for the Containers runtime:
   digitizes Inkscape files: fills (even-odd, holes kept), running-stitch /
   zigzag strokes, and real satin columns for paths carrying
   `inkstitch:satin_column` attributes (angle, spacing, bean repeats honoured).
+  SVGs keep their page position: pick several SVGs exported from the same
+  artboard and they're sewn into one design exactly where they were drawn,
+  or add an SVG onto the current design later (Create › *Add to* › *keep
+  SVG position*) at the same scale and position as the design's first SVG
+  — or below/above/beside/centred on it.
 - **Embroidery file import** — read any pystitch-supported machine file
   (DST, PES, JEF, HUS, VP3, …) to preview, play, re-export and print.
 - **Fill methods** — tatami with fill-angle control, contour fill, and
@@ -189,6 +194,14 @@ Notes for the Containers runtime:
 - **Business tools (embTools)** — client & vendor database, notes / quote
   log / to-do panes, quote sheet on the worksheet, run-time calculator and
   the full unit-conversion set (mm⇄in, cm⇄in, px⇄mm, pt⇄in).
+- **Production worksheet** — the default worksheet is a one-page production
+  sheet (US Letter): boxed header with the design name and a
+  stitches/height/width/colours/zoom box, the design printed on white, machine
+  stats (colour changes, stops, trims, left/right/up/down extents, end point,
+  area, max/min stitch, max jump, estimated top and bobbin thread) and the
+  stop sequence (needle, colour, stitches, thread code, name, chart), with an
+  authors/dates footer. The quote sheet follows on page 2 when set; the
+  previous two-page layout stays available as *Classic* (`?layout=classic`).
 - **Batch export** — one ZIP with every major format, a thread list, the
   stitch plan SVG and the worksheet PDF.
 
@@ -249,7 +262,9 @@ It loops up to four passes and stops as soon as a pass makes no changes.
 POST /api/analyze                image + colour count -> layers
 POST /api/digitize               digitize an analyzed upload (fill_method, fill_angle, ...)
 POST /api/lettering              text + font -> stitched lettering
-POST /api/import                 SVG (digitized) or any machine embroidery file
+POST /api/import                 SVG(s) (digitized, page positions kept) or any machine
+                                 embroidery file; job + placement (keep/center/below/...)
+                                 adds it onto an existing design
 POST /api/pen                    manual digitizing (traced shapes -> stitches)
 POST /api/vectorize              image -> editable vector layers (no stitches yet)
 POST /api/name_layers            vision-model names for the extracted layers
@@ -269,7 +284,8 @@ GET  /api/plan/{job}.svg         stitch plan SVG (?realistic=true for the lit pr
 GET  /api/stitches/{job}         stitch blocks JSON (drives the player + canvas views)
 GET  /api/density/{job}.png      stitch density map
 GET  /api/threadlist/{job}.txt   thread list export
-GET  /api/worksheet/{job}.pdf    print worksheet (client, quote params: setup,
+GET  /api/worksheet/{job}.pdf    print worksheet (layout=production|classic, client, title,
+                                 quote params: setup,
                                  price_per_1000, garment_qty, garment_base, markup_pct,
                                  discount_pct)
 GET/POST/PUT/DELETE /api/business/{client|vendor}[/{id}]   contact book (embTools)

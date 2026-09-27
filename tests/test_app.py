@@ -368,3 +368,62 @@ def test_ai_naming_with_mocked_model(monkeypatch):
     names = r.json()['names']
     assert names[str(ids[0])] == 'Ring'
     assert names[str(ids[-1])] == 'Head'
+
+
+SVG_A = '''<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm"
+     viewBox="0 0 100 100"><rect x="10" y="10" width="20" height="20" fill="#1a3b69"/></svg>'''
+SVG_B = '''<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm"
+     viewBox="0 0 100 100"><rect x="70" y="70" width="20" height="20" fill="#a8201a"/></svg>'''
+SVG_AB = SVG_A.replace('</svg>', '<rect x="70" y="70" width="20" height="20" '
+                                  'fill="#a8201a"/></svg>')
+
+
+def _extent_mm(job):
+    from app import _load_pattern, _extent
+    return [round(v / 10.0) for v in _extent(_load_pattern(job))]
+
+
+def test_svgs_keep_their_page_position():
+    # two SVGs from the same artboard sew exactly like the combined drawing
+    r = client.post('/api/import', files=[('design', ('a.svg', SVG_A.encode())),
+                                          ('design', ('b.svg', SVG_B.encode()))])
+    assert r.status_code == 200, r.text
+    assert len(r.json()['threads']) == 2
+    both = _extent_mm(r.json()['job'])
+    r = client.post('/api/import', files={'design': ('ab.svg', SVG_AB.encode())})
+    assert _extent_mm(r.json()['job']) == both == [-40, -40, 40, 40]
+
+    # adding the second file later with 'keep' lands it in the same place
+    r = client.post('/api/import', files={'design': ('a.svg', SVG_A.encode())})
+    job = r.json()['job']
+    assert _extent_mm(job) == [-10, -10, 10, 10]
+    r = client.post('/api/import', files={'design': ('b.svg', SVG_B.encode())},
+                    data={'job': job, 'placement': 'keep'})
+    assert r.status_code == 200, r.text
+    assert r.json()['job'] == job
+    assert _extent_mm(job) == both
+    assert len(r.json()['threads']) == 2
+
+
+def test_svg_added_beside_a_design(image_job):
+    job, d = image_job
+    r = client.post('/api/import', files={'design': ('a.svg', SVG_A.encode())},
+                    data={'job': job, 'placement': 'right', 'gap_mm': 5})
+    assert r.status_code == 200, r.text
+    assert r.json()['report']['width_mm'] > d['report']['width_mm'] + 20
+    r = client.post('/api/import', files=[('design', ('a.svg', SVG_A.encode())),
+                                          ('design', ('x.dst', b'nope'))])
+    assert r.status_code == 400
+
+
+def test_production_worksheet():
+    from inkstitchlib import worksheet
+    r = client.post('/api/import', files={'design': ('ab.svg', SVG_AB.encode())})
+    job = r.json()['job']
+    for q in ('', '&layout=classic', '&setup=10&price_per_1000=1.5'):
+        r = client.get('/api/worksheet/%s.pdf?name=logo%s' % (job, q))
+        assert r.status_code == 200 and r.content[:4] == b'%PDF', q
+    from app import _load_pattern
+    ps = worksheet.production_stats(_load_pattern(job))
+    assert abs(ps['left_mm'] - 40) < 0.5 and abs(ps['down_mm'] - 40) < 0.5
+    assert ps['max_stitch_mm'] > 0 and ps['thread_ft'] > ps['bobbin_ft'] > 0

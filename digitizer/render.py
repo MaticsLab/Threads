@@ -2,7 +2,9 @@
 import numpy as np, pystitch
 from PIL import Image, ImageDraw
 
-def preview(pat, colors, out_path, px_wide=1000, bg=(184,189,196)):
+def preview(pat, colors, out_path, px_wide=1000, bg=(184,189,196), shade=False):
+    """shade=True draws each stitch over a darker edge so threads read as
+    separate strands (and white thread shows on a white page)."""
     xs=[s[0] for s in pat.stitches]; ys=[s[1] for s in pat.stitches]
     minx,maxx,miny,maxy=min(xs),max(xs),min(ys),max(ys)
     S=px_wide/max(maxx-minx, maxy-miny, 1)
@@ -17,7 +19,11 @@ def preview(pat, colors, out_path, px_wide=1000, bg=(184,189,196)):
         if k==pystitch.COLOR_CHANGE: ci+=1; prev=None; continue
         if k==pystitch.STITCH:
             if prev is not None:
-                d.line([T(*prev),T(x,y)],fill=colors[min(ci,len(colors)-1)],width=lw)
+                col=colors[min(ci,len(colors)-1)]
+                if shade:
+                    edge=tuple(int(v*0.62) for v in col)
+                    d.line([T(*prev),T(x,y)],fill=edge,width=lw+2)
+                d.line([T(*prev),T(x,y)],fill=col,width=lw)
             prev=(x,y)
         elif k==pystitch.JUMP: prev=(x,y)
         else: prev=None

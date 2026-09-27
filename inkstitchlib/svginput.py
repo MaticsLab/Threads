@@ -215,8 +215,16 @@ def _sew_stroke(s, subs_mm, sw_mm, attrs, max_satin):
 
 def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
                  row_spacing=0.35, max_stitch=3.5, max_satin=8.0,
-                 heavy_underlay=True):
-    """SVG bytes/str -> (pystitch pattern via Sewer, layers, info)."""
+                 heavy_underlay=True, scale=None, center=True):
+    """SVG bytes/str -> (pystitch pattern via Sewer, layers, info).
+
+    Coordinates are page coordinates: the viewBox's top-left corner is
+    (0, 0), so several SVGs exported from the same artboard line up. With
+    center=False the pattern keeps them (0.1 mm units) instead of being
+    moved to the origin. `scale` multiplies the natural size (used to sew a
+    second SVG at the same scale as the first); width_mm overrides it.
+    info['scale'] is the multiplier actually used.
+    """
     import pystitch
 
     if isinstance(data, bytes):
@@ -228,17 +236,30 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
 
     # document scale: user units -> mm
     vb = root.get('viewBox')
+    vbx = vby = 0.0
+    vh = None
+    parts = None
     if vb:
-        parts = [float(v) for v in re.split(r'[ ,]+', vb.strip())]
-        vw = parts[2]
+        try:
+            parts = [float(v) for v in re.split(r'[ ,]+', vb.strip())]
+        except ValueError:
+            parts = None
+    if parts and len(parts) == 4 and parts[2] > 0:
+        vbx, vby, vw, vh = parts
     else:
+        vb = None
         vw = _length_px(root.get('width')) or 100.0
+        vh = _length_px(root.get('height'))
     w_px = _length_px(root.get('width'))
     doc_scale = (w_px / vw) if (w_px and vb and vw) else 1.0
     unit2mm = doc_scale / PIXELS_PER_MM
     natural_w_mm = vw * doc_scale / PIXELS_PER_MM
+    mult = 1.0
     if width_mm:
-        unit2mm *= width_mm / max(natural_w_mm, 1e-6)
+        mult = width_mm / max(natural_w_mm, 1e-6)
+    elif scale:
+        mult = float(scale)
+    unit2mm *= mult
 
     elements = _collect(root)
     if not elements:
@@ -264,7 +285,8 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
         prev_rgb = rgb
 
     for subs, st, attrs in elements:
-        subs_mm = [[(x * unit2mm, y * unit2mm) for x, y in sub] for sub in subs]
+        subs_mm = [[((x - vbx) * unit2mm, (y - vby) * unit2mm) for x, y in sub]
+                   for sub in subs]
         fill_c = _color(st.get('fill', '#000000')) if st.get('fill', '#000000').lower() != 'none' else None
         stroke_c = _color(st.get('stroke', 'none')) if st.get('stroke', 'none').lower() != 'none' else None
 
@@ -314,12 +336,16 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
         raise SvgError('the SVG contained no stitchable geometry')
     s.tie_off()
     s.pattern.end()
-    s.pattern.move_center_to_origin()
+    if center:
+        s.pattern.move_center_to_origin()
 
     for i, rgb in enumerate(block_colors):
         layers.append({'name': 'Colour %d' % (i + 1),
                        'hex': '#%02X%02X%02X' % rgb, 'rgb': rgb})
     info = {'elements': len(elements), 'satin_columns': n_satin,
             'fills': n_fill, 'strokes': n_stroke,
-            'natural_width_mm': round(natural_w_mm, 1)}
+            'natural_width_mm': round(natural_w_mm, 1),
+            'page_w_mm': round(vw * unit2mm, 2),
+            'page_h_mm': round(vh * unit2mm, 2) if vh else None,
+            'scale': mult}
     return s.pattern, layers, info

@@ -10,13 +10,21 @@ to PDF; here the same layout is drawn straight to PDF with reportlab:
 * page 2 - operator detailed view (operator_detailedview.html): one row per
   colour block with swatch, thread, stitch count, estimated time, stops and
   trims, and a notes line.
+
+That is the 'classic' layout. The default 'production' layout is the
+one-page production worksheet digitizing studios print: a boxed header
+with the design name and a stitches/size box, the sewn preview on the left,
+machine statistics (extents from the origin, area, stitch/jump lengths,
+thread and bobbin usage) and the stop sequence (needle, colour, stitches,
+thread code, name, chart) on the right, and an authors/dates footer bar.
+The quote sheet follows on its own page when quote parameters are given.
 """
 import datetime
 import math
 import os
 
 import pystitch
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor, black, white
 from reportlab.pdfgen.canvas import Canvas
@@ -138,15 +146,319 @@ def quote(stitches, setup=0.0, price_per_1000=0.0, garment_qty=0, garment_base=0
             'digitizing': digitizing, 'setup': setup, 'total': total}
 
 
+# ------------------------------------------------ production worksheet
+APP_LINE = 'Threads Studio - Designing'
+MACHINE_FORMAT = 'Tajima'           # the native file the app saves is DST
+TAKE_UP_MM = 1.6                    # top thread used per penetration
+BOBBIN_RATIO = 1 / 3.0              # bobbin shows ~1/3 of the column width
+
+
+def production_stats(pattern):
+    """Machine-sheet numbers, all from the stitch list (0.1 mm units)."""
+    st = pattern.stitches
+    xs = [x for x, y, c in st if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)]
+    ys = [y for x, y, c in st if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)]
+    if not xs:
+        xs = ys = [0.0]
+    lens, jumps = [], []
+    trims = 0
+    prev = None
+    run_jump = 0.0
+    for x, y, c in st:
+        k = c & 0xFF
+        if k == pystitch.TRIM:
+            trims += 1
+        if prev is not None and k in (pystitch.STITCH, pystitch.JUMP):
+            d = math.hypot(x - prev[0], y - prev[1]) / 10.0
+            if k == pystitch.STITCH:
+                if d > 0:
+                    lens.append(d)
+                if run_jump:
+                    jumps.append(run_jump)
+                run_jump = 0.0
+            else:
+                run_jump += d
+        if k in (pystitch.STITCH, pystitch.JUMP):
+            prev = (x, y)
+    if run_jump:
+        jumps.append(run_jump)
+    end = next(((x, y) for x, y, c in reversed(st)
+                if (c & 0xFF) in (pystitch.STITCH, pystitch.JUMP)), (0.0, 0.0))
+    w_mm = (max(xs) - min(xs)) / 10.0
+    h_mm = (max(ys) - min(ys)) / 10.0
+    top_mm = sum(lens) + len(lens) * TAKE_UP_MM
+    return {
+        'left_mm': -min(xs) / 10.0, 'right_mm': max(xs) / 10.0,
+        'up_mm': -min(ys) / 10.0, 'down_mm': max(ys) / 10.0,
+        'width_mm': w_mm, 'height_mm': h_mm,
+        'end_x_in': end[0] / 254.0, 'end_y_in': -end[1] / 254.0,
+        'area_in2': (w_mm / 25.4) * (h_mm / 25.4),
+        'max_stitch_mm': max(lens) if lens else 0.0,
+        'min_stitch_mm': min(lens) if lens else 0.0,
+        'max_jump_mm': max(jumps) if jumps else 0.0,
+        'thread_ft': top_mm / 304.8,
+        'bobbin_ft': top_mm * BOBBIN_RATIO / 304.8,
+        'stitches': len(lens) + 1 if lens else 0,
+        'trims': trims,
+    }
+
+
+def _fit(c, s, width, font, size):
+    """Truncate s with an ellipsis so it fits `width` points."""
+    s = str(s)
+    if c.stringWidth(s, font, size) <= width:
+        return s
+    while s and c.stringWidth(s + '…', font, size) > width:
+        s = s[:-1]
+    return s + '…'
+
+
+def _stamp(t):
+    return '%d/%d/%d %d:%02d:%02d %s' % (
+        t.month, t.day, t.year, (t.hour % 12) or 12, t.minute, t.second,
+        'AM' if t.hour < 12 else 'PM')
+
+
+def _production_page(c, pattern, report, layers, thread_matches, preview_png,
+                     design_name, client, saved_at, title='', pages=1):
+    from reportlab.lib.utils import ImageReader
+    W, H = letter
+    body, bold = c._body, c._bold
+    theme = c._theme or {}
+    m = 0.22 * 72                         # outer frame margin
+    x0, x1, y0, y1 = m, W - m, m, H - m
+    head_h = 88.0
+    foot_h = 14.0
+    stats_w = 98.0                         # header stats box (top right)
+    col_x = x0 + (x1 - x0) * 0.672         # right column divider
+    ps = production_stats(pattern)
+    blocks = block_stats(pattern)
+
+    c.setStrokeColor(black)
+    c.setLineWidth(0.8)
+    c.rect(x0, y0, x1 - x0, y1 - y0)
+    c.line(x0, y1 - head_h, x1, y1 - head_h)
+    c.line(x1 - stats_w, y1, x1 - stats_w, y1 - head_h)
+    c.line(x0, y0 + foot_h, x1, y0 + foot_h)
+    c.line(col_x, y1 - head_h, col_x, y0 + foot_h)
+
+    # ---- header, left: title block
+    tx = x0 + 3
+    _text(c, tx, y1 - 13, 'Production Worksheet', 12.5, bold=True, color=c._accent)
+    _text(c, tx, y1 - 26, theme.get('footer') or APP_LINE, 8)
+    big = '*%s*' % design_name.upper()
+    size = 20
+    avail = (x1 - stats_w) - tx - 6
+    while size > 10 and c.stringWidth(big, body, size) > avail:
+        size -= 1
+    _text(c, tx, y1 - 47, big, size)
+    _text(c, tx, y1 - 66, 'Design:', 8)
+    _text(c, tx + 34, y1 - 66, _fit(c, design_name, avail - 36, bold, 11), 11, bold=True)
+    _text(c, tx, y1 - 82, 'Title:', 8)
+    if title:
+        _text(c, tx + 34, y1 - 82, _fit(c, title, avail - 36, body, 8), 8)
+    if getattr(c, '_logo', None) and os.path.exists(c._logo):
+        try:
+            img = ImageReader(c._logo)
+            iw, ih = img.getSize()
+            lh = min(float(theme.get('logo_h_mm', 12)) * mm, head_h - 30)
+            lw = lh * iw / max(ih, 1)
+            lx = (x1 - stats_w - 6 - lw) if theme.get('logo_pos', 'right') != 'left' \
+                else x0 + 0.42 * (x1 - stats_w - x0)
+            c.drawImage(img, lx, y1 - 6 - lh, lw, lh, preserveAspectRatio=True,
+                        mask='auto')
+        except Exception:
+            pass
+
+    # ---- header, right: stitches / size box
+    unique = []
+    for L in layers:
+        if L['hex'].upper() not in unique:
+            unique.append(L['hex'].upper())
+    sx = x1 - stats_w + 3
+    rows = [('Stitches:', '{:,}'.format(report.get('stitches', ps['stitches']))),
+            ('Height:', '%.2f in' % (ps['height_mm'] / 25.4)),
+            ('Width:', '%.2f in' % (ps['width_mm'] / 25.4)),
+            ('Colors:', str(len(unique))),
+            ('Colorway:', 'Colorway 1'),
+            ('Zoom:', '%ZOOM%')]
+    zoom_y = None
+    for i, (k, v) in enumerate(rows):
+        yy = y1 - 10 - i * 12.2
+        _text(c, sx, yy, k, 8)
+        if v == '%ZOOM%':
+            zoom_y = yy
+        else:
+            _text(c, sx + 47, yy, v, 8)
+
+    # ---- preview, left area
+    area_top = y1 - head_h - 6
+    area_bot = y0 + foot_h + 6
+    ax0, ax1 = x0 + 6, col_x - 6
+    zoom = 0.0
+    if preview_png and os.path.exists(preview_png):
+        img = ImageReader(preview_png)
+        iw, ih = img.getSize()
+        box_w, box_h = ax1 - ax0, (area_top - area_bot) * 0.78
+        sc = min(box_w / iw, box_h / ih)
+        dw, dh = iw * sc, ih * sc
+        c.drawImage(img, ax0 + (box_w - dw) / 2, area_top - 40 - dh - (box_h - dh) / 2,
+                    dw, dh, mask=[250, 255, 250, 255, 250, 255])
+        # the PNG has a 3% pad on each side of the design's long edge
+        long_mm = max(ps['width_mm'], ps['height_mm'], 0.1)
+        drawn_long = max(dw, dh) / 1.06
+        zoom = drawn_long / (long_mm / 25.4 * 72)
+    if zoom_y is not None:
+        _text(c, sx + 47, zoom_y, '%.2f' % zoom, 8)
+
+    # ---- right column: machine statistics
+    rx = col_x + 3
+    vx = rx + 72
+    lh = 12.6
+    y = y1 - head_h - 10
+    stat_rows = [
+        ('Machine format:', MACHINE_FORMAT),
+        ('Color changes:', str(max(0, len(blocks) - 1))),
+        ('Stops:', str(len(blocks))),
+        ('Trims:', str(ps['trims'])),
+        ('Appliqués:', '0'),
+        ('Left:', '%.1f mm' % ps['left_mm']),
+        ('Right:', '%.1f mm' % ps['right_mm']),
+        ('Up:', '%.1f mm' % ps['up_mm']),
+        ('Down:', '%.1f mm' % ps['down_mm']),
+        ('EndX:', '%.2f in' % ps['end_x_in']),
+        ('EndY:', '%.2f in' % ps['end_y_in']),
+        ('Area', '%.2f in²' % ps['area_in2']),
+        ('Max stitch:', '%.1f mm' % ps['max_stitch_mm']),
+        ('Min stitch:', '%.1f mm' % ps['min_stitch_mm']),
+        ('Max jump:', '%.1f mm' % ps['max_jump_mm']),
+        ('Total thread:', '%.2fft' % ps['thread_ft']),
+        ('Total bobbin:', '%.2fft' % ps['bobbin_ft']),
+    ]
+    for k, v in stat_rows:
+        _text(c, rx, y, k, 8)
+        _text(c, vx, y, v, 8)
+        y -= lh
+    c.line(col_x, y + lh - 3.5, x1, y + lh - 3.5)
+
+    # ---- stop sequence
+    _text(c, rx, y, 'Stop Sequence:', 8)
+    y -= lh
+    cols = {'#': rx, 'N#': rx + 12, 'Color': rx + 25, 'St.': rx + 79,
+            'Code': rx + 82, 'Name': rx + 106, 'Chart': x1 - 3}
+    for k, align in (('#', 'l'), ('N#', 'l'), ('Color', 'l'), ('St.', 'r'),
+                     ('Code', 'l'), ('Name', 'l'), ('Chart', 'r')):
+        _text(c, cols[k], y, k, 8, bold=True, align='right' if align == 'r' else 'left')
+        w = c.stringWidth(k, bold, 8)
+        ux = cols[k] - w if align == 'r' else cols[k]
+        c.setLineWidth(0.5)
+        c.line(ux, y - 1.5, ux + w, y - 1.5)
+    y -= lh
+    for i, b in enumerate(blocks):
+        if y < y0 + foot_h + 10:
+            break
+        L = layers[i] if i < len(layers) else {'hex': '#888888', 'name': 'Colour %d' % (i + 1)}
+        needle = unique.index(L['hex'].upper()) + 1 if L['hex'].upper() in unique else i + 1
+        t = thread_matches[i] if thread_matches and i < len(thread_matches) else None
+        code = (t.get('thread_number') or '') if t else ''
+        name = (t.get('thread_name') if t else None) or L.get('name', '')
+        chart = t.get('palette', 'Default') if t else 'Default'
+        _text(c, cols['#'], y, '%d.' % (i + 1), 8)
+        _text(c, cols['N#'], y, str(needle), 8)
+        c.setFillColor(HexColor(L['hex']))
+        c.setStrokeColor(black)
+        c.setLineWidth(0.5)
+        c.rect(cols['Color'], y - 2, 24, 9, fill=1)
+        _text(c, cols['St.'], y, '{:,}'.format(b['stitches']), 7.5, align='right')
+        _text(c, cols['Code'], y, _fit(c, code, 20, body, 7.5), 7.5)
+        # chart = the thread brand; drop the line name when it won't fit
+        fs = 7.5
+        if c.stringWidth(chart, body, fs) > 40:
+            chart = chart.split(' ')[0]
+        chart = _fit(c, chart, 40, body, fs)
+        name_w = cols['Chart'] - c.stringWidth(chart, body, fs) - cols['Name'] - 4
+        _text(c, cols['Name'], y, _fit(c, name, name_w, body, fs), fs)
+        _text(c, cols['Chart'], y, chart, fs, align='right')
+        y -= lh
+    c.setStrokeColor(black)
+    c.setLineWidth(0.8)
+    c.line(col_x, y + lh - 3.5, x1, y + lh - 3.5)
+
+    # ---- footer bar
+    fy = y0 + 4
+    now = datetime.datetime.now()
+    _text(c, x0 + 3, fy, 'Authors:%s' % (('  ' + client) if client else ''), 7.5)
+    _text(c, x0 + 150, fy, 'Design last saved : %s' % _stamp(saved_at or now), 7.5)
+    _text(c, x0 + 345, fy, 'Date printed: %s' % _stamp(now), 7.5)
+    _text(c, x1 - 3, fy, 'Page %d of %d' % (c.getPageNumber(), pages), 7.5, align='right')
+
+
+def _quote_page(c, stitches, quote_params, design_name):
+    """The embTools quote sheet on its own page (production layout)."""
+    W, H = c._pagesize
+    q = quote(stitches, **quote_params)
+    x = 0.5 * 72
+    y = H - 0.6 * 72
+    _text(c, x, y, 'Quote — %s' % design_name, 14, bold=True, color=c._accent)
+    y -= 10
+    c.setStrokeColor(black)
+    c.line(x, y, W - x, y)
+    y -= 20
+    rows = [('Setup fee', '$%.2f' % q['setup']),
+            ('Digitizing (%s st @ $%.2f/1000)' % ('{:,}'.format(stitches),
+                                                  quote_params.get('price_per_1000', 0)),
+             '$%.2f' % q['digitizing'])]
+    if q['product']:
+        rows.append(('Garments (%d × $%.2f, %+.0f%% markup)'
+                     % (quote_params.get('garment_qty', 0), quote_params.get('garment_base', 0),
+                        quote_params.get('markup_pct', 0)), '$%.2f' % q['marked_up']))
+    if q['discount']:
+        rows.append(('Discount (%.0f%%)' % quote_params.get('discount_pct', 0),
+                     '-$%.2f' % q['discount']))
+    for k, v in rows:
+        _text(c, x, y, k, 10)
+        _text(c, W - x, y, v, 10, align='right')
+        y -= 16
+    c.line(x, y + 10, W - x, y + 10)
+    _text(c, x, y - 4, 'Total', 11, bold=True)
+    _text(c, W - x, y - 4, '$%.2f' % q['total'], 11, bold=True, align='right')
+
+
+def build_production(path, pattern, report, layers, thread_matches=None,
+                     preview_png=None, design_name='design', quote_params=None,
+                     client='', theme=None, logo_path=None, saved_at=None, title=''):
+    c = Canvas(path, pagesize=letter)
+    c.setTitle('%s — production worksheet' % design_name)
+    _apply_theme(c, theme, logo_path)
+    _production_page(c, pattern, report, layers, thread_matches, preview_png,
+                     design_name, client, saved_at, title=title,
+                     pages=2 if quote_params else 1)
+    c.showPage()
+    if quote_params:
+        _apply_theme(c, theme, logo_path)
+        _quote_page(c, report.get('stitches', 0), quote_params, design_name)
+        c.showPage()
+    c.save()
+    return path
+
+
 def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
           design_name='design', quote_params=None, spm=700, client='',
-          theme=None, logo_path=None):
+          theme=None, logo_path=None, layout='production', saved_at=None,
+          title=''):
     """Write the worksheet PDF to `path`.
+
+    layout: 'production' (one-page production worksheet, the default) or
+    'classic' (Ink/Stitch overview + operator pages).
 
     report: engine.qa_report dict (or the lighter lettering report).
     layers: [{'name','hex', ...}] in sew order.
     thread_matches: optional threads.match_layers output, same order.
     """
+    if layout != 'classic':
+        return build_production(path, pattern, report, layers, thread_matches,
+                                preview_png, design_name, quote_params, client,
+                                theme, logo_path, saved_at, title)
     c = Canvas(path, pagesize=A4)
     c.setTitle('%s — embroidery worksheet' % design_name)
     _apply_theme(c, theme, logo_path)
