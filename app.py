@@ -1084,6 +1084,28 @@ def designs_open(did: int, palette: str = 'Madeira Rayon'):
                     'design': dsg, 'client': client})
 
 
+# ------------------------------------------------------------------ hoops
+@app.get('/api/hoops')
+def hoops_list():
+    return business.list_hoops()
+
+
+@app.post('/api/hoops')
+async def hoops_add(data: dict):
+    try:
+        hid = business.add_hoop(data.get('name'), data.get('w_mm'), data.get('h_mm'))
+    except (TypeError, ValueError) as e:
+        raise HTTPException(400, str(e) if str(e) else 'w_mm and h_mm are required')
+    return next(h for h in business.list_hoops() if h['id'] == hid)
+
+
+@app.delete('/api/hoops/{hid}')
+def hoops_delete(hid: int):
+    if not business.delete_hoop(hid):
+        raise HTTPException(404, 'unknown hoop')
+    return {'ok': True}
+
+
 # --------------------------------------------- business database (embTools)
 @app.get('/api/business/{kind}')
 def business_list(kind: str, sort: str = 'name'):

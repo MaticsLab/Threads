@@ -53,6 +53,10 @@ def _db():
         colors TEXT NOT NULL DEFAULT '[]',
         created TEXT NOT NULL DEFAULT '',
         updated TEXT NOT NULL DEFAULT '')''')
+    con.execute('''CREATE TABLE IF NOT EXISTS hoop (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL DEFAULT '',
+        w_mm REAL NOT NULL, h_mm REAL NOT NULL)''')
     con.execute('''CREATE TABLE IF NOT EXISTS wtheme (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL DEFAULT '',
@@ -364,3 +368,45 @@ def set_note(kind, text):
         con.execute('INSERT INTO note (kind, text) VALUES (?, ?) '
                     'ON CONFLICT(kind) DO UPDATE SET text=excluded.text',
                     (kind, str(text)[:100000]))
+
+
+# ------------------------------------------------------------ hoops
+# Built-in hoop sizes by machine family (sewing field, mm), plus the
+# custom ones a studio saves. The UI sizes a design to the chosen hoop.
+BUILTIN_HOOPS = [
+    ('4" × 4"', 100, 100), ('5" × 7"', 130, 180), ('6" × 10"', 160, 260),
+    ('8" × 8"', 200, 200), ('8" × 12"', 200, 300), ('9.5" × 14"', 240, 360),
+    ('Brother 4" × 9.25"', 100, 235), ('Brother 5" × 12"', 130, 300),
+    ('Brother 10.6" × 16"', 272, 408), ('Janome 5.5" × 5.5"', 140, 140),
+    ('Janome 7.9" × 11" (SQ23)', 230, 230), ('Janome 9.1" × 11.8" (GR)', 230, 300),
+    ('Ricoma 2.5" × 2.5" (cap)', 65, 65), ('Ricoma 4.7" (12 cm)', 120, 120),
+    ('Ricoma 5.9" (15 cm)', 150, 150), ('Ricoma 7.9" (20 cm)', 200, 200),
+    ('Ricoma 11.8" × 15.7" (30 × 40)', 300, 400), ('Tajima 4.7" (12 cm)', 120, 120),
+    ('Tajima 7.1" (18 cm)', 180, 180), ('Tajima 11.8" × 13.8" (30 × 35)', 300, 350),
+    ('Cap frame 2.6" × 5.5"', 67, 140), ('Left chest 4" × 4"', 100, 100),
+]
+
+
+def list_hoops():
+    out = [{'id': 0, 'name': n, 'w_mm': w, 'h_mm': h, 'custom': False}
+           for n, w, h in BUILTIN_HOOPS]
+    with _lock, _db() as con:
+        rows = con.execute('SELECT * FROM hoop ORDER BY name COLLATE NOCASE').fetchall()
+    out += [{'id': r['id'], 'name': r['name'], 'w_mm': r['w_mm'], 'h_mm': r['h_mm'],
+             'custom': True} for r in rows]
+    return out
+
+
+def add_hoop(name, w_mm, h_mm):
+    w, h = float(w_mm), float(h_mm)
+    if not (20 <= w <= 1000 and 20 <= h <= 1000):
+        raise ValueError('hoop sides must be between 20 and 1000 mm')
+    name = str(name or '').strip()[:60] or '%g × %g mm' % (w, h)
+    with _lock, _db() as con:
+        return con.execute('INSERT INTO hoop (name, w_mm, h_mm) VALUES (?, ?, ?)',
+                           (name, w, h)).lastrowid
+
+
+def delete_hoop(hid):
+    with _lock, _db() as con:
+        return con.execute('DELETE FROM hoop WHERE id=?', (hid,)).rowcount > 0

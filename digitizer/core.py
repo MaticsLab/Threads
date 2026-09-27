@@ -265,6 +265,18 @@ def sew_fill(sewer, poly, angle, spacing, maxlen, stagger=True, start=None, trav
         sewer.run_to(b, maxlen)
     return order[-1][1] if order else start
 
+# Sewing phases: every treatment can be sewn as its underlay only, its top
+# stitching only, or both in one go. The digitizers sew a colour block in two
+# passes (all underlay, then all top stitching) so the fabric is stabilised
+# across the whole block before any cover stitch goes down, and travels
+# between objects happen under the top layer.
+UNDER, TOP, BOTH = 'underlay', 'top', 'both'
+
+
+def _do(phase, which):
+    return phase == BOTH or phase == which
+
+
 def sew_edge_run(sewer, poly, inset=0.7, maxlen=2.5, travel=None):
     """Edge-walk underlay just inside the outline."""
     inner = poly.buffer(-inset)
@@ -625,31 +637,33 @@ def order_by_nearest(items, keyfn, start=None):
 
 
 
-def sew_column(s, col, travel):
+def sew_column(s, col, travel, phase=BOTH):
     """centre run -> zigzag underlay -> satin, travelling inside the shape."""
-    s.move_to(tuple(col[0][2]), travel)
-    step = max(1, int(round(UNDERLAY_RUN / SATIN_SPACING)))
-    for _, _, c3 in col[::step]:
-        s.run_to(tuple(c3), UNDERLAY_RUN)
+    if _do(phase, UNDER):
+        s.move_to(tuple(col[0][2]), travel)
+        step = max(1, int(round(UNDERLAY_RUN / SATIN_SPACING)))
+        for _, _, c3 in col[::step]:
+            s.run_to(tuple(c3), UNDERLAY_RUN)
 
-    zstep = max(1, int(round(2.0 / SATIN_SPACING)))
-    zi = list(range(0, len(col), zstep))
-    if zi and zi[-1] != len(col) - 1:
-        zi.append(len(col) - 1)
-    z = 0
-    for i in zi[::-1]:
-        l, r, c3 = col[i]
-        mid = np.array(c3, float)
-        edge = np.array(l if z == 0 else r, float)
-        p = mid + (edge - mid) * 0.72
-        s.run_to((p[0], p[1]), 4.0)
-        z ^= 1
+        zstep = max(1, int(round(2.0 / SATIN_SPACING)))
+        zi = list(range(0, len(col), zstep))
+        if zi and zi[-1] != len(col) - 1:
+            zi.append(len(col) - 1)
+        z = 0
+        for i in zi[::-1]:
+            l, r, c3 = col[i]
+            mid = np.array(c3, float)
+            edge = np.array(l if z == 0 else r, float)
+            p = mid + (edge - mid) * 0.72
+            s.run_to((p[0], p[1]), 4.0)
+            z ^= 1
 
-    s.move_to(tuple(col[0][2]), travel)
-    side = 0
-    for left, right, _ in col:
-        s.run_to(tuple(left if side == 0 else right), MAX_SATIN + 1)
-        side ^= 1
+    if _do(phase, TOP):
+        s.move_to(tuple(col[0][2]), travel)
+        side = 0
+        for left, right, _ in col:
+            s.run_to(tuple(left if side == 0 else right), MAX_SATIN + 1)
+            side ^= 1
 
 
 
@@ -716,15 +730,17 @@ def satin_ring(poly, width, spacing):
     return None
 
 
-def sew_ring(sewer, ring, travel=None):
-    sewer.move_to(ring[0][2], travel)
-    for _, _, mid in ring[::max(1, len(ring) // 24)]:
-        sewer.run_to(mid, UNDERLAY_RUN)          # centre-run underlay
-    sewer.move_to(ring[0][0], travel)
-    side = 0
-    for a, b, _ in ring:
-        sewer.run_to(a if side == 0 else b, MAX_SATIN + 1)
-        side ^= 1
+def sew_ring(sewer, ring, travel=None, phase=BOTH):
+    if _do(phase, UNDER):
+        sewer.move_to(ring[0][2], travel)
+        for _, _, mid in ring[::max(1, len(ring) // 24)]:
+            sewer.run_to(mid, UNDERLAY_RUN)          # centre-run underlay
+    if _do(phase, TOP):
+        sewer.move_to(ring[0][0], travel)
+        side = 0
+        for a, b, _ in ring:
+            sewer.run_to(a if side == 0 else b, MAX_SATIN + 1)
+            side ^= 1
 
 
 def blob_rows(poly, spacing, max_span):
@@ -740,16 +756,19 @@ def blob_rows(poly, spacing, max_span):
 
 
 def sew_blob(sewer, poly, spacing, max_span, border_w, travel=None,
-             heavy_underlay=True):
+             heavy_underlay=True, phase=BOTH):
     """Outline underlay -> open underfill -> satin core -> satin outline.
 
     Sewn in that order on purpose: the border goes down last so it lands on
     top and gives the shape a clean, hard edge.
     """
-    sew_edge_run(sewer, poly, inset=min(0.6, border_w), travel=travel)
-    if heavy_underlay:
-        sew_fill(sewer, poly, principal_angle(poly) + 45, 2.5, 3.0,
-                 stagger=False, start=sewer.pos, travel=travel)
+    if _do(phase, UNDER):
+        sew_edge_run(sewer, poly, inset=min(0.6, border_w), travel=travel)
+        if heavy_underlay:
+            sew_fill(sewer, poly, principal_angle(poly) + 45, 2.5, 3.0,
+                     stagger=False, start=sewer.pos, travel=travel)
+    if not _do(phase, TOP):
+        return
 
     ring = satin_ring(poly, border_w, spacing)
     core = poly.buffer(-border_w * 0.72) if ring else poly

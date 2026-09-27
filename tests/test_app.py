@@ -536,3 +536,72 @@ def test_svg_colour_blocks_merge_when_layering_allows():
            '<rect x="30" y="15" width="30" height="10" fill="#0047ab"/></svg>')
     pat, layers, info = svginput.digitize_svg(svg)
     assert [L['hex'] for L in layers] == ['#0047AB', '#FDF0E1', '#0047AB']
+
+
+def _phase_log(monkeypatch):
+    """Record which kind of stitching each sew call is, in order."""
+    from digitizer import core
+    from inkstitchlib import fills
+    log = []
+    real_edge, real_area, real_col = core.sew_edge_run, fills.sew_area, core.sew_column
+    monkeypatch.setattr(core, 'sew_edge_run', lambda *a, **k: (log.append('U'), real_edge(*a, **k)))
+    monkeypatch.setattr(fills, 'sew_area', lambda *a, **k: (log.append('T'), real_area(*a, **k)))
+
+    def col(s, c, travel, phase='both'):
+        log.append('U' if phase == 'underlay' else 'T')
+        return real_col(s, c, travel, phase)
+    monkeypatch.setattr(core, 'sew_column', col)
+    return log
+
+
+def _underlay_first(log):
+    # once the first top stitch of a block goes down, no more underlay follows
+    return 'T' in log and log.index('T') > 0 and 'U' not in log[log.index('T'):]
+
+
+def test_underlay_sewn_first_per_block(monkeypatch):
+    from inkstitchlib import svginput, layers as veclayers
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">'
+           + ''.join('<rect x="%d" y="10" width="14" height="30" fill="#1a3b69"/>' % x
+                     for x in (5, 30, 55, 80)) + '</svg>')
+    log = _phase_log(monkeypatch)
+    pat, layers, info = svginput.digitize_svg(svg)
+    assert log.count('U') >= 4 and log.count('T') >= 4 and _underlay_first(log), log
+
+    # AI layers: four separate objects in one layer
+    lyr = [{'name': 'Bars', 'color': '#1a3b69', 'visible': True,
+            'params': {'stitch': 'fill'},
+            'polys': [{'shell': [[x, 10], [x + 14, 10], [x + 14, 40], [x, 40]], 'holes': []}
+                      for x in (5, 30, 55, 80)]}]
+    log.clear()
+    veclayers.stitch(lyr)
+    assert log.count('U') >= 4 and log.count('T') >= 4 and _underlay_first(log), log
+
+
+def test_image_digitizer_underlay_first(monkeypatch):
+    from digitizer import segment, engine
+    from PIL import Image as PImage, ImageDraw as PDraw
+    im = PImage.new('RGBA', (400, 200), (0, 0, 0, 0))
+    d = PDraw.Draw(im)
+    for x in (20, 120, 220, 320):
+        d.rectangle([x, 40, x + 60, 160], fill=(26, 59, 105, 255))
+    p = os.path.join(tempfile.mkdtemp(), 'bars.png')
+    im.save(p)
+    log = _phase_log(monkeypatch)
+    layers = segment.quantize(segment.load(p), 1)
+    engine.build_pattern(layers, 80.0, 400, engine.Params(target_width_mm=80, heavy_underlay=True))
+    assert log.count('U') >= 4 and log.count('T') >= 4 and _underlay_first(log), log
+
+
+def test_hoops():
+    r = client.get('/api/hoops').json()
+    assert any(h['name'] == '5" × 7"' and h['w_mm'] == 130 for h in r)
+    assert not any(h['custom'] for h in r)
+    r = client.post('/api/hoops', json={'name': 'Cap left', 'w_mm': 60, 'h_mm': 40})
+    assert r.status_code == 200 and r.json()['custom'] and r.json()['name'] == 'Cap left'
+    hid = r.json()['id']
+    assert any(h['id'] == hid for h in client.get('/api/hoops').json())
+    assert client.post('/api/hoops', json={'w_mm': 5, 'h_mm': 40}).status_code == 400
+    assert client.post('/api/hoops', json={'w_mm': 'x'}).status_code == 400
+    assert client.delete('/api/hoops/%d' % hid).status_code == 200
+    assert client.delete('/api/hoops/%d' % hid).status_code == 404

@@ -61,9 +61,12 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
 
         ncol = nfill = nblob = 0
         start_count = s.count
-        # finish each shape before moving on — travelling back and forth
-        # across the design is what generates jump stitches
-        for comp, _c in core.order_by_nearest(comps, lambda t: t[1], s.pos):
+        # Plan every shape first (columns vs fills vs blobs), then sew the
+        # block in two passes: all underlay, then all top stitching. Each
+        # pass visits shapes nearest-first from where the needle is, so the
+        # top pass naturally runs back over the block the underlay just laid.
+        plans = []
+        for comp, cen in comps:
             travel = unary_union(core.mask_to_polys(comp, scale))
             if travel.is_empty:
                 continue
@@ -90,48 +93,59 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
                                         cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
             grow = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (th_px + 1,) * 2)
             leftover = cv2.bitwise_and(cv2.dilate(leftover, grow), comp)
-            fills = [q for q in core.mask_to_polys(leftover, scale, simplify_mm=0.05)
-                     if q.area > p.min_fill_area]
-
-            for q in core.order_by_nearest(
-                    fills, lambda z: (z.centroid.x, z.centroid.y), s.pos):
+            regions = []
+            for q in core.mask_to_polys(leftover, scale, simplify_mm=0.05):
+                if q.area <= p.min_fill_area:
+                    continue
                 g = q.buffer(0.25)
                 if g.geom_type == 'MultiPolygon':
                     g = max(g.geoms, key=lambda z: z.area)
-
                 # A rounded, blocky region (a head, a torso) reads badly as
                 # plain tatami: the edge goes ragged and it never looks round.
                 # If it is narrow enough to satin, give it the full treatment —
                 # outline underlay, open underfill, satin core, satin outline.
                 mw = core.poly_max_width(g) if g.area >= p.min_blob_area else 0.0
-                if mw and mw <= p.max_satin:
-                    core.sew_blob(s, g, p.row_spacing, p.max_satin,
-                                  min(p.border_width, mw * 0.30),
-                                  travel=travel,
-                                  heavy_underlay=p.heavy_underlay)
-                    nblob += 1
-                else:
-                    if q.area >= 3.0:
-                        core.sew_edge_run(s, g, travel=travel)
-                        if p.heavy_underlay:
-                            core.sew_fill(s, g, 110.0, p.underlay_spacing, 3.0,
-                                          stagger=False, start=s.pos, travel=travel)
-                            core.sew_fill(s, g, 20.0, p.underlay_spacing, 3.0,
-                                          stagger=False, start=s.pos, travel=travel)
-                    fill_methods.sew_area(s, g, p.fill_method, p.fill_angle,
-                                   p.row_spacing, p.max_stitch, travel=travel)
-                    # too wide to satin across, but it still needs a hard edge:
-                    # a satin outline over the fill is what stops a torso or a
-                    # head reading as ragged
-                    if q.area >= p.min_blob_area * 2:
-                        ring = core.satin_ring(g, p.border_width, p.row_spacing)
-                        if ring:
-                            core.sew_ring(s, ring, travel)
-                    nfill += 1
+                regions.append({'q': q, 'g': g, 'blob': bool(mw and mw <= p.max_satin),
+                                'mw': mw})
+            plans.append({'cen': cen, 'travel': travel, 'columns': columns,
+                          'regions': regions})
 
-            for col in core.order_columns(columns, s.pos):
-                core.sew_column(s, col, travel)
-                ncol += 1
+        def sew_region(r, travel, phase):
+            g, q = r['g'], r['q']
+            if r['blob']:
+                core.sew_blob(s, g, p.row_spacing, p.max_satin,
+                              min(p.border_width, r['mw'] * 0.30), travel=travel,
+                              heavy_underlay=p.heavy_underlay, phase=phase)
+                return
+            if phase != core.TOP and q.area >= 3.0:
+                core.sew_edge_run(s, g, travel=travel)
+                if p.heavy_underlay:
+                    core.sew_fill(s, g, 110.0, p.underlay_spacing, 3.0,
+                                  stagger=False, start=s.pos, travel=travel)
+                    core.sew_fill(s, g, 20.0, p.underlay_spacing, 3.0,
+                                  stagger=False, start=s.pos, travel=travel)
+            if phase != core.UNDER:
+                fill_methods.sew_area(s, g, p.fill_method, p.fill_angle,
+                                      p.row_spacing, p.max_stitch, travel=travel)
+                # too wide to satin across, but it still needs a hard edge:
+                # a satin outline over the fill is what stops a torso or a
+                # head reading as ragged
+                if q.area >= p.min_blob_area * 2:
+                    ring = core.satin_ring(g, p.border_width, p.row_spacing)
+                    if ring:
+                        core.sew_ring(s, ring, travel)
+
+        for phase in (core.UNDER, core.TOP):
+            for pl in core.order_by_nearest(plans, lambda t: t['cen'], s.pos):
+                travel = pl['travel']
+                for r in core.order_by_nearest(
+                        pl['regions'], lambda z: (z['g'].centroid.x, z['g'].centroid.y), s.pos):
+                    sew_region(r, travel, phase)
+                    if phase == core.TOP:
+                        nblob += r['blob']; nfill += not r['blob']
+                for col in core.order_columns(pl['columns'], s.pos):
+                    core.sew_column(s, col, travel, phase=phase)
+                    ncol += phase == core.TOP
         stats.append({'name': L['name'], 'hex': L['hex'], 'columns': ncol,
                       'blobs': nblob, 'fills': nfill,
                       'stitches': s.count - start_count})

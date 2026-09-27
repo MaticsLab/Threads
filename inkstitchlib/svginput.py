@@ -533,24 +533,27 @@ def _stroke_pieces(subs_mm, st, attrs, clip, stroke_c, unit2mm, max_satin,
         polys = [q for q in (band.geoms if band.geom_type == 'MultiPolygon' else [band])
                  if q.geom_type == 'Polygon' and q.area >= 0.4]
 
-        def sew(s, polys=polys):
+        def under(s, polys=polys):
             for q in polys:
                 if q.area >= 3.0:
                     core.sew_edge_run(s, q, travel=q)
+
+        def top(s, polys=polys):
+            for q in polys:
                 fills.sew_area(s, q, fill_method, fill_angle, row_spacing,
                                max_stitch, travel=q)
-        return [(band, sew)] if polys else []
+        return [(band, under, top)] if polys else []
 
     foot = unary_union([LineString(ln).buffer(max(sw_mm, 0.6) / 2) for ln in lines])
-    return [(foot, lambda s, lines=lines: _sew_stroke(s, lines, sw_mm, attrs, max_satin))]
+    return [(foot, None, lambda s, lines=lines: _sew_stroke(s, lines, sw_mm, attrs, max_satin))]
 
 
 def _plan_blocks(pieces):
     """Group pieces into colour blocks, sewing order preserved where it
     matters: a piece joins the latest block of its colour unless a piece
     sewn after that block overlaps it (then it would be covered), in which
-    case a new block starts. Returns [(rgb, [sew_fn, ...])]."""
-    blocks = []            # [rgb, [sew_fn], [footprints]]
+    case a new block starts. Returns [(rgb, [(under_fn, top_fn), ...])]."""
+    blocks = []            # [rgb, [(under, top)], [footprints]]
     for rgb, geom, fn in pieces:
         target = None
         for bi in range(len(blocks) - 1, -1, -1):
@@ -663,16 +666,19 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
             if zz:
                 under = center_run(subs_mm)
 
-                def sew_satin(s, zz=zz, under=under):
+                def satin_under(s, zz=zz, under=under):
                     s.move_to(under[0] if under else zz[0], None)
                     for pnt in under:
                         s.run_to(pnt, 2.5)
                     for pnt in reversed(under):
                         s.run_to(pnt, 2.5)
+
+                def satin_top(s, zz=zz):
+                    s.move_to(zz[0], None)
                     for pnt in zz:
                         s._st(pnt)
                 from shapely.geometry import MultiPoint
-                pieces.append((rgb, MultiPoint(zz).convex_hull, sew_satin))
+                pieces.append((rgb, MultiPoint(zz).convex_hull, (satin_under, satin_top)))
                 n_satin += 1
             continue
 
@@ -681,7 +687,7 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
         stroke_first = str(st.get('paint-order', '')).split()[:1] == ['stroke']
         if stroke_first and stroke_c is not None:
             sp = _stroke_pieces(*stroke_args)
-            pieces += [(stroke_c, g, fn) for g, fn in sp]
+            pieces += [(stroke_c, g, (u, t)) for g, u, t in sp]
             n_stroke += bool(sp)
             stroke_c = None
         if fill_c is not None:
@@ -700,22 +706,25 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
                 geoms = [q for q in (g.geoms if g.geom_type == 'MultiPolygon' else [g])
                          if q.area >= 0.4]
 
-                def sew_fill(s, geoms=geoms, angle=angle, spacing=spacing):
+                def fill_under(s, geoms=geoms, angle=angle):
                     for q in geoms:
                         if q.area >= 3.0:
                             core.sew_edge_run(s, q, travel=q)
                             if heavy_underlay:
                                 core.sew_fill(s, q, angle + 45, 2.5, 3.0,
                                               stagger=False, start=s.pos, travel=q)
+
+                def fill_top(s, geoms=geoms, angle=angle, spacing=spacing):
+                    for q in geoms:
                         fills.sew_area(s, q, fill_method, angle, spacing,
                                        max_stitch, travel=q)
                 if geoms:
-                    pieces.append((fill_c, g, sew_fill))
+                    pieces.append((fill_c, g, (fill_under, fill_top)))
                     n_fill += len(geoms)
 
         if stroke_c is not None:
             sp = _stroke_pieces(*stroke_args)
-            pieces += [(stroke_c, g, fn) for g, fn in sp]
+            pieces += [(stroke_c, g, (u, t)) for g, u, t in sp]
             n_stroke += bool(sp)
 
     s = core.Sewer()
@@ -729,8 +738,12 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
         else:
             s.color_break(th)
         block_colors.append(rgb)
-        for fn in fns:
-            fn(s)
+        # the block's underlay first, then its top stitching
+        for under, _top in fns:
+            if under:
+                under(s)
+        for _under, top in fns:
+            top(s)
 
     if s.count == 0:
         raise SvgError('the SVG contained no stitchable geometry')

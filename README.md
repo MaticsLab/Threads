@@ -149,6 +149,19 @@ Notes for the Containers runtime:
   — or below/above/beside/centred on it.
 - **Embroidery file import** — read any pystitch-supported machine file
   (DST, PES, JEF, HUS, VP3, …) to preview, play, re-export and print.
+- **Hoops & sizing** — pick the hoop before you digitize (common Brother,
+  Janome, Ricoma and Tajima fields built in, or save your own custom sizes),
+  then set width / height / scale % (they stay in the artwork's aspect
+  ratio) or hit *Fit to hoop*. The canvas shows the hoop and the artwork at
+  that size before anything is stitched; a design that outgrows the hoop is
+  flagged in red before and after digitizing. SVGs start at their natural
+  document size. `GET/POST/DELETE /api/hoops`.
+- **Sew order** — every digitizer sews a colour block in two passes: all
+  underlay (edge walks, centre runs, underfills, zigzag) for every object
+  in the block first, then all top stitching, each pass nearest-object
+  first from where the needle is. The fabric is stabilised across the
+  whole block before cover stitches go down, and travels run under the top
+  layer.
 - **Fill methods** — tatami with fill-angle control, contour fill, and
   circular fill, per Ink/Stitch's fill family.
 - **Previews** — raster preview, stitch-plan SVG (pan/zoom via
