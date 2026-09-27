@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threads Studio — clients &amp; designs</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%234f46e5'/%3E%3Cpath d='M4 11 Q8 3 12 11' stroke='%23fbbf24' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+<style>
+  /* tokens + base controls: same as the studio (static/index.html) */
+  :root{
+    --bg:#f6f7f9; --surface:#ffffff; --ink:#1a1d23; --muted:#6b7280;
+    --line:#e9eaee; --line2:#e2e4e9;
+    --accent:#2563eb; --accent-press:#1d4ed8; --accent-soft:#eef4ff;
+    --stage:#181c26; --ok:#188652; --warn:#a8620a; --warnbg:#fdf5e7; --danger:#c2410c;
+    --r:16px; --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 28px rgba(16,24,40,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;
+    font:14.5px/1.55 "Inter var","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+
+  header{position:relative;flex:none;background:#fff;border-bottom:1px solid var(--line);
+    height:60px;display:flex;align-items:center;padding:0 22px;gap:12px;z-index:30}
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);min-width:0}
+  .crumbs b{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crumbs .sep{color:#c3c7cf}
+  .topnav{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);
+    display:flex;align-items:center;gap:2px}
+  .topnav a{position:relative;color:var(--muted);text-decoration:none;
+    border-radius:10px;padding:0 16px;font-weight:500;height:38px;display:flex;align-items:center;font-size:13.5px}
+  .topnav a:hover{background:#f2f3f6;color:var(--ink)}
+  .topnav a.on{background:#f2f3f6;color:var(--ink);font-weight:600}
+  .topnav a.on::after{content:"";position:absolute;top:-11px;left:22%;right:22%;
+    height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+  .hact{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .avatar{width:32px;height:32px;border-radius:50%;background:#23262e;color:#fff;
+    display:grid;place-items:center;font-size:13px;font-weight:600;flex:none}
+
+  label{display:block;font-size:12.5px;margin:13px 0 5px;color:#3d4250;font-weight:500}
+  input[type=text],input[type=email],input[type=search],select,textarea{width:100%;padding:8px 11px;
+    border:1px solid var(--line2);border-radius:10px;font:inherit;background:#fff;
+    transition:border-color .12s, box-shadow .12s}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft)}
+  textarea{resize:vertical;min-height:72px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  button,.btn{padding:9px 14px;border:0;border-radius:10px;background:var(--accent);
+    color:#fff;font:600 13.5px/1 inherit;cursor:pointer;text-decoration:none;
+    display:inline-flex;align-items:center;gap:7px;
+    box-shadow:0 1px 2px rgba(37,99,235,.3);transition:background .12s,transform .06s}
+  button:hover,.btn:hover{background:var(--accent-press)}
+  button:active,.btn:active{transform:translateY(1px)}
+  button:disabled{background:#aeb6c6;box-shadow:none;cursor:default}
+  .ghost{background:#fff!important;color:var(--ink)!important;border:1px solid var(--line2);box-shadow:none;font-weight:500}
+  .ghost:hover{background:#f4f6f9!important;border-color:#d4d8df}
+  .danger{color:var(--danger)!important}
+  .mini{padding:6px 10px;font-size:12px;border-radius:9px}
+  .muted{color:var(--muted);font-size:12px}
+  .hide{display:none!important}
+  svg.i{width:14px;height:14px;flex:none}
+
+  .card{background:#f1f2f5;border:1px solid #ebecf0;border-radius:var(--r);padding:18px}
+  h2{margin:0;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+  /* ------------------------------------------------------ layout */
+  main{flex:1;min-height:0;max-width:1500px;width:100%;margin:0 auto;
+    padding:18px 22px;display:grid;grid-template-columns:330px 1fr;gap:20px}
+  main>section{overflow-y:auto;min-height:0;padding:2px;scrollbar-width:thin;scrollbar-color:#d3d6dd transparent}
+  button,.btn{white-space:nowrap}
+
+  /* ------------------------------------------------ client list */
+  .side{display:flex;flex-direction:column;gap:12px}
+  .sidehead{display:flex;align-items:center;gap:8px}
+  .search{position:relative}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9aa1ad}
+  .search input{padding-left:33px}
+  .clist{display:flex;flex-direction:column;gap:4px}
+  .crow{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:12px;
+    cursor:pointer;border:1px solid transparent;transition:background .1s}
+  .crow:hover{background:#fff}
+  .crow.on{background:#fff;border-color:var(--line2);box-shadow:0 1px 3px rgba(16,24,40,.08)}
+  .crow .nm{font-weight:600;font-size:13.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crow .sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .crow .tx{min-width:0;flex:1}
+  .count{font-size:11.5px;font-weight:600;color:var(--muted);background:#e6e8ed;
+    border-radius:20px;padding:2px 8px;font-variant-numeric:tabular-nums}
+  .crow.on .count{background:var(--accent-soft);color:var(--accent)}
+  .ini{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
+    font-weight:700;font-size:12.5px;color:#fff;letter-spacing:.02em}
+  .ini.sys{background:#fff;color:var(--muted);border:1px solid var(--line2)}
+  .sep-line{height:1px;background:var(--line2);margin:6px 4px}
+
+  /* ------------------------------------------------ client hero */
+  .hero{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:20px 22px;box-shadow:var(--shadow);display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+  .hero .ini{width:56px;height:56px;border-radius:16px;font-size:19px}
+  .hero h1{margin:0;font-size:21px;line-height:1.2;letter-spacing:-.01em}
+  .hero .biz{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .contacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .contacts a,.contacts span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;
+    color:#3d4250;background:#f4f5f8;border-radius:8px;padding:5px 9px;text-decoration:none}
+  .contacts a:hover{background:var(--accent-soft);color:var(--accent)}
+  .hero .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+  @media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
+  .stat .v{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .stat .k{font-size:12px;color:var(--muted)}
+
+  .bar{display:flex;align-items:center;gap:12px;margin:22px 0 12px;flex-wrap:wrap}
+  .seg{display:flex;gap:3px;background:#e5e7ec;padding:3px;border-radius:11px;margin-left:auto;flex-wrap:wrap}
+  .seg button{background:transparent;color:var(--muted);box-shadow:none;padding:6px 11px;border-radius:8px;font-weight:500;font-size:12.5px}
+  .seg button:hover{background:#eceef2;color:var(--ink)}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12);font-weight:600}
+
+  /* ------------------------------------------------ design grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .dcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    cursor:pointer;transition:box-shadow .15s,transform .15s,border-color .15s;display:flex;flex-direction:column}
+  .dcard:hover{box-shadow:var(--shadow);transform:translateY(-2px);border-color:#dfe2e8}
+  .thumb{position:relative;aspect-ratio:4/3;background:var(--stage);display:grid;place-items:center;padding:14px}
+  .thumb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+  .thumb .pill{position:absolute;top:10px;left:10px}
+  .dbody{padding:12px 14px 13px;display:flex;flex-direction:column;gap:6px}
+  .dname{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dmeta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .dfoot{display:flex;align-items:center;gap:8px}
+  .sws{display:flex;gap:3px}
+  .sws span{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.12)}
+  .dfoot .muted{margin-left:auto;font-size:11.5px}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+    padding:3px 8px;border-radius:20px;background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .st-draft{color:#6b7280}.st-approved{color:#2563eb}.st-in_production{color:#a8620a}.st-done{color:#188652}
+  .newcard{border:1.5px dashed var(--line2);border-radius:14px;display:grid;place-items:center;
+    text-decoration:none;color:var(--muted);min-height:230px;font-weight:500;font-size:13.5px;
+    transition:border-color .12s,background .12s,color .12s;text-align:center;padding:16px}
+  .newcard:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .newcard b{display:block;font-size:26px;font-weight:400;line-height:1;margin-bottom:6px}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty h3{color:var(--ink);margin:10px 0 4px;font-size:16px}
+
+  /* ------------------------------------------------ modals / drawer */
+  .modal{position:fixed;inset:0;background:rgba(15,18,26,.45);z-index:60;
+    display:grid;place-items:center;padding:20px;animation:fade .12s}
+  @keyframes fade{from{opacity:0}}
+  .sheet{width:min(560px,100%);max-height:calc(100vh - 40px);background:#fff;border-radius:16px;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(10,14,22,.35)}
+  .sheet.wide{width:min(860px,100%)}
+  .shead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .shead b{font-size:15px}
+  .shead .x{margin-left:auto}
+  .sbody{padding:4px 18px 18px;overflow-y:auto}
+  .sfoot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+  .sfoot .r{margin-left:auto;display:flex;gap:8px}
+  .detail{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;padding-top:14px}
+  @media(max-width:720px){.detail{grid-template-columns:1fr}}
+  .detail .thumb{border-radius:12px;aspect-ratio:1}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px;margin-top:4px}
+  .kv span:nth-child(odd){color:var(--muted)}
+  .kv span:nth-child(even){text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1a1d23;color:#fff;
+    padding:10px 16px;border-radius:12px;font-size:13px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid #fff6;border-top-color:#fff;
+    border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  @media(max-width:900px){
+    main{display:block;overflow-y:auto;padding:14px 16px}
+    main>section{overflow:visible}
+    main>section+section{margin-top:16px}
+    .clist#clientList{max-height:260px;overflow-y:auto}
+    .topnav{position:static;transform:none}
+    .crumbs{display:none}
+    header{padding:0 16px}
+  }
+  @media(max-width:560px){
+    #newDesignTop span{display:none}
+    #newDesignTop{padding:9px 11px}
+    .hero{padding:16px}
+    .hero .ini{width:44px;height:44px;border-radius:12px;font-size:15px}
+    .hero .acts{margin-left:0;width:100%}
+    .hero .acts>*{flex:1;justify-content:center}
+    .contacts a,.contacts span{word-break:break-word}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+    .newcard{min-height:170px}
+    .sfoot{flex-wrap:wrap}
+    .sfoot .r{flex-wrap:wrap;margin-left:0;width:100%}
+    .sfoot .r>*{flex:1;justify-content:center}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="crumbs">Threads <span class="sep">›</span> <b id="crumb">Clients</b></div>
+  <nav class="topnav">
+    <a href="/" class="on">Clients</a>
+    <a href="/studio">Studio</a>
+  </nav>
+  <div class="hact">
+    <a class="btn" id="newDesignTop" href="/studio">
+      <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+      <span>New design</span></a>
+    <div class="avatar">J</div>
+  </div>
+</header>
+
+<main>
+  <!-- ============================================ clients -->
+  <section class="side">
+    <div class="card" style="padding:14px">
+      <div class="sidehead">
+        <h2>Clients</h2>
+        <button class="ghost mini" id="addClient" style="margin-left:auto">
+          <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+          Client</button>
+      </div>
+      <div class="search" style="margin-top:12px">
+        <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="q" placeholder="Search clients…" autocomplete="off">
+      </div>
+      <div class="clist" id="sysList" style="margin-top:12px"></div>
+      <div class="sep-line"></div>
+      <div class="clist" id="clientList"></div>
+    </div>
+  </section>
+
+  <!-- ============================================ selected client + designs -->
+  <section id="content"></section>
+</main>
+
+<!-- client form -->
+<div class="modal hide" id="clientModal">
+  <div class="sheet">
+    <div class="shead"><b id="cmTitle">New client</b>
+      <button class="ghost mini x" data-close>✕</button></div>
+    <div class="sbody">
+      <div class="row">
+        <div><label>Name *</label><input type="text" id="f_name"></div>
+        <div><label>Business</label><input type="text" id="f_business_name"></div>
+      </div>
+      <div class="row">
+        <div><label>Email</label><input type="email" id="f_email"></div>
+        <div><label>Phone</label><input type="text" id="f_phone"></div>
+      </div>
+      <div class="row">
+        <div><label>Mobile</label><input type="text" id="f_mobile"></div>
+        <div><label>Website</label><input type="text" id="f_website"></div>
+      </div>
+      <label>Address</label><input type="text" id="f_address">
+      <label>Billing address</label><input type="text" id="f_billing_address">
+    </div>
+    <div class="sfoot">
+      <button class="ghost danger hide" id="cmDelete">Delete client</button>
+      <div class="r"><button class="ghost" data-close>Cancel</button><button id="cmSave">Save client</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- design detail -->
+<div class="modal hide" id="designModal">
+  <div class="sheet wide">
+    <div class="shead"><b id="dmTitle">Design</b>
+      <button class="ghost mini x" data-close>✕</button></div>
+    <div class="sbody">
+      <div class="detail">
+        <div class="thumb"><img id="dmImg" alt=""></div>
+        <div>
+          <label style="margin-top:0">Name</label><input type="text" id="dmName">
+          <div class="row">
+            <div><label>Status</label>
+              <select id="dmStatus">
+                <option value="draft">Draft</option><option value="approved">Approved</option>
+                <option value="in_production">In production</option><option value="done">Done</option>
+              </select></div>
+            <div><label>Client</label><select id="dmClient"></select></div>
+          </div>
+          <label>Notes</label><textarea id="dmNotes" placeholder="Garment, placement, quantities…"></textarea>
+          <div class="kv" id="dmKv" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sfoot">
+      <button class="ghost danger" id="dmDelete">Delete</button>
+      <div class="r">
+        <button class="ghost" id="dmDst">Download DST</button>
+        <button class="ghost" id="dmSheet">Worksheet</button>
+        <button class="ghost" id="dmSave">Save</button>
+        <button id="dmOpen">Open in studio</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const FIELDS = ['name','business_name','email','phone','mobile','website','address','billing_address'];
+const STATUS = {draft: 'Draft', approved: 'Approved', in_production: 'In production', done: 'Done'};
+const HUES = ['#2563eb','#7c3aed','#db2777','#ea580c','#16a34a','#0891b2','#4f46e5','#ca8a04'];
+
+let clients = [], designs = [], sel = 'all', filter = 'all', editing = null, current = null;
+
+function initials(n) {
+  const p = String(n || '?').trim().split(/\s+/);
+  return ((p[0] || '?')[0] + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+}
+function hue(id) { return HUES[Math.abs(Number(id) || 0) % HUES.length]; }
+function ago(iso) {
+  if (!iso) return '';
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 86400 * 7) return Math.floor(s / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2400);
+}
+async function api(url, opts = {}) {
+  const res = await fetch(url, opts.body ? { headers: {'Content-Type': 'application/json'}, ...opts,
+    body: JSON.stringify(opts.body) } : opts);
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { msg = (await res.json()).detail || msg; } catch (e) {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+/* ------------------------------------------------------------ data */
+async function load() {
+  [clients, designs] = await Promise.all([api('/api/clients'), api('/api/designs')]);
+  if (sel !== 'all' && sel !== 'none' && !clients.some(c => c.id == sel)) sel = 'all';
+  renderList(); renderContent();
+}
+
+/* ------------------------------------------------------------ sidebar */
+function renderList() {
+  const unassigned = designs.filter(d => !d.client_id).length;
+  $('sysList').innerHTML = [
+    ['all', 'All designs', designs.length, '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>'],
+    ['none', 'Unassigned', unassigned, '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7M9 7V4h6v3"/></svg>'],
+  ].map(([id, nm, n, ic]) => `<div class="crow ${sel === id ? 'on' : ''}" data-sel="${id}">
+      <div class="ini sys">${ic}</div><div class="tx"><div class="nm">${nm}</div></div>
+      <span class="count">${n}</span></div>`).join('');
+
+  const q = $('q').value.trim().toLowerCase();
+  const rows = clients.filter(c => !q || [c.name, c.business_name, c.email].join(' ').toLowerCase().includes(q));
+  $('clientList').innerHTML = rows.map(c => `<div class="crow ${sel == c.id ? 'on' : ''}" data-sel="${c.id}">
+      <div class="ini" style="background:${hue(c.id)}">${esc(initials(c.name))}</div>
+      <div class="tx"><div class="nm">${esc(c.name)}</div>
+        <div class="sub">${esc(c.business_name || c.email || (c.last_design ? 'Updated ' + ago(c.last_design) : 'No designs yet'))}</div></div>
+      <span class="count">${c.design_count}</span></div>`).join('')
+    || `<p class="muted" style="padding:6px 10px">${clients.length ? 'No matches.' : 'No clients yet — add your first one.'}</p>`;
+  document.querySelectorAll('[data-sel]').forEach(el => el.onclick = () => select(el.dataset.sel));
+}
+
+function select(id) {
+  sel = id; filter = 'all';
+  const u = new URL(location); id === 'all' ? u.searchParams.delete('c') : u.searchParams.set('c', id);
+  history.replaceState(null, '', u);
+  renderList(); renderContent();
+}
+
+/* ------------------------------------------------------------ content */
+function scoped() {
+  if (sel === 'all') return designs;
+  if (sel === 'none') return designs.filter(d => !d.client_id);
+  return designs.filter(d => d.client_id == sel);
+}
+function clientName(id) { const c = clients.find(c => c.id == id); return c ? c.name : ''; }
+
+function renderContent() {
+  const c = clients.find(x => x.id == sel);
+  $('crumb').textContent = c ? c.name : sel === 'none' ? 'Unassigned' : 'Clients';
+  $('newDesignTop').href = c ? '/studio?client=' + c.id : '/studio';
+  const list = scoped();
+  let hero;
+  if (c) {
+    const ct = [];
+    if (c.email) ct.push(`<a href="mailto:${esc(c.email)}"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>${esc(c.email)}</a>`);
+    if (c.phone || c.mobile) ct.push(`<a href="tel:${esc(c.phone || c.mobile)}"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/></svg>${esc(c.phone || c.mobile)}</a>`);
+    if (c.website) ct.push(`<a href="${esc(/^https?:/i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>${esc(c.website)}</a>`);
+    if (c.address) ct.push(`<span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>${esc(c.address)}</span>`);
+    hero = `<div class="hero">
+      <div class="ini" style="background:${hue(c.id)}">${esc(initials(c.name))}</div>
+      <div style="min-width:0;flex:1">
+        <h1>${esc(c.name)}</h1>
+        <div class="biz">${esc(c.business_name || 'Client')}</div>
+        <div class="contacts">${ct.join('') || '<span>No contact details yet</span>'}</div>
+      </div>
+      <div class="acts">
+        <button class="ghost" id="editClient">Edit</button>
+        <a class="btn" href="/studio?client=${c.id}">
+          <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+          New design</a>
+      </div></div>`;
+  } else {
+    hero = `<div class="hero"><div style="flex:1">
+      <h1>${sel === 'none' ? 'Unassigned designs' : 'All designs'}</h1>
+      <div class="biz">${sel === 'none' ? 'Saved designs not linked to a client — open one to assign it.'
+        : 'Every design saved from the studio, newest first.'}</div></div>
+      <div class="acts"><button class="ghost" id="heroAddClient">Add client</button></div></div>`;
+  }
+  const n = s => list.filter(d => d.status === s).length;
+  const stitches = list.reduce((a, d) => a + (d.stitches || 0), 0);
+  const stats = `<div class="stats">
+    <div class="stat"><div class="v">${list.length}</div><div class="k">Designs</div></div>
+    <div class="stat"><div class="v">${stitches.toLocaleString()}</div><div class="k">Total stitches</div></div>
+    <div class="stat"><div class="v">${n('in_production')}</div><div class="k">In production</div></div>
+    <div class="stat"><div class="v">${n('done')}</div><div class="k">Done</div></div></div>`;
+  const segs = ['all', ...Object.keys(STATUS)].map(s =>
+    `<button data-f="${s}" class="${filter === s ? 'on' : ''}">${s === 'all' ? 'All' : STATUS[s]}</button>`).join('');
+  const shown = list.filter(d => filter === 'all' || d.status === filter);
+  const cards = shown.map(d => `<div class="dcard" data-d="${d.id}">
+      <div class="thumb"><span class="pill st-${esc(d.status)}">${STATUS[d.status] || esc(d.status)}</span>
+        <img loading="lazy" src="/api/designs/${d.id}/preview.png?u=${encodeURIComponent(d.updated)}" alt=""></div>
+      <div class="dbody">
+        <div class="dname">${esc(d.name)}</div>
+        <div class="dmeta">${d.width_mm.toFixed(0)} × ${d.height_mm.toFixed(0)} mm · ${(d.stitches || 0).toLocaleString()} st${sel === 'all' && d.client_id ? ' · ' + esc(clientName(d.client_id)) : ''}</div>
+        <div class="dfoot"><div class="sws">${(d.colors || []).slice(0, 8).map(h => `<span style="background:${esc(h)}"></span>`).join('')}</div>
+          <span class="muted">${ago(d.updated)}</span></div>
+      </div></div>`).join('');
+  const newCard = `<a class="newcard" href="${c ? '/studio?client=' + c.id : '/studio'}"><div><b>+</b>New design${c ? '<br><span class="muted">for ' + esc(c.name) + '</span>' : ''}</div></a>`;
+  const body = list.length || c
+    ? `<div class="grid">${cards}${filter === 'all' ? newCard : ''}</div>
+       ${!shown.length && filter !== 'all' ? '<p class="muted" style="margin-top:4px">No designs with this status.</p>' : ''}`
+    : `<div class="empty"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#b6bcc7" stroke-width="1.6"><path d="M4 16c3-8 5-8 8 0s5 8 8 0"/></svg>
+        <h3>No saved designs yet</h3><p>Create a design in the studio and use <b>Save to client</b> to keep it here.</p>
+        <a class="btn" href="/studio" style="margin-top:8px">Open the studio</a></div>`;
+  $('content').innerHTML = hero + stats +
+    `<div class="bar"><h2>Designs</h2><div class="seg">${segs}</div></div>` + body;
+
+  if ($('editClient')) $('editClient').onclick = () => openClient(c);
+  if ($('heroAddClient')) $('heroAddClient').onclick = () => openClient(null);
+  document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { filter = b.dataset.f; renderContent(); });
+  document.querySelectorAll('[data-d]').forEach(el => el.onclick = () => openDesign(designs.find(d => d.id == el.dataset.d)));
+}
+
+/* ------------------------------------------------------------ client form */
+function openClient(c) {
+  editing = c;
+  $('cmTitle').textContent = c ? 'Edit client' : 'New client';
+  FIELDS.forEach(f => $('f_' + f).value = c ? (c[f] || '') : '');
+  $('cmDelete').classList.toggle('hide', !c);
+  $('clientModal').classList.remove('hide');
+  setTimeout(() => $('f_name').focus(), 30);
+}
+$('addClient').onclick = () => openClient(null);
+$('cmSave').onclick = async () => {
+  const data = {}; FIELDS.forEach(f => data[f] = $('f_' + f).value.trim());
+  if (!data.name) { $('f_name').focus(); return toast('A client needs a name'); }
+  try {
+    if (editing) await api('/api/business/client/' + editing.id, { method: 'PUT', body: data });
+    else { const r = await api('/api/business/client', { method: 'POST', body: data }); sel = String(r.id); }
+    $('clientModal').classList.add('hide');
+    await load(); select(sel); toast(editing ? 'Client updated' : 'Client added');
+  } catch (e) { toast(e.message); }
+};
+$('cmDelete').onclick = async () => {
+  if (!editing || !confirm(`Delete ${editing.name}? Their designs stay in the library as unassigned.`)) return;
+  await api('/api/business/client/' + editing.id, { method: 'DELETE' });
+  $('clientModal').classList.add('hide'); sel = 'all'; await load(); select('all'); toast('Client deleted');
+};
+
+/* ------------------------------------------------------------ design detail */
+function openDesign(d) {
+  current = d;
+  $('dmTitle').textContent = d.name;
+  $('dmImg').src = `/api/designs/${d.id}/preview.png?u=${encodeURIComponent(d.updated)}`;
+  $('dmName').value = d.name;
+  $('dmStatus').value = d.status;
+  $('dmNotes').value = d.notes || '';
+  $('dmClient').innerHTML = '<option value="">— Unassigned —</option>' +
+    clients.map(c => `<option value="${c.id}" ${c.id == d.client_id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  $('dmKv').innerHTML = [
+    ['Size', `${d.width_mm.toFixed(1)} × ${d.height_mm.toFixed(1)} mm`],
+    ['', `${(d.width_mm / 25.4).toFixed(2)} × ${(d.height_mm / 25.4).toFixed(2)} in`],
+    ['Stitches', (d.stitches || 0).toLocaleString()],
+    ['Colours', (d.colors || []).length],
+    ['Created', new Date(d.created).toLocaleString()],
+    ['Updated', new Date(d.updated).toLocaleString()],
+  ].map(([k, v]) => `<span>${k}</span><span>${esc(v)}</span>`).join('');
+  $('designModal').classList.remove('hide');
+}
+async function saveDesign(quiet) {
+  const data = { name: $('dmName').value, status: $('dmStatus').value,
+                 notes: $('dmNotes').value, client_id: $('dmClient').value || null };
+  current = await api('/api/designs/' + current.id, { method: 'PUT', body: data });
+  await load();
+  if (!quiet) { toast('Design saved'); $('designModal').classList.add('hide'); }
+}
+$('dmSave').onclick = () => saveDesign(false).catch(e => toast(e.message));
+$('dmOpen').onclick = async () => { await saveDesign(true).catch(() => {}); location.href = '/studio?design=' + current.id; };
+$('dmDelete').onclick = async () => {
+  if (!confirm(`Delete "${current.name}"? This removes the saved design files.`)) return;
+  await api('/api/designs/' + current.id, { method: 'DELETE' });
+  $('designModal').classList.add('hide'); await load(); toast('Design deleted');
+};
+// exports need a working job: restore the design, then hand off
+async function withJob(btn, fn) {
+  const label = btn.textContent; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  const win = window.open('', '_blank');
+  try {
+    const d = await api(`/api/designs/${current.id}/open`, { method: 'POST' });
+    win.location = fn(d.job);
+  } catch (e) { win && win.close(); toast(e.message); }
+  btn.disabled = false; btn.textContent = label;
+}
+$('dmDst').onclick = () => withJob($('dmDst'), j => `/api/download/${j}?fmt=dst`);
+$('dmSheet').onclick = () => withJob($('dmSheet'), j => `/api/worksheet/${j}.pdf?inline=true&` +
+  new URLSearchParams({ name: current.name, client: clientName(current.client_id) }));
+
+/* ------------------------------------------------------------ modal plumbing */
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-close]')) m.classList.add('hide'); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.classList.add('hide'));
+});
+$('q').oninput = renderList;
+
+sel = new URLSearchParams(location.search).get('c') || 'all';
+load().catch(e => toast(e.message));
+</script>
+</body>
+</html>

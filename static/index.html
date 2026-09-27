@@ -203,10 +203,14 @@
 <header>
   <div class="crumbs">Threads <span class="sep">›</span> <b id="crumbName">Create</b></div>
   <nav class="topnav">
+    <button id="tabClients" onclick="location.href='/'">Clients</button>
     <button id="tabImage" class="on">Create</button>
     <button id="tabBiz">Business</button>
   </nav>
   <div class="hact">
+    <button class="mini" id="saveTop" disabled title="Keep this design in a client's library">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1zM8 3v5h7V3M8 21v-7h8v7"/></svg>
+      Save to client</button>
     <button class="ghost mini" id="pdfTop" disabled>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5M6 3h8l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/></svg>
       Worksheet</button>
@@ -717,6 +721,31 @@
   </div>
 </div>
 
+<div id="saveModal" class="modal hide">
+  <div class="sheet" style="width:min(460px,96vw);height:auto">
+    <div class="sheet-head">
+      <b>Save to client</b>
+      <button class="ghost mini" id="saveClose" style="margin-left:auto">✕</button>
+    </div>
+    <div style="padding:4px 18px 18px">
+      <label>Client</label>
+      <select id="svClient"><option value="">— Unassigned —</option></select>
+      <label>Design name</label>
+      <input type="text" id="svName" placeholder="e.g. Front chest logo">
+      <p class="muted" id="svHint" style="margin:10px 0 0"></p>
+      <div class="row" style="margin-top:16px">
+        <button class="ghost" id="svAsNew">Save as new</button>
+        <button id="svSave">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="savedNote" class="hide" style="position:fixed;left:50%;top:72px;transform:translateX(-50%);
+  background:#1a1d23;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:80;
+  box-shadow:0 10px 30px rgba(0,0,0,.25)"></div>
+<style>#savedNote a{color:#93b4ff}</style>
+
 <div id="pdfModal" class="modal hide">
   <div class="sheet">
     <div class="sheet-head">
@@ -1062,6 +1091,7 @@ $('goText').onclick = async () => {
 let previewSrc = '';
 function show(d) {
   job = d.job; kind = d.kind; rev++;
+  $('saveTop').disabled = false;
   $('importPlacement').disabled = false;
   const r = d.report;
   $('stageEmpty').classList.add('hide');
@@ -2256,6 +2286,77 @@ $('dpSave').onclick = async () => {
   b.disabled = false; b.textContent = 'Save changes';
 };
 
+
+/* ----------------------- client library: open / save designs (main page) */
+const params = new URLSearchParams(location.search);
+let libDesign = null;                                // saved design open in the studio
+let libClient = params.get('client') || '';          // preselected client for saving
+async function libClients() {
+  try { return await (await fetch('/api/clients')).json(); } catch (e) { return []; }
+}
+const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function libCrumb() {
+  if (libDesign) $('crumbName').textContent = libDesign.name;
+}
+$('saveTop').onclick = async () => {
+  if (!job) return;
+  const cl = await libClients();
+  const cur = libDesign ? String(libDesign.client_id || '') : libClient;
+  $('svClient').innerHTML = '<option value="">— Unassigned —</option>' +
+    cl.map(c => `<option value="${c.id}" ${String(c.id) === cur ? 'selected' : ''}>${escH(c.name)}</option>`).join('');
+  $('svName').value = libDesign ? libDesign.name : ($('qName').value !== 'design' ? $('qName').value : '');
+  $('svSave').textContent = libDesign ? 'Save changes' : 'Save';
+  $('svAsNew').classList.toggle('hide', !libDesign);
+  $('svHint').textContent = libDesign ? `Save changes overwrites “${libDesign.name}”; Save as new keeps both.`
+    : 'The design, its colours and preview are kept in the client’s library on the Clients page.';
+  $('saveModal').classList.remove('hide');
+  setTimeout(() => $('svName').focus(), 30);
+};
+async function libSave(asNew) {
+  const btn = asNew ? $('svAsNew') : $('svSave'), label = btn.textContent;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Saving…';
+  try {
+    const res = await fetch('/api/designs', { method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ job, name: $('svName').value || 'Untitled design',
+        client_id: $('svClient').value || null,
+        design_id: (!asNew && libDesign) ? libDesign.id : null }) });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    libDesign = await res.json();
+    libClient = String(libDesign.client_id || '');
+    $('saveModal').classList.add('hide');
+    libCrumb();
+    const u = new URL(location); u.searchParams.set('design', libDesign.id); u.searchParams.delete('client');
+    history.replaceState(null, '', u);
+    const back = libDesign.client_id ? '/?c=' + libDesign.client_id : '/?c=none';
+    $('savedNote').innerHTML = `Saved “${escH(libDesign.name)}” · <a href="${back}">view in Clients</a>`;
+    $('savedNote').classList.remove('hide');
+    setTimeout(() => $('savedNote').classList.add('hide'), 5000);
+  } catch (e) { alert(e.message); }
+  btn.disabled = false; btn.textContent = label;
+}
+$('svSave').onclick = () => libSave(false);
+$('svAsNew').onclick = () => libSave(true);
+$('saveClose').onclick = () => $('saveModal').classList.add('hide');
+$('saveModal').onclick = e => { if (e.target === $('saveModal')) $('saveModal').classList.add('hide'); };
+
+(async () => {
+  const did = params.get('design');
+  if (!did) return;
+  try {
+    const res = await fetch(`/api/designs/${did}/open?palette=${encodeURIComponent($('palette').value || 'Madeira Rayon')}`, { method: 'POST' });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const d = await res.json();
+    libDesign = d.design;
+    show(d);
+    $('qName').value = libDesign.name;
+    if (d.client) {
+      const opt = [...$('qClient').options].find(o => o.text === d.client.name);
+      if (opt) $('qClient').value = opt.value;
+    }
+    updateDl();
+    libCrumb();
+  } catch (e) { alert('Could not open the saved design: ' + e.message); }
+})();
 </script>
 </body>
 </html>

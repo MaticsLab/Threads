@@ -259,6 +259,14 @@ def basic_report(pat):
 
 @app.get('/', response_class=HTMLResponse)
 def index():
+    """Main page: clients and their designs."""
+    with open(os.path.join(APP_DIR, 'static', 'clients.html')) as f:
+        return f.read()
+
+
+@app.get('/studio', response_class=HTMLResponse)
+def studio():
+    """The digitizing studio (canvas, Create/Text/Pen/Design/Export)."""
     with open(os.path.join(APP_DIR, 'static', 'index.html')) as f:
         return f.read()
 
@@ -973,6 +981,103 @@ def themes_delete(tid: int):
     if not business.delete_theme(tid):
         raise HTTPException(404, 'no such theme')
     return {'ok': True}
+
+
+# ------------------------------------------------ clients & design library
+@app.get('/api/clients')
+def clients_summary():
+    """Clients with design counts (the main page's list)."""
+    return business.client_summaries()
+
+
+@app.get('/api/designs')
+def designs_list(client_id: int = 0, unassigned: bool = False):
+    return business.list_designs(client_id or None, unassigned=unassigned)
+
+
+@app.post('/api/designs')
+async def designs_save(data: dict):
+    """Save the current job into the library, for a client (or unassigned).
+    With `design_id` the saved design is overwritten (Save), else a new one
+    is made (Save as)."""
+    job = str(data.get('job') or '')
+    d = _job_dir(job)
+    meta = _load_meta(job)
+    pat = _load_pattern(job)
+    rep = meta.get('report') or basic_report(pat)
+    summary = {'kind': meta.get('kind', ''), 'stitches': rep.get('stitches', 0),
+               'width_mm': rep.get('width_mm', 0), 'height_mm': rep.get('height_mm', 0),
+               'colors': [L['hex'] for L in meta.get('layers', [])]}
+    try:
+        did = business.save_design(d, data.get('name'), data.get('client_id'),
+                                   int(data.get('design_id') or 0) or None, summary)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except KeyError:
+        raise HTTPException(404, 'unknown design')
+    return business.get_design(did)
+
+
+def _design_or_404(did):
+    dsg = business.get_design(did)
+    if not dsg:
+        raise HTTPException(404, 'unknown design')
+    return dsg
+
+
+@app.put('/api/designs/{did}')
+async def designs_update(did: int, data: dict):
+    _design_or_404(did)
+    try:
+        business.update_design(did, data)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return business.get_design(did)
+
+
+@app.delete('/api/designs/{did}')
+def designs_delete(did: int):
+    if not business.delete_design(did):
+        raise HTTPException(404, 'unknown design')
+    return {'ok': True}
+
+
+@app.get('/api/designs/{did}/preview.png')
+def designs_preview(did: int):
+    _design_or_404(did)
+    p = os.path.join(business.design_dir(did), 'preview.png')
+    if not os.path.exists(p):
+        raise HTTPException(404, 'no preview')
+    return FileResponse(p, media_type='image/png',
+                        headers={'Cache-Control': 'no-cache'})
+
+
+@app.post('/api/designs/{did}/open')
+def designs_open(did: int, palette: str = 'Madeira Rayon'):
+    """Restore a saved design into a working job (the studio's payload)."""
+    import shutil
+    dsg = _design_or_404(did)
+    src = business.design_dir(did)
+    if not os.path.exists(os.path.join(src, 'design.dst')):
+        raise HTTPException(404, 'the design files are missing from the library')
+    job = uuid.uuid4().hex[:12]
+    d = _job_dir(job, must_exist=False)
+    os.makedirs(d, exist_ok=True)
+    for fn in business.DESIGN_FILES:
+        if os.path.exists(os.path.join(src, fn)):
+            shutil.copyfile(os.path.join(src, fn), os.path.join(d, fn))
+    meta = _load_meta(job)
+    pat = _load_pattern(job)
+    with open(os.path.join(d, 'plan.svg'), 'w') as f:
+        f.write(stitch_svg.render(pat, realistic=False))
+    layers = _job_layers(meta)
+    client = business.get_contact('client', dsg['client_id']) if dsg['client_id'] else None
+    return _native({'job': job, 'kind': meta.get('kind', 'import'),
+                    'report': meta.get('report') or basic_report(pat),
+                    'settings': meta.get('settings') or {},
+                    'threads': threads.match_layers(layers, palette),
+                    'warnings': [], 'preview': _b64(os.path.join(d, 'preview.png')),
+                    'design': dsg, 'client': client})
 
 
 # --------------------------------------------- business database (embTools)

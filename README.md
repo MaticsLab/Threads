@@ -10,7 +10,7 @@ Ink/Stitch family of projects integrated end to end.
 ## Run it
 
 ```bash
-./run.sh            # then open http://localhost:8000
+./run.sh            # then open http://localhost:8000 (clients) — the studio is /studio
 ```
 
 Or manually:
@@ -108,6 +108,17 @@ Notes for the Containers runtime:
   (`Cache-Control: public`), so a browser or CDN only fetches them once.
 
 ## What you get
+
+- **Clients & designs (main page, `/`)** — every client with their saved
+  designs: search clients, add/edit contact details, and see each client's
+  designs as cards (preview, size, stitches, thread colours, status). Click a
+  design to rename it, move it to another client, set its status (draft →
+  approved → in production → done), keep notes, download the DST, print the
+  worksheet or reopen it in the studio. In the studio, **Save to client**
+  keeps the current design in a client's library (Save changes overwrites a
+  design you opened, Save as new keeps both). Saved designs live under
+  `STITCHFORGE_DATA` — on Railway attach a volume (e.g. at `/data`) and set
+  `STITCHFORGE_DATA=/data` so they survive redeploys.
 
 - **PNG → DST** — the digitizing pipeline described below, unchanged.
 - **Any machine format** — exports via pystitch: DST, PES, JEF, EXP, VP3,
@@ -289,13 +300,19 @@ GET  /api/worksheet/{job}.pdf    print worksheet (layout=production|classic, cli
                                  price_per_1000, garment_qty, garment_base, markup_pct,
                                  discount_pct)
 GET/POST/PUT/DELETE /api/business/{client|vendor}[/{id}]   contact book (embTools)
+GET  /api/clients                clients with design counts (main page)
+GET  /api/designs                saved designs (?client_id= or ?unassigned=true)
+POST /api/designs                save a job {job, name, client_id, design_id?}
+PUT/DELETE /api/designs/{id}     rename / status / notes / move client, or delete
+GET  /api/designs/{id}/preview.png
+POST /api/designs/{id}/open      restore a saved design into a working job
 GET/PUT  /api/notes/{notes|quotes|todo}                    persisted notes (embTools)
 ```
 
 ## Layout
 
 ```
-app.py                    FastAPI app
+app.py                    FastAPI app (/ clients & designs, /studio the canvas)
 digitizer/                image -> colour layers -> stitches (the original core)
 inkstitchlib/             everything ported from the Ink/Stitch family
   stitch_svg.py             stitch plan + realistic SVG rendering
@@ -305,7 +322,8 @@ inkstitchlib/             everything ported from the Ink/Stitch family
 fonts/                    vendored Ink/Stitch fonts (per-font licences inside)
 palettes/                 vendored Ink/Stitch thread palettes (.gpl)
 third_party/pystitch/     vendored pystitch (MIT)
-static/                   UI; vendor/ holds svg.js + svg.panzoom.js
+static/                   UI: clients.html (main page), index.html (studio);
+                          vendor/ holds svg.js + svg.panzoom.js
 tests/                    end-to-end API tests
 ```
 

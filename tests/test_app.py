@@ -427,3 +427,44 @@ def test_production_worksheet():
     ps = worksheet.production_stats(_load_pattern(job))
     assert abs(ps['left_mm'] - 40) < 0.5 and abs(ps['down_mm'] - 40) < 0.5
     assert ps['max_stitch_mm'] > 0 and ps['thread_ft'] > ps['bobbin_ft'] > 0
+
+
+def test_client_design_library():
+    # main page + studio routes
+    assert b'clients' in client.get('/').content.lower()
+    assert b'Save to client' in client.get('/studio').content
+    cid = client.post('/api/business/client', json={'name': 'Library Co'}).json()['id']
+    r = client.post('/api/import', files={'design': ('ab.svg', SVG_AB.encode())})
+    job = r.json()['job']
+    r = client.post('/api/designs', json={'job': job, 'name': 'Chest logo', 'client_id': cid})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d['client_id'] == cid and d['stitches'] > 100 and len(d['colors']) == 2
+    summ = {c['id']: c for c in client.get('/api/clients').json()}
+    assert summ[cid]['design_count'] == 1
+    assert [x['id'] for x in client.get('/api/designs?client_id=%d' % cid).json()] == [d['id']]
+    assert client.get('/api/designs/%d/preview.png' % d['id']).status_code == 200
+
+    # overwrite (Save) keeps the id; status/notes update; bad status rejected
+    r = client.post('/api/designs', json={'job': job, 'name': 'Chest logo v2',
+                                          'client_id': cid, 'design_id': d['id']})
+    assert r.json()['id'] == d['id'] and r.json()['name'] == 'Chest logo v2'
+    r = client.put('/api/designs/%d' % d['id'], json={'status': 'approved', 'notes': 'navy tee'})
+    assert r.json()['status'] == 'approved' and r.json()['notes'] == 'navy tee'
+    assert client.put('/api/designs/%d' % d['id'], json={'status': 'nope'}).status_code == 400
+    assert client.post('/api/designs', json={'job': job, 'client_id': 99999}).status_code == 400
+
+    # reopen into a fresh working job that exports like the original
+    r = client.post('/api/designs/%d/open' % d['id'])
+    assert r.status_code == 200, r.text
+    o = r.json()
+    assert o['job'] != job and o['client']['name'] == 'Library Co'
+    assert abs(o['report']['width_mm'] - 80) < 2
+    assert client.get('/api/download/%s?fmt=dst' % o['job']).status_code == 200
+    assert client.get('/api/worksheet/%s.pdf' % o['job']).status_code == 200
+
+    # deleting the client leaves the design unassigned; deleting the design removes it
+    client.delete('/api/business/client/%d' % cid)
+    assert d['id'] in [x['id'] for x in client.get('/api/designs?unassigned=true').json()]
+    assert client.delete('/api/designs/%d' % d['id']).status_code == 200
+    assert client.get('/api/designs/%d/preview.png' % d['id']).status_code == 404
