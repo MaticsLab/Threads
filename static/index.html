@@ -329,12 +329,43 @@
   #histBox{left:84px;flex-direction:row;padding:4px}
 
   /* right rail + layers dock */
-  #rail{position:absolute;right:328px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:4px;padding:8px 6px;
-    background:var(--panel);border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+  #rail{position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:4px;padding:8px 6px;
+    background:var(--panel);border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);transition:right .18s ease}
+  #rail.beside{right:328px}
   #rail .tb{width:42px;height:42px}
   #rail .rsep{height:1px;background:var(--line2);margin:4px 6px}
-  #designPanel{position:absolute;top:80px;right:12px;bottom:auto;left:auto;width:300px;max-height:calc(100vh - 170px);z-index:36;border-radius:16px}
+  /* panels that dock on the right edge, one at a time, with the rail beside them */
+  .rdock{position:absolute!important;top:80px!important;right:12px!important;bottom:12px;left:auto!important;width:300px;max-height:none;z-index:36;border-radius:16px}
+  .rdock .dhead{cursor:default}
+  .rdock .dbody{padding:12px 12px 14px;flex:1}
   .dpanel{width:300px;max-height:calc(100vh - 170px)}
+  .lfoot{display:flex;gap:6px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+  .lfoot .tb{width:40px;height:40px}
+  .lfoot .sep-v{width:1px;height:26px;background:var(--line2);margin:0 4px}
+  .ptabs{display:flex;background:#1f2228;border-radius:12px;padding:4px;margin-bottom:12px}
+  .ptabs button{flex:1;background:transparent;box-shadow:none;color:var(--ink);font-size:15px;padding:9px 6px;border-radius:9px}
+  .ptabs button:hover{background:rgba(255,255,255,.06)}
+  .ptabs button.on{background:#3a3d45}
+  .srow{display:flex;gap:8px;margin-bottom:8px}
+  .srow .sbox{flex:1;display:flex;align-items:center;gap:8px;background:#1f2228;border-radius:12px;padding:0 12px;color:var(--muted)}
+  .srow .sbox input{background:transparent;border:0;box-shadow:none;padding:11px 0;color:var(--ink);min-width:0;flex:1}
+  .srow .sbox input:focus{box-shadow:none}
+  .srow .tb{width:44px;height:44px;background:#1f2228}
+  .ccard{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--panel2);margin-bottom:8px;cursor:pointer;border:2px solid transparent}
+  .ccard:hover{background:#3a3d45}
+  .ccard.sel{border-color:var(--accent)}
+  .ccard .csw{width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.18);flex:none}
+  .ccard .cn{font-size:16px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ccard .cc{font-size:13.5px;color:#cfd4dd;font-variant-numeric:tabular-nums}
+  .ccard .cb{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ccard .cmeta{flex:1;min-width:0}
+  .ccard .cnum{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+  .icard{background:var(--panel2);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+  .icard .ik{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;margin-bottom:6px}
+  .icard .iv{font-size:17px;font-weight:600;color:var(--ink)}
+  .istat{display:flex;justify-content:space-between;align-items:center;background:var(--panel2);border-radius:14px;padding:15px 16px;margin-bottom:8px;font-size:15px;color:#cfd4dd}
+  .istat b{color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums}
+  .pdesc{color:var(--muted);font-size:13.5px;margin:-4px 0 12px}
   #reopenPanel{position:absolute;left:12px;top:80px;z-index:34}
   #toolHint{padding-right:40px}
   #toolHintClose{position:absolute;right:8px;top:8px}
@@ -344,7 +375,8 @@
   .lrow:hover{background:#3a3d45}
   .lrow.sel{border-color:var(--accent);background:#3a3d45}
   .lrow .grip{color:#6b7280;display:grid;place-items:center;width:14px;flex:none}
-  .lrow canvas{width:72px;height:72px;border-radius:50%;background:#1c1f26;flex:none}
+  .lrow canvas{width:72px;height:72px;border-radius:12px;background:#9ca3af;flex:none}
+  .lrow.off{opacity:.45}
   .lrow .lmeta{flex:1;min-width:0}
   .lrow .lname{font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lrow .lsub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -431,11 +463,15 @@
               <button data-rt="run" class="on" title="Running stitch"><svg width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 8h4M11 8h4M19 8h4"/></svg></button>
               <button data-rt="bean" title="Bean stitch (each step sewn three times)"><svg width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><path d="M3 8h5M12 8h5M21 8h5"/></svg></button>
               <button data-rt="satin" title="Satin (zigzag at a set width)"><svg width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 14 5 2l3 12 3-12 3 12 3-12 3 12 3-12 3 12"/></svg></button>
+              <button data-rt="estitch" title="E-stitch (blanket / comb)"><svg width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 13h26M5 13V4M11 13V4M17 13V4M23 13V4"/></svg></button>
+              <button data-rt="triangle" title="Triangle stitch"><svg width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 13 7 3l5 10 5-10 5 10 5-10 1 2M2 13h26"/></svg></button>
+              <button data-rt="cross" title="Cross stitch"><svg width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 3l8 10M10 3 2 13M11 3l8 10M19 3l-8 10M20 3l8 10M28 3l-8 10"/></svg></button>
+              <button data-rt="motif" title="Motif — chain of diamonds"><svg width="30" height="16" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 8l4-4 4 4-4 4zM10 8h2M12 8l4-4 4 4-4 4zM20 8h2M22 8l3-3 3 3-3 3z"/></svg></button>
             </div>
             <details class="sec" open><summary>Run Settings</summary>
               <div class="row">
-                <div><label>Stitch length (mm)</label><input type="number" id="objRunLen" value="2.5" step="0.1" min="0.8" max="6"></div>
-                <div><label>Satin width (mm)</label><input type="number" id="objWidth" value="3" step="0.5" min="0.6" max="12"></div>
+                <div><label>Length / spacing (mm)</label><input type="number" id="objRunLen" value="2.5" step="0.1" min="0.8" max="6"></div>
+                <div><label>Width (mm)</label><input type="number" id="objWidth" value="3" step="0.5" min="0.6" max="12"></div>
               </div>
             </details>
           </div>
@@ -708,14 +744,14 @@
   </section>
 </main>
 
-<div id="layersPanel" class="dpanel hide" style="right:auto;left:324px;top:80px">
-  <div class="dhead" id="layersDrag" title="Drag to move · double-click to reset">
-    <span class="dots">⠿</span>
+<div id="layersPanel" class="dpanel rdock hide">
+  <div class="dhead" id="layersDrag">
     <span class="dcrumb">Layers</span>
     <button class="ghost mini" id="layersClose" style="margin-left:auto">✕</button>
   </div>
   <div class="dbody">
     <div id="vecList"></div>
+    <p class="muted" id="vecEmpty" style="margin:0">No shapes yet — draw one, add a shape, or read layers from the artwork.</p>
     <div id="vecParams" class="hide" style="border-top:1px solid var(--line);margin-top:10px;padding-top:6px">
       <label style="margin-top:4px">Layer name</label>
       <input type="text" id="vlName">
@@ -728,6 +764,10 @@
             <option value="run">Running outline</option>
             <option value="bean">Bean-stitch outline</option>
             <option value="satin">Satin (line or shape)</option>
+            <option value="estitch">E-stitch outline</option>
+            <option value="triangle">Triangle-stitch outline</option>
+            <option value="cross">Cross-stitch outline</option>
+            <option value="motif">Motif (diamond chain) outline</option>
             <option value="applique">Appliqué (placement · tack-down · border)</option>
             <option value="puff">3D puff (foam)</option>
           </select></div>
@@ -749,6 +789,52 @@
       <span class="muted" id="vecNameStatus"></span>
     </div>
     <button class="mini wide" id="vecStitch">Stitch layers →</button>
+  </div>
+  <div class="lfoot">
+    <button class="tb" id="vlEye" title="Show / hide the shape"><i data-ic="eye" data-size="20"></i></button>
+    <button class="tb" id="vlDup" title="Duplicate (⌘D)"><i data-ic="copy" data-size="20"></i></button>
+    <button class="tb" id="vlTrash" title="Delete (⌫)"><i data-ic="trash" data-size="20"></i></button>
+    <span class="sep-v"></span>
+    <button class="tb" id="vlTop" title="Sew first"><i data-ic="arrow-up-line" data-size="20"></i></button>
+    <button class="tb" id="vlUp" title="Sew earlier"><i data-ic="chevron-up" data-size="20"></i></button>
+    <button class="tb" id="vlDown" title="Sew later"><i data-ic="chevron-down" data-size="20"></i></button>
+    <button class="tb" id="vlBottom" title="Sew last"><i data-ic="arrow-down-line" data-size="20"></i></button>
+  </div>
+</div>
+
+<div id="seqPanel" class="dpanel rdock hide">
+  <div class="dhead">
+    <span class="dcrumb">Sequencer: Colors</span>
+    <button class="ghost mini" id="seqClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+    <div id="seqList"></div>
+    <p class="muted" id="seqEmpty" style="margin:0">Nothing to sequence yet.</p>
+  </div>
+  <div class="lfoot hide" id="seqFoot">
+    <button class="ghost mini" id="seqRevert">Revert</button>
+    <button class="mini" id="seqSave" style="margin-left:auto">Save changes</button>
+  </div>
+</div>
+
+<div id="colorsPanel" class="dpanel rdock hide">
+  <div class="dhead">
+    <span class="dcrumb">Colors</span>
+    <button class="ghost mini" id="colorsClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+    <div class="ptabs">
+      <button data-ct="all" class="on">All</button>
+      <button data-ct="brands">Brands</button>
+      <button data-ct="sel">Selected</button>
+    </div>
+    <div class="srow">
+      <div class="sbox"><i data-ic="search" data-size="18"></i><input type="text" id="colorSearch" placeholder="Search all colors…" autocomplete="off"></div>
+      <button class="tb" id="colorPick" title="Pick a colour from the screen"><i data-ic="pipette" data-size="18"></i></button>
+    </div>
+    <p class="muted" id="colorCount" style="margin:0 0 10px"></p>
+    <div id="colorList"></div>
+    <button class="mini wide ghost hide" id="colorMore">Show more</button>
   </div>
 </div>
 
@@ -838,13 +924,14 @@
   </div>
 </div>
 
-<div id="detailsPanel" class="dpanel hide" style="right:324px;top:80px">
-  <div class="dhead" id="detailsDrag" title="Drag to move · double-click to reset">
-    <span class="dots">⠿</span>
-    <span class="dcrumb">Details</span>
+<div id="detailsPanel" class="dpanel rdock hide">
+  <div class="dhead" id="detailsDrag">
+    <span class="dcrumb">Project info</span>
     <button class="ghost mini" id="detailsClose" style="margin-left:auto">✕</button>
   </div>
   <div class="dbody">
+    <p class="pdesc">Name, size, and stitch stats for this project.</p>
+    <div id="infoCards"></div>
     <div id="warnings"></div>
     <h2>Specification</h2><table id="spec"></table>
     <h2 id="rightColTitle" style="margin-top:14px">Auto-tune passes</h2><div id="passes"></div>
@@ -852,9 +939,8 @@
   </div>
 </div>
 
-<div id="exportPanel" class="dpanel hide" style="top:80px;right:12px;z-index:60">
-  <div class="dhead" id="exportDrag" title="Drag to move · double-click to reset">
-    <span class="dots">⠿</span>
+<div id="exportPanel" class="dpanel rdock hide">
+  <div class="dhead" id="exportDrag">
     <span class="dcrumb">Export</span>
     <button class="ghost mini" id="exportClose" style="margin-left:auto">✕</button>
   </div>
@@ -909,9 +995,8 @@
   </div>
 </div>
 
-<div id="designPanel" class="dpanel hide">
-  <div class="dhead" id="dpDrag" title="Drag to move · double-click to reset">
-    <span class="dots">⠿</span>
+<div id="designPanel" class="dpanel rdock hide">
+  <div class="dhead" id="dpDrag">
     <span class="dcrumb" id="dpCrumb">Layers</span>
     <button class="ghost mini" id="dpBack" style="margin-left:auto">‹ Themes</button>
     <button class="ghost mini" id="dpClose">✕</button>
@@ -1631,7 +1716,7 @@ function setMode(mode) {
   $('viewerHint').textContent =
     mode === '3d' ? 'drag to orbit' :
     mode === 'plan' ? 'scroll pans · pinch zooms' :
-    mode === 'digitize' ? 'click adds a point · double-click finishes · ⌫ undoes' :
+    mode === 'digitize' ? 'click adds a point · Enter or right-click ends the trace · ⌫ undoes' :
     mode === 'vector' ? 'click a shape to select its layer' :
     (mode === 'photo' || mode === 'density') ? '' :
     'click a thread to recolour';
@@ -1905,7 +1990,7 @@ function bindPanZoom(el) {
     requestAnimationFrame(drawFrame);
   }, { passive: false });
   el.addEventListener('dblclick', () => {
-    if (curMode === 'digitize') { penFinish(); return; }
+    if (curMode === 'digitize') { penEnd(); return; }
     if (curMode === 'vector' && vecDraw) { vecFinish(); return; }
     if (curMode === 'vector') return;
     fitView(); drawFrame();
@@ -2054,7 +2139,14 @@ let penShapes = [], penCur = null, penCursor = null, penImg = null, penViewInit 
 
 function penImgWpx() { return (parseFloat($('penImgW').value) || 90) * PXMM; }
 
+let penArmed = true;
+function penEnd() {
+  penFinish(); penArmed = false;
+  setTool('select');
+  if (curMode === 'digitize') { $('penHint').textContent = 'Tracing ended — press 4 to trace another shape'; drawFrame(); }
+}
 $('penBtn').onclick = () => {
+  penArmed = true;
   $('penPanel').classList.remove('hide');
   if (!penImg && window._f && window._fKind === 'image') penLoadImage(window._f);
   setMode('digitize');
@@ -2190,6 +2282,8 @@ function drawPenMarkers() {
   }
 }
 function penAdd(el, e) {
+  if (e.button === 2) { penEnd(); return; }
+  if (!penArmed) { penArmed = true; penHintUpdate(); }
   const p = worldPos(el, e);
   if (!penCur) penCur = {
     mode: $('penMode').value, color: $('penColor').value,
@@ -2232,8 +2326,8 @@ document.addEventListener('keydown', e => {
   if (curMode !== 'digitize') return;
   if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
   if (e.key === 'Backspace') { e.preventDefault(); penUndoStep(); }
-  else if (e.key === 'Enter') penFinish();
-  else if (e.key === 'Escape') { penCur = null; penCursor = null; drawFrame(); }
+  else if (e.key === 'Enter') penEnd();
+  else if (e.key === 'Escape') { if (penCur) { penCur = null; penCursor = null; drawFrame(); } else penEnd(); }
 });
 $('penStitch').onclick = async () => {
   penFinish();
@@ -2274,7 +2368,7 @@ $('goLayers').onclick = async () => {
     vecImageJob = d.image_job; vecAI = d.ai_names_available;
     $('vecNames').classList.toggle('hide', !vecAI);
     $('vecNameStatus').textContent = '';
-    $('layersPanel').classList.remove('hide');
+    openDock('layersPanel');
     renderVecList();
     setMode('vector');
     if (vecAI) nameLayersAI();          // semantic names arrive in the background
@@ -2330,19 +2424,23 @@ function drawVectorLayers() {
     cctx.fillStyle = L.color;
     if ((L.polys || []).length) {
       const st = L.params && L.params.stitch;
-      if (st === 'run' || st === 'bean' || st === 'outline') {
-        cctx.lineWidth = (st === 'outline' ? (L.params.border_mm || 1) : st === 'bean' ? 0.9 : 0.5) * PXMM;
+      const DEC = ['estitch', 'triangle', 'cross', 'motif'];
+      if (st === 'run' || st === 'bean' || st === 'outline' || DEC.includes(st)) {
         cctx.strokeStyle = L.color; cctx.lineJoin = 'round';
+        if (DEC.includes(st)) { cctx.globalAlpha = 0.35; cctx.lineWidth = (L.params.width_mm || 3) * PXMM; cctx.stroke(paths[i]); cctx.globalAlpha = 0.92; }
+        cctx.lineWidth = (st === 'outline' ? (L.params.border_mm || 1) : st === 'bean' ? 0.9 : 0.5) * PXMM;
         cctx.stroke(paths[i]);
       } else cctx.fill(paths[i], 'evenodd');
     }
     for (const ln of (L.lines || [])) {
       const pts = ln.points; if (!pts || pts.length < 2) continue;
       const st = L.params.stitch;
-      cctx.lineWidth = (st === 'satin' ? (L.params.width_mm || 3) : st === 'bean' ? 0.9 : 0.5) * PXMM;
+      const dec = ['estitch', 'triangle', 'cross', 'motif'].includes(st);
       cctx.strokeStyle = L.color; cctx.lineCap = 'round'; cctx.lineJoin = 'round';
       cctx.beginPath(); cctx.moveTo(pts[0][0] * PXMM, pts[0][1] * PXMM);
       for (let k = 1; k < pts.length; k++) cctx.lineTo(pts[k][0] * PXMM, pts[k][1] * PXMM);
+      if (dec) { cctx.globalAlpha = 0.35; cctx.lineWidth = (L.params.width_mm || 3) * PXMM; cctx.stroke(); cctx.globalAlpha = 0.92; }
+      cctx.lineWidth = (st === 'satin' ? (L.params.width_mm || 3) : st === 'bean' ? 0.9 : 0.5) * PXMM;
       cctx.stroke();
     }
     cctx.globalAlpha = 1;
@@ -2402,8 +2500,13 @@ function vecPick(el, e) {
   cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
   const hit = vecHitTest(dx, dy);
   vecSel = hit;
-  if (hit !== null && !vecLayers[hit].drawn) $('layersPanel').classList.remove('hide');
+  if (hit !== null && !vecLayers[hit].drawn) openDock('layersPanel');
   renderVecList(); drawFrame(); syncObjBox();
+  if (hit !== null) revealObjBox();
+}
+function revealObjBox() {                   // the shape's settings, in view
+  $('leftPanel').classList.remove('hide'); $('reopenPanel').classList.add('hide');
+  $('objBox').scrollIntoView({ block: 'nearest' });
 }
 function vecHitTest(dx, dy) {
   const paths = vecPaths();
@@ -2557,8 +2660,8 @@ $('textBtn').onclick = () => {
   }
 };
 $('textClose').onclick = () => $('textPanel').classList.add('hide');
-$('detailsBtn').onclick = () => $('detailsPanel').classList.toggle('hide');
-$('exportBtn').onclick = () => $('exportPanel').classList.toggle('hide');
+$('detailsBtn').onclick = () => { if (toggleDock('detailsPanel')) renderInfo(); };
+$('exportBtn').onclick = () => toggleDock('exportPanel');
 $('detailsClose').onclick = () => $('detailsPanel').classList.add('hide');
 $('exportClose').onclick = () => $('exportPanel').classList.add('hide');
 $('dpClose').onclick = () => $('designPanel').classList.add('hide');
@@ -2895,6 +2998,15 @@ const ICONS = {
   sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  pipette: '<path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>',
+  'file-text': '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  'arrow-up-line': '<path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/>',
+  'arrow-down-line': '<path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/>',
+  'chevron-up': '<path d="m18 15-6-6-6 6"/>',
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   grip: '<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>',
 };
 function icon(name, size = 18) {
@@ -2909,7 +3021,7 @@ const TOOLS = [
   { id: 'density', ic: 'ruler', k: 'M', title: 'Density map', act: () => job && setMode('density') },
   null,
   { id: 'digitize', ic: 'pen-tool', k: '1', title: 'Pen digitizer', act: () => $('penBtn').click() },
-  { id: 'vector', ic: 'pentagon', k: '2', title: 'AI layers', act: () => vecLayers && vecLayers.length ? ($('layersPanel').classList.toggle('hide'), setMode('vector')) : $('goLayers').click() },
+  { id: 'vector', ic: 'pentagon', k: '2', title: 'AI layers', act: () => vecLayers && vecLayers.length ? (toggleDock('layersPanel'), setMode('vector')) : $('goLayers').click() },
   { id: 'design', ic: 'brush', k: '3', title: 'Threads & colours', act: () => $('designBtn').click() },
   { id: 'sketch', ic: 'pencil', k: '4', title: 'Sketch mode (one-colour outline)', act: () => { if (window._fKind !== 'image') return; $('artMode').value = $('artMode').value === 'sketch' ? 'digitize' : 'sketch'; modeChanged(); syncStitchType(); } },
   { id: 'text', ic: 'type', k: 'T', title: 'Text', act: () => $('textBtn').click() },
@@ -2938,18 +3050,18 @@ setInterval(() => syncToolbar(), 400);
 
 /* ---- right rail */
 const RAIL = [
-  { ic: 'layers', title: 'Layers (thread blocks)', act: () => $('designBtn').click() },
-  { ic: 'shapes', title: 'AI layers', act: () => vecLayers && vecLayers.length ? $('layersPanel').classList.toggle('hide') : $('goLayers').click() },
-  { ic: 'image', title: 'Artwork', act: () => { $('leftPanel').classList.remove('hide'); $('reopenPanel').classList.add('hide'); $('leftPanel').scrollTop = 0; } },
+  { id: 'layers', ic: 'layers', title: 'Layers', act: () => openLayers() },
+  { id: 'seq', ic: 'shapes', title: 'Sequencer: Colors', act: () => { if (toggleDock('seqPanel')) renderSeq(); } },
+  { id: 'art', ic: 'image', title: 'Artwork', act: () => { $('leftPanel').classList.remove('hide'); $('reopenPanel').classList.add('hide'); $('leftPanel').scrollTop = 0; } },
   null,
-  { ic: 'palette', title: 'Themes (colourways)', act: () => openDesign('themes') },
-  { ic: 'sliders', title: 'Show / hide the settings panel', act: () => { $('leftPanel').classList.toggle('hide'); $('reopenPanel').classList.toggle('hide', !$('leftPanel').classList.contains('hide')); } },
-  { ic: 'info', title: 'Details', act: () => $('detailsBtn').click() },
+  { id: 'colors', ic: 'palette', title: 'Colors', act: () => { if (toggleDock('colorsPanel')) openColors(); } },
+  { id: 'settings', ic: 'sliders', title: 'Show / hide the settings panel', act: () => { $('leftPanel').classList.toggle('hide'); $('reopenPanel').classList.toggle('hide', !$('leftPanel').classList.contains('hide')); } },
+  { id: 'info', ic: 'info', title: 'Project info', act: () => { if (toggleDock('detailsPanel')) renderInfo(); } },
 ];
 $('reopenPanel').innerHTML = icon('sliders', 21);
 $('reopenPanel').onclick = () => { $('leftPanel').classList.remove('hide'); $('reopenPanel').classList.add('hide'); };
 $('leftClose').onclick = () => { $('leftPanel').classList.add('hide'); $('reopenPanel').classList.remove('hide'); };
-$('rail').innerHTML = RAIL.map(r => r ? `<button class="tb" title="${r.title}">${icon(r.ic, 21)}</button>` : '<div class="rsep"></div>').join('');
+$('rail').innerHTML = RAIL.map(r => r ? `<button class="tb" data-rail="${r.id}" title="${r.title}">${icon(r.ic, 21)}</button>` : '<div class="rsep"></div>').join('');
 [...$('rail').querySelectorAll('button')].forEach((b, i) => { b.onclick = RAIL.filter(Boolean)[i].act; });
 
 /* ---- stitch type segmented control (Outlined = sketch, Filled = digitize) */
@@ -3077,11 +3189,14 @@ $('shareBtn').onclick = () => $('saveTop').click();
 $('exportTop').onclick = () => $('exportBtn').disabled ? null : $('exportBtn').click();
 
 /* ---- layers dock rows with stitched thumbnails */
+function thumbBg(ctx, W, H) {
+  ctx.fillStyle = '#9ca3af'; ctx.beginPath(); ctx.roundRect(0, 0, W, H, 18); ctx.fill();
+}
 function drawBlockThumb(cv, block, hex) {
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height;
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#1c1f26'; ctx.beginPath(); ctx.arc(W / 2, H / 2, W / 2, 0, 7); ctx.fill();
+  thumbBg(ctx, W, H);
   let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
   for (const r of block.runs) for (const [x, y] of r) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
   const w = Math.max(maxx - minx, 1e-3), h = Math.max(maxy - miny, 1e-3);
@@ -3238,8 +3353,9 @@ function syncObjBox() {
     const p = L.params || {};
     const isLine = !(L.polys || []).length;
     objDef.color = L.color;
-    objDef.filled = !isLine && !['run', 'bean', 'outline'].includes(p.stitch);
-    objDef.run = isLine ? (p.stitch in { run: 1, bean: 1, satin: 1 } ? p.stitch : 'run') : (p.stitch === 'outline' ? 'satin' : (p.stitch === 'bean' ? 'bean' : 'run'));
+    const RUNS = ['run', 'bean', 'satin', 'estitch', 'triangle', 'cross', 'motif'];
+    objDef.filled = !isLine && !['run', 'bean', 'outline', 'estitch', 'triangle', 'cross', 'motif'].includes(p.stitch);
+    objDef.run = isLine ? (RUNS.includes(p.stitch) ? p.stitch : 'run') : (p.stitch === 'outline' ? 'satin' : (RUNS.includes(p.stitch) ? p.stitch : 'run'));
     objDef.pattern = p.fill_method || 'tatami';
     objDef.angle = p.angle === undefined ? 'auto' : p.angle;
     objDef.density = p.density || 0.4;
@@ -3307,9 +3423,9 @@ function vecAddObject(L) {
 const TOOL_HINTS = {
   select: ['Select', 'Click a shape to select it. Drag to move, corner handles scale, side handles stretch, the top handle rotates. Delete removes it, ⌘D duplicates.'],
   pan: ['Pan', 'Drag to move the canvas. Scroll pans; pinch or ⌘-scroll zooms.'],
-  open: ['Drawing open shape', 'Left click to plot straight lines; right click for curves. Enter or double-click to finish, Esc to cancel, Backspace removes the last point.'],
-  closed: ['Drawing closed shape', 'Left click to plot corners; right click for curves. Click the first point, press Enter or double-click to close it.'],
-  free: ['Freehand', 'Drag to draw. Release to finish — end near the start and the shape closes itself.'],
+  open: ['Drawing open shape', 'Click to plot straight lines; Shift-click for curves. Enter, right-click or double-click finishes and returns to Select. Esc cancels, Backspace removes the last point.'],
+  closed: ['Drawing closed shape', 'Click to plot corners; Shift-click for curves. Click the first point, press Enter or right-click to close it and return to Select.'],
+  free: ['Freehand', 'Drag to draw; release to finish (end near the start and the shape closes itself). Enter or right-click returns to Select.'],
 };
 function setTool(t) {
   tool = t;
@@ -3327,6 +3443,7 @@ function syncHint() {
 let hintClosed = false;
 $('toolHintClose').onclick = () => { hintClosed = true; syncHint(); };
 function vecClick(el, e) {
+  if (e.button === 2) { endTool(); return; }          // right-click ends the tool
   if (tool === 'open' || tool === 'closed') {
     const p = mmPos(el, e);
     if (!vecDraw) vecDraw = { closed: tool === 'closed', pts: [] };
@@ -3334,19 +3451,24 @@ function vecClick(el, e) {
       const f = vecDraw.pts[0];
       if (Math.hypot(f[0] - p[0], f[1] - p[1]) * PXMM * view.s < 10) { vecFinish(); return; }
     }
-    vecDraw.pts.push([p[0], p[1], e.button === 2]);
+    vecDraw.pts.push([p[0], p[1], !!(e.shiftKey || e.altKey)]);
     drawFrame();
     return;
   }
   if (tool === 'select') vecPick(el, e);
 }
 function vecFinish() {
-  if (!vecDraw) return;
+  if (!vecDraw) { endTool(); return; }
   const d = vecDraw; vecDraw = null; vecCursor = null;
   const pts = expandCurve(d.pts, d.closed);
   if (d.closed && pts.length >= 3) vecAddObject(newObject('Shape ' + (++shapeN), [{ shell: pts, holes: [] }], []));
   else if (!d.closed && pts.length >= 2) vecAddObject(newObject('Line ' + (++shapeN), [], [{ points: pts }]));
-  drawFrame();
+  endTool();
+}
+/* finish whatever is being drawn and hand back to Select */
+function endTool() {
+  if (vecDraw) { vecFinish(); return; }
+  if (tool !== 'select') setTool('select'); else drawFrame();
 }
 function vecToolDown(el, e) {
   if (tool === 'free') {
@@ -3366,6 +3488,7 @@ function vecToolDown(el, e) {
   const r = el.getBoundingClientRect(), dpr = cnv._dpr;
   cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
   if (vecHitTest((e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr) === vecSel) {
+    revealObjBox();
     vecSnapshot();
     vecDrag = { kind: 'move', start: w, orig: JSON.stringify(L) };
     return true;
@@ -3514,7 +3637,7 @@ document.addEventListener('click', e => { if (!e.target.closest('#shapesMenu') &
 const SHORTCUTS = [
   ['S', 'Select'], ['H', 'Pan'], ['M', 'Hoop & size overlay'], ['1', 'Draw open shape'], ['2', 'Draw closed shape'], ['3', 'Freehand'],
   ['4', 'Pen digitizer'], ['T', 'Text'], ['P', 'Stitch player'], ['R', 'Realistic view'], ['V', '3D view'], ['D', 'Density map'],
-  ['Enter', 'Finish the shape'], ['Esc', 'Cancel / back to Select / close panels'], ['⌫', 'Remove last point · delete selected shape'],
+  ['Enter · right-click', 'Finish the shape and end the tool'], ['Esc', 'Cancel / back to Select / close panels'], ['⌫', 'Remove last point · delete selected shape'],
   ['⌘Z / ⇧⌘Z', 'Undo / redo shape edits'], ['⌘D', 'Duplicate selected shape'], ['Space (hold)', 'Pan while held'],
   ['+ / −', 'Zoom in / out'], ['0', 'Fit to screen'], ['?', 'This list'],
 ];
@@ -3522,7 +3645,7 @@ $('helpBody').innerHTML = '<table>' + SHORTCUTS.map(([k, d]) => `<tr><td style="
 function toggleHelp() { $('helpOverlay').classList.toggle('hide'); }
 $('helpClose').onclick = toggleHelp;
 $('helpOverlay').onclick = e => { if (e.target === $('helpOverlay')) toggleHelp(); };
-function closeAllPanels() { ['textPanel', 'detailsPanel', 'exportPanel', 'penPanel', 'layersPanel', 'designPanel', 'shapesMenu', 'nameMenu', 'helpOverlay'].forEach(id => $(id).classList.add('hide')); syncToolbar(); }
+function closeAllPanels() { ['textPanel', 'detailsPanel', 'exportPanel', 'penPanel', 'layersPanel', 'designPanel', 'seqPanel', 'colorsPanel', 'shapesMenu', 'nameMenu', 'helpOverlay'].forEach(id => $(id).classList.add('hide')); syncToolbar(); }
 document.addEventListener('keydown', e => {
   const t = e.target;
   if (t && (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable)) return;
@@ -3545,7 +3668,7 @@ document.addEventListener('keydown', e => {
     case 'r': if (job) setMode('realistic'); break;
     case 'v': if (job) setMode('3d'); break;
     case 'd': if (job) setMode('density'); break;
-    case 'enter': if (vecDraw) vecFinish(); else return; break;
+    case 'enter': if (vecDraw || (curMode === 'vector' && tool !== 'select')) endTool(); else return; break;
     case 'escape':
       if (vecDraw) { vecDraw = null; vecCursor = null; drawFrame(); }
       else if (!$('helpOverlay').classList.contains('hide')) toggleHelp();
@@ -3569,6 +3692,295 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { if (e.key === ' ' && spaceTool !== null) { const t = spaceTool; spaceTool = null; setTool(t); } });
 syncObjBox(); syncHint(); syncToolbar();
+
+/* ============================================================ right dock: Layers · Sequencer · Colors · Project info */
+const DOCK = ['layersPanel', 'designPanel', 'seqPanel', 'colorsPanel', 'detailsPanel', 'exportPanel'];
+function dockOpen() { return DOCK.find(id => !$(id).classList.contains('hide')) || null; }
+function openDock(id) { DOCK.forEach(d => { if (d !== id) $(d).classList.add('hide'); }); $(id).classList.remove('hide'); syncRail(); }
+function toggleDock(id) {
+  if (dockOpen() === id) { $(id).classList.add('hide'); syncRail(); return false; }
+  openDock(id); return true;
+}
+const RAIL_FOR = { layersPanel: 'layers', designPanel: 'layers', seqPanel: 'seq', colorsPanel: 'colors', detailsPanel: 'info', exportPanel: '' };
+function syncRail() {
+  const open = dockOpen();
+  $('rail').classList.toggle('beside', !!open);
+  const on = open ? RAIL_FOR[open] : '';
+  $('rail').querySelectorAll('[data-rail]').forEach(b => b.classList.toggle('on', b.dataset.rail === on));
+}
+DOCK.forEach(id => new MutationObserver(syncRail).observe($(id), { attributes: true, attributeFilter: ['class'] }));
+new MutationObserver(syncRail).observe($('leftPanel'), { attributes: true, attributeFilter: ['class'] });
+const _openDesign = openDesign;
+openDesign = async function (view) { if (!job) return; await _openDesign(view); openDock('designPanel'); };
+function openLayers() {
+  if (vecLayers.length) { if (toggleDock('layersPanel')) renderVecList(); }
+  else if (job) $('designBtn').click();
+  else if (window._f && window._fKind === 'image') $('goLayers').click();
+  else { setMode('vector'); openDock('layersPanel'); renderVecList(); }
+}
+['seqClose', 'colorsClose'].forEach(id => $(id).onclick = () => { $(id.replace('Close', 'Panel')).classList.add('hide'); syncRail(); });
+
+/* ---- shape thumbnails + labels for the Layers dock */
+const STITCH_LABEL = { auto: 'Auto', fill: 'Fill', outline: 'Satin outline', run: 'Running', bean: 'Bean', satin: 'Satin',
+  estitch: 'E-stitch', triangle: 'Triangle', cross: 'Cross', motif: 'Motif', applique: 'Appliqué', puff: '3D puff' };
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
+function stitchLabel(L) {
+  const p = L.params || {}, st = p.stitch || 'auto';
+  if ((L.polys || []).length && (st === 'auto' || st === 'fill')) return cap(p.fill_method || 'tatami') + (st === 'auto' ? '' : ' only');
+  return STITCH_LABEL[st] || cap(st);
+}
+function drawObjThumb(cv, Ls) {
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H); thumbBg(ctx, W, H);
+  const pts = Ls.flatMap(objPoints); if (!pts.length) return;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  pts.forEach(([x, y]) => { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; });
+  const w = Math.max(x1 - x0, 1e-3), h = Math.max(y1 - y0, 1e-3), s = Math.min(W * 0.7 / w, H * 0.7 / h);
+  const ox = (W - w * s) / 2 - x0 * s, oy = (H - h * s) / 2 - y0 * s;
+  const P = p => [p[0] * s + ox, p[1] * s + oy];
+  ctx.lineCap = ctx.lineJoin = 'round';
+  Ls.forEach(L => {
+    const st = (L.params || {}).stitch || 'auto';
+    const outlined = ['run', 'bean', 'outline', 'estitch', 'triangle', 'cross', 'motif'].includes(st);
+    ctx.fillStyle = ctx.strokeStyle = L.color;
+    (L.polys || []).forEach(poly => {
+      ctx.beginPath();
+      [poly.shell, ...(poly.holes || [])].forEach(r => { if (!r || r.length < 2) return; r.forEach((p, i) => { const [x, y] = P(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); });
+      if (outlined) { ctx.lineWidth = Math.max(2.5, (st === 'outline' ? 2 : 1.2) * s); ctx.stroke(); } else ctx.fill('evenodd');
+    });
+    (L.lines || []).forEach(ln => {
+      ctx.beginPath(); ln.points.forEach((p, i) => { const [x, y] = P(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.lineWidth = Math.max(2.5, (st === 'satin' ? (L.params.width_mm || 3) : 1) * s); ctx.stroke();
+    });
+  });
+}
+let vecParamsOpen = false;
+const _renderVecList = renderVecList;
+renderVecList = function () {
+  _renderVecList();
+  $('vecEmpty').classList.toggle('hide', !!vecLayers.length);
+  $('vecList').innerHTML = vecLayers.map((L, i) =>
+    `<div class="lrow ${i === vecSel ? 'sel' : ''} ${L.visible ? '' : 'off'}" data-i="${i}">
+      <span class="grip">${icon('grip', 16)}</span>
+      <canvas width="112" height="112"></canvas>
+      <div class="lmeta"><div class="lname">${escH(L.name)}</div><div class="lsub">${stitchLabel(L)}</div></div>
+      <div class="lside"><span class="lnum">${i + 1}</span><span class="ldot" style="background:${L.color}"></span>
+        <button class="lgear" title="Layer settings">${icon('settings', 18)}</button></div></div>`).join('');
+  document.querySelectorAll('#vecList .lrow').forEach((el, i) => {
+    drawObjThumb(el.querySelector('canvas'), [vecLayers[i]]);
+    el.onclick = () => { vecSel = i; renderVecList(); drawFrame(); if (typeof syncObjBox === 'function') syncObjBox(); };
+    el.querySelector('.lgear').onclick = e => { e.stopPropagation(); vecParamsOpen = !(vecParamsOpen && vecSel === i); vecSel = i; renderVecList(); drawFrame(); };
+  });
+  const L = vecSel !== null ? vecLayers[vecSel] : null;
+  $('vecParams').classList.toggle('hide', !(L && (vecParamsOpen || curMode !== 'vector')));
+  const has = !!L;
+  ['vlEye', 'vlDup', 'vlTrash', 'vlTop', 'vlUp', 'vlDown', 'vlBottom'].forEach(id => $(id).disabled = !has);
+  if (has) { $('vlTop').disabled = $('vlUp').disabled = vecSel === 0; $('vlDown').disabled = $('vlBottom').disabled = vecSel === vecLayers.length - 1; }
+  if (!$('seqPanel').classList.contains('hide')) renderSeq();
+};
+function vecMoveTo(j) {
+  if (vecSel === null) return;
+  j = Math.max(0, Math.min(vecLayers.length - 1, j));
+  if (j === vecSel) return;
+  vecSnapshot();
+  const [L] = vecLayers.splice(vecSel, 1); vecLayers.splice(j, 0, L);
+  vecSel = j; vecPathCache = null; renderVecList(); drawFrame();
+}
+$('vlTop').onclick = () => vecMoveTo(0);
+$('vlUp').onclick = () => vecMoveTo(vecSel - 1);
+$('vlDown').onclick = () => vecMoveTo(vecSel + 1);
+$('vlBottom').onclick = () => vecMoveTo(vecLayers.length - 1);
+$('vlEye').onclick = () => { if (vecSel === null) return; vecLayers[vecSel].visible = !vecLayers[vecSel].visible; renderVecList(); drawFrame(); };
+$('vlDup').onclick = () => { if (curMode !== 'vector') setMode('vector'); vecDuplicate(); };
+$('vlTrash').onclick = () => $('vlDelete').click();
+
+/* ---- Sequencer: Colors — the colour stops in sew order */
+let seqSel = null;
+const vecThread = {};          // hex -> {name, number, brand} once picked from the library
+function seqGroups() {
+  // consecutive shapes of one colour sew as one stop
+  const g = [];
+  vecLayers.forEach((L, i) => {
+    const c = (L.color || '').toUpperCase();
+    if (g.length && g[g.length - 1].color === c) g[g.length - 1].idx.push(i);
+    else g.push({ color: c, idx: [i] });
+  });
+  return g;
+}
+const useVec = () => vecLayers.length && (curMode === 'vector' || !job);
+function renderSeq() {
+  let rows = [];
+  if (useVec()) {
+    rows = seqGroups().map((g, i) => {
+      const t = vecThread[g.color] || {};
+      const a = g.idx[0] + 1, b = g.idx[g.idx.length - 1] + 1;
+      return { hex: g.color, name: t.name || g.color, number: t.number || '', sub: `${g.idx.length} shape${g.idx.length === 1 ? '' : 's'}`,
+        range: a === b ? String(a) : `${a}-${b}`, draw: cv => drawObjThumb(cv, g.idx.map(k => vecLayers[k])) };
+    });
+    $('seqFoot').classList.add('hide');
+  } else if (job && playerData) {
+    rows = playerData.map((b, i) => {
+      const t = pending[i] || {}, m = lastThreads[i] || {};
+      const n = b.runs.reduce((s, r) => s + r.length, 0);
+      return { hex: blockColor(i), name: t.name || m.thread_name || blockColor(i), number: t.number || m.thread_number || '',
+        sub: `${n.toLocaleString()} stitches`, range: String(i + 1), draw: cv => drawBlockThumb(cv, b, blockColor(i)) };
+    });
+    $('seqFoot').classList.toggle('hide', !Object.keys(pending).length);
+  } else $('seqFoot').classList.add('hide');
+  $('seqEmpty').classList.toggle('hide', !!rows.length);
+  const sel = useVec() ? seqSel : selBlock;
+  $('seqList').innerHTML = rows.map((r, i) =>
+    `<div class="lrow ${i === sel ? 'sel' : ''}" data-i="${i}">
+      <span class="grip">${icon('grip', 16)}</span>
+      <canvas width="112" height="112"></canvas>
+      <div class="lmeta"><div class="lname">${escH(r.name)}</div><div class="lsub" style="font-family:ui-monospace,monospace">${escH(r.number || r.hex)}</div><div class="lsub">${r.sub}</div></div>
+      <div class="lside"><span class="lnum">${r.range}</span><span class="ldot" style="background:${r.hex}"></span><span class="lsub">${i + 1}</span></div></div>`).join('');
+  document.querySelectorAll('#seqList .lrow').forEach((el, i) => {
+    rows[i].draw(el.querySelector('canvas'));
+    el.onclick = () => { if (useVec()) seqSel = i; else selBlock = i; renderSeq(); };
+    el.ondblclick = () => { openDock('colorsPanel'); openColors(); };
+  });
+}
+$('seqSave').onclick = async () => { if (!job) return; await loadStitches(); $('dpSave').click(); setTimeout(renderSeq, 1200); };
+$('seqRevert').onclick = () => { $('dpRevert').click(); renderSeq(); };
+
+/* ---- Colors — the whole thread library */
+let catalog = null, colorTab = 'all', colorBrand = null, colorQuery = '', colorPage = 0;
+const PAGE = 120;
+async function openColors() {
+  if (!job && !vecLayers.length) { /* still fine: picks set the colour for the next shape */ }
+  if (!catalog) {
+    $('colorCount').textContent = 'Loading the thread library…';
+    try { catalog = await (await fetch('/api/threads/all')).json(); }
+    catch (e) { $('colorCount').textContent = 'Could not load the thread library.'; return; }
+  }
+  if (job && !playerData) await loadStitches();
+  renderColors();
+}
+function currentColors() {
+  // the colours this design uses, as library rows
+  if (useVec()) return seqGroups().map(g => ({ ...(vecThread[g.color] || { brand: '', name: g.color, number: '' }), hex: g.color }));
+  if (job && playerData) return playerData.map((b, i) => {
+    const t = pending[i], m = lastThreads[i] || {};
+    return t ? { brand: t.palette, name: t.name, number: t.number, hex: t.hex }
+      : { brand: m.palette || '', name: m.thread_name || blockColor(i), number: m.thread_number || '', hex: blockColor(i) };
+  });
+  return [];
+}
+function colorRows() {
+  if (colorTab === 'sel') return currentColors();
+  const q = colorQuery.trim().toLowerCase();
+  const hexq = /^#?[0-9a-f]{6}$/.test(q) ? '#' + q.replace('#', '') : null;
+  let rows = catalog.threads;
+  if (colorBrand) rows = rows.filter(t => t.brand === colorBrand);
+  if (hexq) rows = nearestRows(hexq, rows, 40);
+  else if (q) rows = rows.filter(t => t.name.toLowerCase().includes(q) || t.number.toLowerCase().includes(q) || t.brand.toLowerCase().includes(q));
+  return rows;
+}
+const hex2rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function nearestRows(hex, rows, n) {
+  const [r0, g0, b0] = hex2rgb(hex);
+  return rows.map(t => { const [r, g, b] = hex2rgb(t.hex); const rm = (r + r0) / 2;
+      return [(2 + rm / 256) * (r - r0) ** 2 + 4 * (g - g0) ** 2 + (2 + (255 - rm) / 256) * (b - b0) ** 2, t]; })
+    .sort((a, b) => a[0] - b[0]).slice(0, n).map(x => x[1]);
+}
+function renderColors() {
+  if (!catalog) return;
+  document.querySelectorAll('.ptabs [data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === colorTab));
+  const list = $('colorList'), used = new Set(currentColors().map(c => c.hex.toUpperCase()));
+  if (colorTab === 'brands' && !colorBrand) {
+    const counts = {}; catalog.threads.forEach(t => { counts[t.brand] = (counts[t.brand] || 0) + 1; });
+    const q = colorQuery.trim().toLowerCase();
+    const brands = Object.keys(counts).filter(b => !q || b.toLowerCase().includes(q));
+    $('colorCount').textContent = `${brands.length} brands`;
+    list.innerHTML = brands.map(b => `<div class="ccard" data-brand="${escH(b)}"><div class="cmeta"><div class="cn">${escH(b)}</div><div class="cb">${counts[b].toLocaleString()} colors</div></div>${icon('chevron-down', 18).replace('<svg', '<svg style="transform:rotate(-90deg);color:#8b93a3"')}</div>`).join('');
+    list.querySelectorAll('[data-brand]').forEach(el => el.onclick = () => { colorBrand = el.dataset.brand; colorQuery = ''; $('colorSearch').value = ''; colorPage = 0; renderColors(); });
+    $('colorMore').classList.add('hide');
+    return;
+  }
+  const rows = colorRows();
+  const shown = rows.slice(0, (colorPage + 1) * PAGE);
+  $('colorCount').innerHTML = colorTab === 'sel' ? `${rows.length} color${rows.length === 1 ? '' : 's'} in this design`
+    : colorBrand ? `${rows.length.toLocaleString()} colors · <a href="#" id="brandBack" style="color:var(--ink)">${escH(colorBrand)} ✕</a>`
+    : `${rows.length.toLocaleString()} colors from ${catalog.brands} brands`;
+  const bb = $('brandBack'); if (bb) bb.onclick = e => { e.preventDefault(); colorBrand = null; colorPage = 0; renderColors(); };
+  list.innerHTML = shown.map((t, i) =>
+    `<div class="ccard ${used.has(t.hex.toUpperCase()) && colorTab !== 'sel' ? 'sel' : ''}" data-i="${i}">
+      <span class="csw" style="background:${t.hex}"></span>
+      <div class="cmeta"><div class="cn">${escH(t.name)}</div><div class="cc">${escH(t.number || t.hex)}</div><div class="cb">${escH(t.brand || '—')}</div></div>
+      ${colorTab === 'sel' ? `<span class="cnum">${i + 1}</span>` : ''}</div>`).join('');
+  list.querySelectorAll('.ccard').forEach((el, i) => el.onclick = () => applyColorPick(shown[i]));
+  $('colorMore').classList.toggle('hide', shown.length >= rows.length);
+  $('colorMore').textContent = `Show more (${(rows.length - shown.length).toLocaleString()} left)`;
+}
+function applyColorPick(t) {
+  const hex = t.hex.toUpperCase();
+  if (useVec()) {
+    vecThread[hex] = { name: t.name, number: t.number, brand: t.brand };
+    const targets = seqSel !== null && seqGroups()[seqSel] ? seqGroups()[seqSel].idx : (vecSel !== null ? [vecSel] : []);
+    if (targets.length) { vecSnapshot(); targets.forEach(i => { vecLayers[i].color = hex; }); vecChanged(); }
+    objDef.color = hex; $('objColor').value = hex.toLowerCase();
+    if (typeof syncObjBox === 'function') syncObjBox();
+  } else if (job && playerData) {
+    if (selBlock === null) selBlock = 0;
+    pending[selBlock] = { hex: t.hex, name: t.name, number: t.number, palette: t.brand };
+    spriteCache.clear();
+    if (curMode === 'photo' || curMode === 'density') setMode('realistic'); else drawFrame();
+    if (curMode === '3d' && window.Stitch3D) window.Stitch3D.setColors(blockColor);
+    renderBlocks(); renderColorRow();
+  } else { objDef.color = hex; $('objColor').value = hex.toLowerCase(); }
+  renderSeq(); renderColors();
+}
+document.querySelectorAll('.ptabs [data-ct]').forEach(b => b.onclick = () => {
+  colorTab = b.dataset.ct; colorPage = 0; colorQuery = ''; $('colorSearch').value = '';
+  if (colorTab !== 'all') colorBrand = null;
+  $('colorSearch').placeholder = colorTab === 'brands' ? 'Search brands…' : 'Search all colors…';
+  renderColors();
+});
+$('colorSearch').oninput = () => { colorQuery = $('colorSearch').value; colorPage = 0; renderColors(); };
+$('colorMore').onclick = () => { colorPage++; renderColors(); };
+if (window.EyeDropper) {
+  $('colorPick').onclick = async () => {
+    try {
+      const r = await new EyeDropper().open();
+      const rows = colorBrand ? catalog.threads.filter(t => t.brand === colorBrand) : catalog.threads;
+      const best = nearestRows(r.sRGBHex, rows, 1)[0];
+      if (best) { colorTab = 'all'; colorQuery = r.sRGBHex; $('colorSearch').value = r.sRGBHex; colorPage = 0; renderColors(); applyColorPick(best); }
+    } catch (e) { /* cancelled */ }
+  };
+} else $('colorPick').classList.add('hide');
+
+/* ---- Project info */
+function renderInfo() {
+  let w = 0, h = 0, shapes = 0, changes = null, colors = null, stitches = null;
+  if (vecLayers.length) {
+    shapes = vecLayers.length;
+    const pts = vecAllPoints();
+    if (pts.length) {
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      pts.forEach(([x, y]) => { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; });
+      w = x1 - x0; h = y1 - y0;
+    }
+    const g = seqGroups(); changes = Math.max(0, g.length - 1); colors = new Set(g.map(x => x.color)).size;
+  }
+  if (lastReport && !useVec()) {
+    w = lastReport.width_mm; h = lastReport.height_mm; stitches = lastReport.stitches; changes = lastReport.colour_changes;
+    colors = new Set((playerData || []).map((b, i) => blockColor(i).toUpperCase())).size || (lastThreads || []).length;
+    if (!shapes) shapes = playerData ? playerData.length : (lastThreads || []).length;
+  } else if (lastReport) stitches = lastReport.stitches;
+  const fmtN = v => v === null || v === undefined ? '—' : (+v).toLocaleString();
+  $('infoCards').innerHTML = `
+    <div class="icard"><div class="ik">${icon('file-text', 18)} Project name</div><div class="iv">${escH($('designName').textContent)}</div></div>
+    <div class="icard"><div class="ik">${icon('ruler', 18)} Dimensions</div><div class="iv">${w ? `${(w / 25.4).toFixed(2)} × ${(h / 25.4).toFixed(2)} in <span class="muted" style="font-weight:500;font-size:13px">· ${w.toFixed(1)} × ${h.toFixed(1)} mm</span>` : '—'}</div></div>
+    <div class="istat"><span>Shapes</span><b>${fmtN(shapes)}</b></div>
+    <div class="istat"><span>Color changes</span><b>${fmtN(changes)}</b></div>
+    <div class="istat"><span>Total colors</span><b>${fmtN(colors)}</b></div>
+    <div class="istat"><span>Stitch count</span><b>${fmtN(stitches)}</b></div>`;
+}
+const _show3 = show;
+show = function (d) { _show3(d); renderInfo(); if (!$('seqPanel').classList.contains('hide')) loadStitches().then(renderSeq); };
+setInterval(() => { if (!$('detailsPanel').classList.contains('hide')) renderInfo(); }, 1500);
+renderInfo(); syncRail();
 </script>
 </body>
 </html>

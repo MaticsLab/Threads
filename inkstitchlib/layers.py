@@ -101,9 +101,59 @@ def _poly_from_data(d):
         return None
 
 
-STITCH_TYPES = ('auto', 'fill', 'outline', 'run', 'bean', 'satin', 'applique', 'puff')
+DECOR_TYPES = ('estitch', 'triangle', 'cross', 'motif')     # decorative runs
+LINE_TYPES = ('run', 'bean', 'satin') + DECOR_TYPES
+STITCH_TYPES = ('auto', 'fill', 'outline', 'run', 'bean', 'satin', 'applique', 'puff') + DECOR_TYPES
 FILL_METHODS = ('tatami', 'contour', 'circular', 'walk', 'satin')
-LINE_TYPES = ('run', 'bean', 'satin')
+
+
+def _normals(path):
+    p = np.asarray(path, float)
+    d = np.gradient(p, axis=0)
+    n = np.linalg.norm(d, axis=1)
+    n[n < 1e-9] = 1e-9
+    return np.column_stack([-d[:, 1] / n, d[:, 0] / n])
+
+
+def decor_points(path, width, kind):
+    """A decorative run along a resampled path -> stitch points.
+
+    estitch  - a comb: along the line, out to one side and back at every step
+    triangle - open triangles: point, apex above the next mid-point, point
+    cross    - X's: a zigzag out and back on the opposite diagonal
+    motif    - a chain of diamonds, one per step
+    """
+    p = np.asarray(path, float)
+    if len(p) < 2:
+        return [tuple(q) for q in p]
+    nrm = _normals(p)
+    half = width / 2.0
+    out = []
+
+    def mid_normal(i):
+        nm = nrm[i] + nrm[i + 1]
+        nm /= max(np.linalg.norm(nm), 1e-9)
+        return (p[i] + p[i + 1]) / 2.0, nm
+
+    if kind == 'estitch':
+        for i in range(len(p)):
+            out += [tuple(p[i]), tuple(p[i] + nrm[i] * width), tuple(p[i])]
+    elif kind == 'triangle':
+        for i in range(len(p) - 1):
+            mid, nm = mid_normal(i)
+            out += [tuple(p[i]), tuple(mid + nm * width)]
+        out.append(tuple(p[-1]))
+    elif kind == 'cross':
+        fwd = [tuple(p[i] + nrm[i] * half * (1 if i % 2 == 0 else -1)) for i in range(len(p))]
+        back = [tuple(p[i] + nrm[i] * half * (-1 if i % 2 == 0 else 1)) for i in range(len(p) - 1, -1, -1)]
+        out = fwd + back
+    elif kind == 'motif':
+        for i in range(len(p) - 1):
+            mid, nm = mid_normal(i)
+            out += [tuple(p[i]), tuple(mid + nm * half), tuple(p[i + 1]), tuple(mid - nm * half), tuple(p[i + 1])]
+    else:
+        out = [tuple(q) for q in p]
+    return out
 
 
 def _read_layer(L, max_satin):
@@ -236,6 +286,17 @@ def _sew_line(s, it, phase):
     """An open path: running stitch, bean stitch, or centre-line satin."""
     from . import pen
     pts, stype = it['line'], it['type']
+    if stype in DECOR_TYPES:
+        if phase == core.UNDER:
+            return
+        path = pen._resample(pts, it['run_len'])
+        if len(path) < 2:
+            return
+        dp = decor_points(path, it['width'], stype)
+        s.move_to(dp[0], None)
+        for q in dp[1:]:
+            s.run_to(q, max(it['width'], it['run_len']) + 0.6)
+        return
     if stype in ('run', 'bean'):
         if phase == core.UNDER:
             return
@@ -304,11 +365,12 @@ def _sew_one(s, it, phase):
         core.outline_run(s, g, step=1.0, travel=g)
         return
     mw = core.poly_max_width(g)
-    if stype in ('run', 'bean'):
-        # an outline-only shape: run the outline
-        if phase != core.UNDER:
-            core.outline_run(s, g, step=it['run_len'], travel=g) if stype == 'run' else \
-                core.bean_run(s, list(g.exterior.simplify(0.2).coords), it['run_len'], g)
+    if stype in ('run', 'bean') or stype in DECOR_TYPES:
+        # an outline-only shape: run every ring of the outline as a line
+        for ring in [g.exterior] + list(g.interiors):
+            coords = [tuple(c) for c in ring.simplify(0.2).coords]
+            if len(coords) >= 3:
+                _sew_line(s, dict(it, line=coords, type=stype), phase)
         return
     if stype == 'satin' or (method == 'satin' and stype in ('auto', 'fill')):
         if mw <= it['max_satin'] and g.area >= 1.5:
