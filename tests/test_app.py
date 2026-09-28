@@ -773,3 +773,56 @@ def test_decorative_run_types():
     assert sum(1 for q in pat.stitches if (q[2] & 0xFF) == pystitch.STITCH) > 80
     r = client.post('/api/stitch_layers', json={'layers': [dict(base, params={'stitch': 'motif'})]})
     assert r.status_code == 200, r.text
+
+
+def test_fill_patterns_and_previews():
+    from inkstitchlib import layers as veclayers, patterns
+    import pystitch
+    sq = {'shell': [[0, 0], [16, 0], [16, 16], [0, 16]], 'holes': []}
+    counts = {}
+    for name in veclayers.FILL_METHODS:
+        pat, blocks = veclayers.stitch([{'name': name, 'color': '#3A78B5', 'polys': [sq],
+                                         'params': {'stitch': 'fill', 'fill_method': name, 'underlay': 'none'}}])
+        counts[name] = sum(1 for q in pat.stitches if (q[2] & 0xFF) == pystitch.STITCH)
+        assert counts[name] > 80, name
+    # a patterned fill puts its needle points where the motif crosses the rows
+    assert counts['diamonds_sm'] > counts['tatami'] and counts['hearts_md'] > counts['tatami']
+    assert set(patterns.PATTERN_FILLS) <= set(veclayers.FILL_METHODS)
+    r = client.get('/api/fills')
+    assert r.status_code == 200 and [f['id'] for f in r.json()] == list(veclayers.FILL_METHODS)
+    r = client.get('/api/fill_preview/hearts_md.png')
+    assert r.status_code == 200 and r.headers['content-type'] == 'image/png' and r.content[:4] == b'\x89PNG'
+    assert client.get('/api/fill_preview/nope.png').status_code == 404
+
+
+def test_object_refinements():
+    """Split satin, hand stitch, per-object underlay and the origin the studio
+    uses to overlay stitches on the shapes."""
+    from inkstitchlib import layers as veclayers
+    import pystitch
+    import numpy as np
+    line = {'points': [[0, 0], [40, 0], [40, 30]]}
+    L = lambda prm: {'name': 'L', 'color': '#a8201a', 'lines': [line], 'params': dict({'stitch': 'satin', 'width_mm': 10}, **prm)}
+    st = lambda pat: np.array([(x, y) for x, y, c in pat.stitches if (c & 0xFF) == pystitch.STITCH], float)
+    longest = lambda pat: np.linalg.norm(np.diff(st(pat), axis=0), axis=1).max() / 10.0
+    assert longest(veclayers.stitch([L({'split': True, 'split_max_mm': 5})])[0]) < 5.5
+    assert longest(veclayers.stitch([L({'split': False})])[0]) > 9.5
+    plain = st(veclayers.stitch([L({'width_mm': 3, 'hand': 0})])[0])
+    hand = st(veclayers.stitch([L({'width_mm': 3, 'hand': 0.8})])[0])
+    assert len(plain) == len(hand) and np.abs(plain - hand).max() > 1.0 and np.abs(plain - hand).max() < 6.0
+    box = {'shell': [[0, 0], [30, 0], [30, 20], [0, 20]], 'holes': []}
+    F = lambda prm: {'name': 'F', 'color': '#1a3b69', 'polys': [box], 'params': dict({'stitch': 'fill'}, **prm)}
+    n = lambda prm: len(st(veclayers.stitch([F(prm)])[0]))
+    assert n({'underlay': 'none'}) < n({'underlay': 'light'}) < n({'underlay': 'heavy'})
+    # row shortening moves inner needle points on a tight ring; the count stays
+    ring = {'shell': [[10 + 5 * np.cos(t), 10 + 5 * np.sin(t)] for t in np.linspace(0, 2 * np.pi, 60, endpoint=False)], 'holes': []}
+    R = lambda prm: {'name': 'R', 'color': '#000', 'polys': [ring], 'params': dict({'stitch': 'outline', 'border_mm': 3.0}, **prm)}
+    a, b = st(veclayers.stitch([R({'row_short': True})])[0]), st(veclayers.stitch([R({'row_short': False})])[0])
+    # same stitch budget (± the closing travel), inner needle points moved out
+    assert abs(len(a) - len(b)) < 12 and len(a) > 100
+    n = min(len(a), len(b))
+    assert np.abs(a[:n] - b[:n]).max() > 3.0      # 0.1 mm units
+    r = client.post('/api/stitch_layers', json={'layers': [F({'fill_method': 'waves', 'stitch_len_mm': 5, 'underpath': False, 'pull_comp_mm': 0.4})]})
+    assert r.status_code == 200, r.text
+    o = r.json()['origin_mm']
+    assert 14 < o[0] < 16 and 9 < o[1] < 11

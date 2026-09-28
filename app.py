@@ -48,7 +48,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 # job artifacts never change once written (a new digitize gets a new job id),
 # so browsers and any CDN in front (e.g. Cloudflare) may cache them hard
 CACHED_PREFIXES = ('/static/', '/api/plan/', '/api/density/', '/api/stitches/',
-                   '/api/fonts/')
+                   '/api/fonts/', '/api/fill_preview/')
 
 
 @app.middleware('http')
@@ -781,10 +781,38 @@ async def stitch_layers(data: dict):
     rep = basic_report(pat)
     png = _store(job, pat, block_layers, rep, {'layers': len(lyrs)}, kind='layers')
     return _native({'job': job, 'kind': 'layers', 'report': rep,
+                    'origin_mm': pat.extras.get('origin_mm'),
                     'layer_info': {'layers': len(lyrs), 'blocks': len(block_layers)},
                     'threads': threads.match_layers(block_layers,
                                                     data.get('palette', 'Madeira Rayon')),
                     'warnings': [], 'preview': _b64(png)})
+
+
+@app.get('/api/fills')
+def fills_list():
+    """The fill patterns, in the order the Available Fills grid shows them."""
+    from inkstitchlib import patterns
+    return [{'id': k, 'name': patterns.FILL_LABELS[k]} for k in veclayers.FILL_METHODS]
+
+
+_FILL_PREVIEW_DIR = os.path.join(tempfile.gettempdir(), 'stitchforge_fills')
+
+
+@app.get('/api/fill_preview/{name}.png')
+def fill_preview(name: str):
+    """A swatch of one fill pattern sewn over a 16 mm square."""
+    if name not in veclayers.FILL_METHODS:
+        raise HTTPException(404, 'no fill named %r' % name)
+    os.makedirs(_FILL_PREVIEW_DIR, exist_ok=True)
+    out = os.path.join(_FILL_PREVIEW_DIR, name + '.png')
+    if not os.path.exists(out):
+        sq = {'shell': [[0, 0], [14, 0], [14, 14], [0, 14]], 'holes': []}
+        layer = {'name': name, 'color': '#3A78B5', 'polys': [sq],
+                 'params': {'stitch': 'fill', 'fill_method': name, 'density': 0.4,
+                            'underlay': 'none'}}
+        pat, _bl = veclayers.stitch([layer], max_satin=18.0)
+        render.preview(pat, [(58, 120, 181)], out, px_wide=300)
+    return FileResponse(out, media_type='image/png')
 
 
 # --------------------------------------------------- pen (manual digitizing)

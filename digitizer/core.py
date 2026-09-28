@@ -30,6 +30,13 @@ MIN_FILL_AREA = 0.20
 MIN_SATIN = 1.0           # narrower than this sews as a bean running stitch
 UNDERLAY = 'auto'         # auto | light | heavy | none
 UNDERLAY_MODES = ('auto', 'light', 'heavy', 'none')
+# satin refinements (set per object by the layer digitizer)
+ROW_SHORT = True          # shorten alternate stitches where the inner edge bunches
+DENSITY_TRIGGER = 0.5     # ...once the inner step is below this × the outer step
+SPLIT_SATIN = 0.0         # split satin stitches longer than this (mm; 0 = off)
+SPLIT_STAGGER = True      # stagger the split needle points
+SPLIT_CYCLES = 4          # over this many stitches
+SPLIT_AMOUNT = 0.3        # by up to this much (mm)
 
 
 def configure(p):
@@ -57,6 +64,47 @@ def set_tunables(**kw):
 def comp_side():
     """Pull compensation per side."""
     return max(0.0, PULL_COMP) / 2.0
+
+
+def satin_to(sewer, p, i=0):
+    """One satin stitch to p. Longer than SPLIT_SATIN it gets split by extra
+    needle points, staggered stitch to stitch so the splits don't line up
+    into a visible seam (split satin)."""
+    if sewer.pos is None:
+        sewer._st(p)
+        return
+    if sewer.pending_tie_in:
+        sewer.pending_tie_in = False
+        sewer.tie_in(p)
+    a = np.array(sewer.pos, float)
+    b = np.array(p, float)
+    d = float(np.linalg.norm(b - a))
+    if SPLIT_SATIN > 0 and d > SPLIT_SATIN:
+        n = int(np.ceil(d / SPLIT_SATIN))
+        shift = 0.0
+        if SPLIT_STAGGER and SPLIT_CYCLES > 1:
+            shift = ((i % SPLIT_CYCLES) / (SPLIT_CYCLES - 1.0) - 0.5) * SPLIT_AMOUNT
+        for k in range(1, n):
+            t = min(0.92, max(0.08, k / n + shift / d))
+            q = a + (b - a) * t
+            sewer._st((q[0], q[1]))
+    sewer._st(p)
+
+
+def shorten_zigzag(zz, mids=None):
+    """Row shortening for an alternating-rail satin: on the inside of a bend
+    the needle points crowd; every other one is pulled back towards the
+    middle of the column so the thread doesn't pile up."""
+    if not ROW_SHORT or len(zz) < 5:
+        return list(zz)
+    out = list(zz)
+    for i in range(3, len(zz)):
+        same = np.hypot(zz[i][0] - zz[i - 2][0], zz[i][1] - zz[i - 2][1])
+        other = np.hypot(zz[i - 1][0] - zz[i - 3][0], zz[i - 1][1] - zz[i - 3][1])
+        if other > 1e-6 and same < DENSITY_TRIGGER * other and (i // 2) % 2 == 1:
+            m = mids[i] if mids is not None else ((zz[i][0] + zz[i - 1][0]) / 2, (zz[i][1] + zz[i - 1][1]) / 2)
+            out[i] = (zz[i][0] + (m[0] - zz[i][0]) * 0.45, zz[i][1] + (m[1] - zz[i][1]) * 0.45)
+    return out
 
 
 def widen_zigzag(zz):
@@ -368,12 +416,36 @@ def bean_run(sewer, pts, maxlen=2.5, travel=None, repeats=1):
             sewer.run_to(tuple(a), maxlen)
             sewer.run_to(tuple(b), maxlen)
 
-def sew_fill(sewer, poly, angle, spacing, maxlen, stagger=True, start=None, travel=None):
+def sew_fill(sewer, poly, angle, spacing, maxlen, stagger=True, start=None, travel=None,
+             pattern=None):
+    """Rows of running stitch across poly. `pattern` is a needle-point
+    function (see inkstitchlib.patterns) that decides where each row's
+    stitches land, for decorative fills."""
     segs = scan_segments(poly, angle, spacing)
     order = order_segments(segs, start)
     tp = travel if travel is not None else poly
+    th = -np.radians(angle)
+    rot = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])
     for a, b, row in order:
         sewer.move_to(a, tp)
+        if pattern is not None:
+            ar, br = rot @ np.array(a, float), rot @ np.array(b, float)
+            y = (ar[1] + br[1]) / 2.0
+            lo, hi = sorted((ar[0], br[0]))
+            xs = pattern(y, lo + 0.35, hi - 0.35, row)
+            if br[0] < ar[0]:
+                xs = xs[::-1]
+            span = br[0] - ar[0]
+            last = 0.0
+            for x in xs:
+                t = (x - ar[0]) / span if abs(span) > 1e-9 else 0.0
+                if t - last < 0.5 / max(abs(span), 1e-9):      # keep stitches ≥ 0.5 mm
+                    continue
+                q = np.array(a) + (np.array(b) - np.array(a)) * t
+                sewer.run_to((q[0], q[1]), maxlen)
+                last = t
+            sewer.run_to(b, maxlen)
+            continue
         if stagger:
             # tatami stagger: shift the first stitch of each row so end-points
             # don't line up into visible ridges
@@ -827,8 +899,8 @@ def sew_column(s, col, travel, phase=BOTH):
     if _do(phase, TOP):
         s.move_to(tuple(col[0][2]), travel)
         side = 0
-        for left, right, _ in col:
-            s.run_to(tuple(left if side == 0 else right), MAX_SATIN + 1)
+        for i, (left, right, _) in enumerate(col):
+            satin_to(s, tuple(left if side == 0 else right), i)
             side ^= 1
     return 'satin'
 
@@ -908,9 +980,16 @@ def sew_ring(sewer, ring, travel=None, phase=BOTH):
     if _do(phase, TOP):
         sewer.move_to(ring[0][0], travel)
         side = 0
-        for a, b, _ in ring:
+        for i, (a, b, _) in enumerate(ring):
             a, b = widen(a, b)                       # pull compensation
-            sewer.run_to(a if side == 0 else b, MAX_SATIN + 1)
+            if ROW_SHORT and side == 1 and i >= 2 and (i // 2) % 2 == 1:
+                # inside of a bend: inner needle points crowd -> pull every
+                # other one back towards the outer edge (row shortening)
+                inner = np.hypot(b[0] - ring[i - 2][1][0], b[1] - ring[i - 2][1][1])
+                outer = np.hypot(a[0] - ring[i - 2][0][0], a[1] - ring[i - 2][0][1])
+                if outer > 1e-6 and inner < DENSITY_TRIGGER * outer:
+                    b = (b[0] + (a[0] - b[0]) * 0.45, b[1] + (a[1] - b[1]) * 0.45)
+            satin_to(sewer, a if side == 0 else b, i)
             side ^= 1
 
 
@@ -958,10 +1037,10 @@ def sew_blob(sewer, poly, spacing, max_span, border_w, travel=None,
     if not core.is_empty and core.area > 0.4:
         rows = blob_rows(core, spacing, max_span, start=sewer.pos)
         if rows is not None:
-            for a, b, _row in rows:
+            for i, (a, b, _row) in enumerate(rows):
                 a, b = widen(a, b)
                 sewer.move_to(a, travel)
-                sewer.run_to(b, max_span + 1)
+                satin_to(sewer, b, i)
         else:
             sew_fill(sewer, core, principal_angle(core), ROW_SPACING,
                      MAX_STITCH, stagger=True, start=sewer.pos, travel=travel)
