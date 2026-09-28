@@ -76,10 +76,15 @@ def center_zigzag(points, width, spacing):
     return out, mids
 
 
-def build(shapes):
+def build(shapes, settings=None):
     """-> (pattern via Sewer, layers). Shapes: [{mode,color,points,width_mm,
-    spacing_mm,run_len_mm}], points in mm."""
+    spacing_mm,run_len_mm}], points in mm. settings: {underlay, pull_comp,
+    min_satin} — a satin narrower than min_satin sews as a bean run."""
     import pystitch
+    settings = settings or {}
+    core.set_tunables(underlay=settings.get('underlay'),
+                      pull_comp=settings.get('pull_comp'),
+                      min_satin=settings.get('min_satin'))
 
     s = core.Sewer()
     block_colors = []
@@ -129,11 +134,21 @@ def build(shapes):
             continue
         start_block(rgb)
         under = _resample(mids, 2.5)
-        s.move_to(under[0], None)
-        for p in under:
-            s.run_to(p, 2.5)
-        for p in reversed(under):
-            s.run_to(p, 2.5)
+        w = float(np.mean([np.hypot(a[0] - b[0], a[1] - b[1]) for a, b in zip(zz, zz[1:])]))
+        if w < core.MIN_SATIN:
+            core.bean_run(s, under, 2.0)
+            drawn += 1
+            continue
+        umode = core.underlay_mode()
+        if umode != 'none':
+            s.move_to(under[0], None)
+            for p in under:
+                s.run_to(p, 2.5)
+            if umode != 'light' and w >= 2.0:
+                for p in reversed(under):
+                    s.run_to(p, 2.5)
+        zz = core.widen_zigzag(zz)
+        s.move_to(zz[0], None)
         for p in zz:
             s._st(p)
         drawn += 1

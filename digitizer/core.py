@@ -22,11 +22,14 @@ TRIM_DIST = 2.0
 LOCK = 1.0
 SATIN_SPACING = 0.175
 MAX_SATIN = 8.0
-PULL_COMP = 0.12
+PULL_COMP = 0.25          # total widening across the stitch direction (mm)
 UNDERLAY_RUN = 2.5
 MIN_BRANCH_MM = 1.2
 BLOB_RATIO = 1.3
 MIN_FILL_AREA = 0.20
+MIN_SATIN = 1.0           # narrower than this sews as a bean running stitch
+UNDERLAY = 'auto'         # auto | light | heavy | none
+UNDERLAY_MODES = ('auto', 'light', 'heavy', 'none')
 
 
 def configure(p):
@@ -34,9 +37,75 @@ def configure(p):
     g = globals()
     for k in ('ROW_SPACING', 'MAX_STITCH', 'MIN_STITCH', 'UNDERLAY_SPACING',
               'TRIM_DIST', 'SATIN_SPACING', 'MAX_SATIN', 'PULL_COMP',
-              'MIN_FILL_AREA'):
+              'MIN_FILL_AREA', 'MIN_SATIN', 'UNDERLAY'):
         if hasattr(p, k.lower()):
             g[k] = getattr(p, k.lower())
+    if g['UNDERLAY'] not in UNDERLAY_MODES:
+        g['UNDERLAY'] = 'auto'
+
+
+def set_tunables(**kw):
+    """Set tunables by name (the SVG / layer / pen paths have no Params)."""
+    g = globals()
+    for k, v in kw.items():
+        if v is not None and k.upper() in g:
+            g[k.upper()] = v
+    if g['UNDERLAY'] not in UNDERLAY_MODES:
+        g['UNDERLAY'] = 'auto'
+
+
+def comp_side():
+    """Pull compensation per side."""
+    return max(0.0, PULL_COMP) / 2.0
+
+
+def widen_zigzag(zz):
+    """Pull compensation for a list of alternating-rail satin points: each
+    point moves away from its opposite-rail neighbour."""
+    c = comp_side()
+    if c <= 0 or len(zz) < 2:
+        return list(zz)
+    out = []
+    for i, p in enumerate(zz):
+        q = zz[i - 1] if i else zz[1]
+        dx, dy = p[0] - q[0], p[1] - q[1]
+        n = (dx * dx + dy * dy) ** 0.5
+        if n < 1e-9:
+            out.append(tuple(p))
+        else:
+            out.append((p[0] + dx / n * c, p[1] + dy / n * c))
+    return out
+
+
+def outline_run(sewer, poly, offset=0.0, step=2.5, travel=None):
+    """Running stitch along a shape's outline (appliqué placement lines,
+    puff perforation, plain outlines)."""
+    g = poly.buffer(offset) if offset else poly
+    parts = g.geoms if g.geom_type == 'MultiPolygon' else [g]
+    for q in parts:
+        if q.is_empty or q.geom_type != 'Polygon':
+            continue
+        for ring in [q.exterior] + list(q.interiors):
+            cs = [tuple(c) for c in ring.simplify(0.2).coords]
+            if len(cs) < 3:
+                continue
+            sewer.move_to(cs[0], travel)
+            for c in cs[1:]:
+                sewer.run_to(c, step)
+
+
+def widen(a, b, extra=None):
+    """Push the two ends of a stitch apart by the pull compensation."""
+    extra = comp_side() if extra is None else extra
+    if extra <= 0:
+        return a, b
+    ax, ay = a; bx, by = b
+    dx, dy = ax - bx, ay - by
+    n = (dx * dx + dy * dy) ** 0.5
+    if n < 1e-9:
+        return a, b
+    dx, dy = dx / n * extra, dy / n * extra
+    return (ax + dx, ay + dy), (bx - dx, by - dy)
 
 
 def clean(mask, k=7, min_area_px=400):
@@ -163,6 +232,11 @@ class Sewer:
         self.jumps = 0
         self.trims = 0
         self.pending_tie_in = False
+        # Areas of the current colour block whose top stitching is still to
+        # come: travelling across them leaves a run that gets covered, so
+        # move_to prefers walking over them to jumping.
+        self._region_parts = []
+        self._region = None
 
     def _st(self, p):
         self.pattern.add_stitch_absolute(pystitch.STITCH, p[0] * 10.0, p[1] * 10.0)
@@ -200,6 +274,27 @@ class Sewer:
             self._st((q[0], q[1]))
             self._st((home[0], home[1]))
 
+    def region_add(self, geom):
+        if geom is not None and not geom.is_empty:
+            self._region_parts.append(geom)
+            self._region = None
+
+    def region_subtract(self, geom):
+        """An object's top stitching is down: don't travel over it any more."""
+        if not self._region_parts or geom is None or geom.is_empty:
+            return
+        self._region_parts = [self.region().difference(geom.buffer(0.6))]
+        self._region = None
+
+    def region_clear(self):
+        self._region_parts = []
+        self._region = None
+
+    def region(self):
+        if self._region is None and self._region_parts:
+            self._region = unary_union(self._region_parts).buffer(0)
+        return self._region
+
     def move_to(self, p, poly=None):
         """Travel to p: walk inside the shape if possible, else jump (+trim)."""
         if self.pos is None:
@@ -211,8 +306,13 @@ class Sewer:
         if d < 0.05:
             return
         inside = False
-        if poly is not None and d < 45:
-            inside = poly.buffer(0.35).covers(LineString([self.pos, p]))
+        if d < 45:
+            line = LineString([self.pos, p])
+            if poly is not None:
+                inside = poly.buffer(0.35).covers(line)
+            if not inside and self._region_parts:
+                reg = self.region()
+                inside = reg is not None and reg.buffer(0.35).covers(line)
         if inside:
             self.run_to(p, 2.6)
         else:
@@ -246,6 +346,27 @@ class Sewer:
         self.pattern.color_change()
         self.pos = None
         self.prev = None
+        self.region_clear()
+
+    def stop(self):
+        """Machine stop (appliqué: place / trim the fabric), same colour."""
+        self.tie_off()
+        self.pattern.stop()
+        self.pos = None
+        self.prev = None
+
+
+def bean_run(sewer, pts, maxlen=2.5, travel=None, repeats=1):
+    """Running stitch with each step sewn forward, back and forward again
+    (bean stitch) so a thin line reads as a line, not a dotted trail."""
+    if len(pts) < 2:
+        return
+    sewer.move_to(tuple(pts[0]), travel)
+    for a, b in zip(pts, pts[1:]):
+        sewer.run_to(tuple(b), maxlen)
+        for _ in range(repeats):
+            sewer.run_to(tuple(a), maxlen)
+            sewer.run_to(tuple(b), maxlen)
 
 def sew_fill(sewer, poly, angle, spacing, maxlen, stagger=True, start=None, travel=None):
     segs = scan_segments(poly, angle, spacing)
@@ -275,6 +396,29 @@ UNDER, TOP, BOTH = 'underlay', 'top', 'both'
 
 def _do(phase, which):
     return phase == BOTH or phase == which
+
+
+def underlay_mode():
+    return UNDERLAY if UNDERLAY in UNDERLAY_MODES else 'auto'
+
+
+def fill_underlay(sewer, g, top_angle, travel=None):
+    """Underlay under a fill region by the UNDERLAY policy: an edge walk
+    to hold the outline, then (auto) one open pass at 90° to the top
+    stitches or (heavy) a cross-hatch at ±45°."""
+    mode = underlay_mode()
+    if mode == 'none':
+        return
+    sew_edge_run(sewer, g, travel=travel)
+    if mode == 'light':
+        return
+    if mode == 'heavy':
+        for ang in (top_angle + 45, top_angle - 45):
+            sew_fill(sewer, g, ang, UNDERLAY_SPACING, 3.0, stagger=False,
+                     start=sewer.pos, travel=travel)
+    else:
+        sew_fill(sewer, g, top_angle + 90, UNDERLAY_SPACING, 3.0, stagger=False,
+                 start=sewer.pos, travel=travel)
 
 
 def sew_edge_run(sewer, poly, inset=0.7, maxlen=2.5, travel=None):
@@ -513,8 +657,8 @@ def satin_column(mask, path_px, scale, max_half_px):
         if best is None:
             continue
         _, a, b, ny, nx = best
-        a = a * scale + PULL_COMP
-        b = b * scale + PULL_COMP
+        a = a * scale + comp_side()
+        b = b * scale + comp_side()
         if a + b < 0.3 or a + b > MAX_SATIN:
             out.append(None)      # too wide for satin here -> break the column
             continue
@@ -637,14 +781,36 @@ def order_by_nearest(items, keyfn, start=None):
 
 
 
+def column_width(col):
+    w = [np.hypot(l[0] - r[0], l[1] - r[1]) for l, r, _ in col]
+    return float(np.mean(w)) if w else 0.0
+
+
 def sew_column(s, col, travel, phase=BOTH):
-    """centre run -> zigzag underlay -> satin, travelling inside the shape."""
-    if _do(phase, UNDER):
+    """centre run -> zigzag underlay -> satin, travelling inside the shape.
+
+    Underlay follows the column's width (auto): a centre run under narrow
+    columns, centre run + zigzag from 2 mm up. A column narrower than
+    MIN_SATIN can't hold satin at all and is sewn as a bean running stitch
+    along its centre instead. Returns 'satin' or 'run'."""
+    width = column_width(col)
+    if width < MIN_SATIN:
+        if _do(phase, TOP):
+            step = max(1, int(round(1.5 / SATIN_SPACING)))
+            pts = [tuple(c3) for _, _, c3 in col[::step]]
+            if pts[-1] != tuple(col[-1][2]):
+                pts.append(tuple(col[-1][2]))
+            bean_run(s, pts, 1.6, travel)
+        return 'run'
+    mode = underlay_mode()
+    zig = mode == 'heavy' or (mode == 'auto' and width >= 2.0)
+    if _do(phase, UNDER) and mode != 'none':
         s.move_to(tuple(col[0][2]), travel)
         step = max(1, int(round(UNDERLAY_RUN / SATIN_SPACING)))
         for _, _, c3 in col[::step]:
             s.run_to(tuple(c3), UNDERLAY_RUN)
 
+    if _do(phase, UNDER) and zig:
         zstep = max(1, int(round(2.0 / SATIN_SPACING)))
         zi = list(range(0, len(col), zstep))
         if zi and zi[-1] != len(col) - 1:
@@ -664,6 +830,7 @@ def sew_column(s, col, travel, phase=BOTH):
         for left, right, _ in col:
             s.run_to(tuple(left if side == 0 else right), MAX_SATIN + 1)
             side ^= 1
+    return 'satin'
 
 
 
@@ -691,9 +858,11 @@ def principal_angle(poly):
     return float(np.degrees(np.arctan2(vt[0][1], vt[0][0])))
 
 
-def satin_ring(poly, width, spacing):
+def satin_ring(poly, width, spacing, start=None):
     """A satin band that follows the outline — this is what makes a round
-    shape read as round. Returns (outer, inner, mid) triples."""
+    shape read as round. Returns (outer, inner, mid) triples, starting at
+    the point of the outline nearest `start` (the needle) so the band
+    begins where the thread already is."""
     outer = poly.exterior
     ip = poly.buffer(-width)
     if ip.is_empty:
@@ -704,7 +873,8 @@ def satin_ring(poly, width, spacing):
     if inner.length < spacing * 4:
         return None
 
-    p0 = outer.interpolate(0.0, normalized=True)
+    t_off = outer.project(Point(start), normalized=True) if start is not None else 0.0
+    p0 = outer.interpolate(t_off, normalized=True)
     best_t, bd = 0.0, 1e18
     for i in range(240):
         t = i / 240.0
@@ -718,7 +888,7 @@ def satin_ring(poly, width, spacing):
         out = []
         for i in range(n + 1):
             t = i / n
-            a = outer.interpolate(t, normalized=True)
+            a = outer.interpolate((t_off + t) % 1.0, normalized=True)
             u = (best_t - t) % 1.0 if flip else (best_t + t) % 1.0
             b = inner.interpolate(u, normalized=True)
             out.append(((a.x, a.y), (b.x, b.y),
@@ -731,7 +901,7 @@ def satin_ring(poly, width, spacing):
 
 
 def sew_ring(sewer, ring, travel=None, phase=BOTH):
-    if _do(phase, UNDER):
+    if _do(phase, UNDER) and underlay_mode() != 'none':
         sewer.move_to(ring[0][2], travel)
         for _, _, mid in ring[::max(1, len(ring) // 24)]:
             sewer.run_to(mid, UNDERLAY_RUN)          # centre-run underlay
@@ -739,11 +909,12 @@ def sew_ring(sewer, ring, travel=None, phase=BOTH):
         sewer.move_to(ring[0][0], travel)
         side = 0
         for a, b, _ in ring:
+            a, b = widen(a, b)                       # pull compensation
             sewer.run_to(a if side == 0 else b, MAX_SATIN + 1)
             side ^= 1
 
 
-def blob_rows(poly, spacing, max_span):
+def blob_rows(poly, spacing, max_span, start=None):
     """Satin across a blob: rows perpendicular to its long axis, one stitch
     per row. Returns None if the shape is too wide to satin safely."""
     ang = principal_angle(poly) + 90.0
@@ -752,7 +923,7 @@ def blob_rows(poly, spacing, max_span):
         return None
     if max(np.hypot(a[0] - b[0], a[1] - b[1]) for _, a, b in segs) > max_span:
         return None
-    return order_segments(segs)
+    return order_segments(segs, start)
 
 
 def sew_blob(sewer, poly, spacing, max_span, border_w, travel=None,
@@ -762,23 +933,33 @@ def sew_blob(sewer, poly, spacing, max_span, border_w, travel=None,
     Sewn in that order on purpose: the border goes down last so it lands on
     top and gives the shape a clean, hard edge.
     """
-    if _do(phase, UNDER):
+    mode = underlay_mode()
+    if not heavy_underlay and mode == 'heavy':
+        mode = 'auto'
+    if _do(phase, UNDER) and mode != 'none':
         sew_edge_run(sewer, poly, inset=min(0.6, border_w), travel=travel)
-        if heavy_underlay:
-            sew_fill(sewer, poly, principal_angle(poly) + 45, 2.5, 3.0,
+        ax = principal_angle(poly)
+        if mode == 'heavy':
+            for ang in (ax + 45, ax - 45):
+                sew_fill(sewer, poly, ang, UNDERLAY_SPACING, 3.0,
+                         stagger=False, start=sewer.pos, travel=travel)
+        elif mode == 'auto' and poly_max_width(poly) >= 2.0:
+            # satin rows run across the axis; the underlay runs along it
+            sew_fill(sewer, poly, ax, UNDERLAY_SPACING, 3.0,
                      stagger=False, start=sewer.pos, travel=travel)
     if not _do(phase, TOP):
         return
 
-    ring = satin_ring(poly, border_w, spacing)
+    ring = satin_ring(poly, border_w, spacing, start=sewer.pos)
     core = poly.buffer(-border_w * 0.72) if ring else poly
     if core.geom_type == 'MultiPolygon':
         core = max(core.geoms, key=lambda g: g.area)
 
     if not core.is_empty and core.area > 0.4:
-        rows = blob_rows(core, spacing, max_span)
+        rows = blob_rows(core, spacing, max_span, start=sewer.pos)
         if rows is not None:
             for a, b, _row in rows:
+                a, b = widen(a, b)
                 sewer.move_to(a, travel)
                 sewer.run_to(b, max_span + 1)
         else:
@@ -786,4 +967,57 @@ def sew_blob(sewer, poly, spacing, max_span, border_w, travel=None,
                      MAX_STITCH, stagger=True, start=sewer.pos, travel=travel)
 
     if ring:
-        sew_ring(sewer, ring, travel)
+        sew_ring(sewer, ring, travel, phase=TOP)
+
+
+# ------------------------------------------------ colour-block planning
+def plan_blocks(pieces):
+    """Group pieces into colour blocks, sewing order preserved where it
+    matters. pieces: (key, footprint_geometry, payload) in document/sew
+    order; key is the block identity (normally the rgb tuple). A piece
+    joins the latest block with its key unless a piece sewn after that
+    block overlaps it visibly (it would be covered), in which case a new
+    block starts. Returns [(key, [payload, ...])]."""
+    blocks = []            # [key, [payload], [footprints]]
+    for key, geom, payload in pieces:
+        target = None
+        for bi in range(len(blocks) - 1, -1, -1):
+            if blocks[bi][0] == key:
+                # an overlap too small to see isn't worth a colour change
+                limit = max(1.0, 0.02 * geom.area)
+                covered = False
+                for later in blocks[bi + 1:]:
+                    for g in later[2]:
+                        if g.intersects(geom) and g.intersection(geom).area > limit:
+                            covered = True
+                            break
+                    if covered:
+                        break
+                if not covered:
+                    target = blocks[bi]
+                break
+        if target is None:
+            target = [key, [], []]
+            blocks.append(target)
+        target[1].append(payload)
+        target[2].append(geom)
+    return [(b[0], b[1]) for b in blocks]
+
+
+def sew_knockdown(sewer, geom, spacing=2.0, angle=45.0, grow=1.0):
+    """Knockdown stitch: an open fill over the whole design footprint that
+    flattens fleece / terry pile before the design sews on top."""
+    g = geom.buffer(grow).simplify(0.2)
+    parts = g.geoms if g.geom_type == 'MultiPolygon' else [g]
+    parts = [q for q in parts if q.geom_type == 'Polygon' and q.area > 2.0]
+    for q in order_by_nearest(parts, lambda z: (z.centroid.x, z.centroid.y), sewer.pos):
+        sew_fill(sewer, q, angle, spacing, 3.0, stagger=False, start=sewer.pos, travel=q)
+        sew_fill(sewer, q, angle + 90, spacing, 3.0, stagger=False, start=sewer.pos, travel=q)
+
+
+def cap_order(items, keyfn, centre_x):
+    """Cap-frame sequencing: work outward from the centre of the design
+    (nearest the frame's centre first) and, at equal distance, bottom up
+    (the brim side first) so the cap's crown stays flat under the needle."""
+    return sorted(items, key=lambda it: (round(abs(keyfn(it)[0] - centre_x) / 8.0),
+                                         -keyfn(it)[1]))

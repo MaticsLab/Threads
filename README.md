@@ -156,6 +156,39 @@ Notes for the Containers runtime:
   that size before anything is stitched; a design that outgrows the hoop is
   flagged in red before and after digitizing. SVGs start at their natural
   document size. `GET/POST/DELETE /api/hoops`.
+- **Fabric & machine presets** — pick the fabric (twill, piqué, jersey,
+  fleece, towel, cap, canvas, leather) and it sets density, underlay, pull
+  compensation, satin cap and knockdown the way a digitizer would for that
+  material; pick the machine (Tajima, Brother, Janome, Ricoma, Melco,
+  Husqvarna, Barudan) and it caps satin width, sets the trim distance and
+  the export format. Every value stays visible and editable.
+  `GET /api/presets`.
+- **Pull compensation** — satin columns, satin borders, blob satin, zigzag
+  strokes and fills are all widened across the stitch direction by the
+  chosen amount (mm, total) so the finished stitch lands on the artwork
+  after the fabric pulls in.
+- **Underlay by width** — *auto* gives narrow satin a centre run, satin
+  from 2 mm a centre run + zigzag, fills an edge walk + one open pass at
+  90° to the top stitches; *heavy* cross-hatches at ±45°; *light* is edge
+  walk / centre run only; *none* for foam or pre-stabilised work.
+- **Small details** — anything narrower than 1 mm can't hold satin and is
+  sewn as a bean running stitch instead; the result says how many details
+  that happened to so you can enlarge the design.
+- **Knockdown & cap frame** — a knockdown stitch (open cross fill over the
+  footprint, first colour) flattens fleece and terry pile before the
+  design; cap mode sequences objects centre-out and bottom-up so a cap's
+  crown stays flat.
+- **Appliqué & 3D puff** (AI layers) — an appliqué layer sews placement
+  line → stop → tack-down → stop → satin border for every piece in the
+  layer; a puff layer sews tight, extra-wide satin with no underlay and a
+  perforating run around the outline for the foam.
+- **Sketch mode** — a photo or drawing as a one-colour outline: edges are
+  found, cleaned and sewn as a bean stitch (or single run) at a chosen
+  detail level. `POST /api/sketch`.
+- **Colour sequencing** — AI layers and SVG imports plan colour blocks so
+  the same thread in several layers sews in one stop whenever nothing in
+  between would cover it; travel between objects of a block runs across
+  the block's not-yet-covered areas instead of jumping.
 - **Sew order** — every digitizer sews a colour block in two passes: all
   underlay (edge walks, centre runs, underfills, zigzag) for every object
   in the block first, then all top stitching, each pass nearest-object
@@ -222,9 +255,9 @@ Notes for the Containers runtime:
   font family (Helvetica/Times/Courier) and a custom footer line. Edited in
   Design › Worksheet, stored server-side (`/api/wthemes`), picked per-export
   in the Export popout, previewed inline.
-- **Business tools (embTools)** — client & vendor database, notes / quote
-  log / to-do panes, quote sheet on the worksheet, run-time calculator and
-  the full unit-conversion set (mm⇄in, cm⇄in, px⇄mm, pt⇄in).
+- **Business tools (embTools)** — quote sheet on the worksheet, run-time
+  calculator and the full unit-conversion set (mm⇄in, cm⇄in, px⇄mm,
+  pt⇄in); clients live on the main page.
 - **Production worksheet** — the default worksheet is a one-page production
   sheet (US Letter): boxed header with the design name and a
   stitches/height/width/colours/zoom box, the design printed on white, machine
@@ -297,6 +330,8 @@ POST /api/import                 SVG(s) (digitized, page positions kept) or any 
                                  embroidery file; job + placement (keep/center/below/...)
                                  adds it onto an existing design
 POST /api/pen                    manual digitizing (traced shapes -> stitches)
+POST /api/sketch                 photo/drawing -> one-colour outline sketch
+GET  /api/presets                fabric + machine presets
 POST /api/vectorize              image -> editable vector layers (no stitches yet)
 POST /api/name_layers            vision-model names for the extracted layers
 POST /api/stitch_layers          sew the arranged layers into a design
