@@ -740,3 +740,36 @@ def test_drawn_shapes_lines_and_fill_patterns():
     assert r.status_code == 200, r.text
     r = client.post('/api/stitch_layers', json={'layers': [{'name': 'x', 'color': '#000', 'lines': [{'points': [[0, 0]]}]}]})
     assert r.status_code == 400
+
+
+def test_thread_catalog():
+    r = client.get('/api/threads/all')
+    assert r.status_code == 200
+    d = r.json()
+    assert d['brands'] > 70 and d['colors'] > 15000 and len(d['threads']) == d['colors']
+    t = d['threads'][0]
+    assert set(t) == {'brand', 'name', 'number', 'hex'} and t['hex'].startswith('#')
+
+
+def test_decorative_run_types():
+    from inkstitchlib import layers as veclayers
+    import pystitch
+    line = {'points': [[0, 0], [40, 0]]}
+    base = {'name': 'L', 'color': '#a8201a', 'lines': [line], 'params': {'stitch': 'run', 'run_len_mm': 2.5, 'width_mm': 3.0}}
+    counts, spread = {}, {}
+    for t in ('run', 'estitch', 'triangle', 'cross', 'motif'):
+        pat, blocks = veclayers.stitch([dict(base, params=dict(base['params'], stitch=t))])
+        st = [(x, y) for x, y, c in pat.stitches if (c & 0xFF) == pystitch.STITCH]
+        counts[t] = len(st)
+        ys = [y for x, y in st]
+        spread[t] = (max(ys) - min(ys)) / 10.0
+    for t in ('estitch', 'triangle', 'cross', 'motif'):
+        assert counts[t] > counts['run'] * 1.4, (t, counts)
+        assert 2.4 <= spread[t] <= 4.5, (t, spread)          # ~ the 3 mm width
+    assert spread['run'] < 1.0
+    # decorative outline on a closed shape, and through the API
+    box = {'shell': [[0, 0], [30, 0], [30, 20], [0, 20]], 'holes': []}
+    pat, blocks = veclayers.stitch([{'name': 'B', 'color': '#1a3b69', 'polys': [box], 'params': {'stitch': 'cross'}}])
+    assert sum(1 for q in pat.stitches if (q[2] & 0xFF) == pystitch.STITCH) > 80
+    r = client.post('/api/stitch_layers', json={'layers': [dict(base, params={'stitch': 'motif'})]})
+    assert r.status_code == 200, r.text

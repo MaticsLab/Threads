@@ -106,6 +106,20 @@ def load(name):
     return threads
 
 
+def catalog():
+    """Every colour of every brand -> {'brands', 'colors', 'threads': [{brand, name, number, hex}]}."""
+    out = []
+    brands = available()
+    for p in brands:
+        try:
+            rows = load(p['name'])
+        except FileNotFoundError:
+            continue
+        out.extend({'brand': p['name'], 'name': n, 'number': num, 'hex': '#%02X%02X%02X' % (r, g, b)}
+                   for r, g, b, n, num in rows)
+    return {'brands': len(brands), 'colors': len(out), 'threads': out}
+
+
 def nearest(rgb, palette_name):
     """Nearest thread by weighted RGB distance (red-mean approximation)."""
     threads = load(palette_name)

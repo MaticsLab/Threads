@@ -222,8 +222,13 @@ Notes for the Containers runtime:
   the left (colour swatches, Outlined/Filled stitch type, Size & hoop, Fill
   Settings, Density Control, Underlays, thread brand); a Layers dock on the
   right listing every thread block with a stitched thumbnail, thread name
-  and number, colour dot and a recolour gear; an icon rail for layers, AI
-  layers, artwork, themes, settings and details; a bottom icon toolbar
+  and number, colour dot and a recolour gear; an icon rail pinned to the
+  right edge that slides beside whichever panel is open — Layers (shapes
+  with stitched thumbnails, sew-order buttons), Sequencer: Colors (the
+  colour stops in sew order), Artwork, Colors (the whole thread library:
+  every brand, search, screen eyedropper, the design's own colours),
+  settings and Project info (name, dimensions, shapes, colour changes,
+  colours, stitch count); a bottom icon toolbar
   (select, plan, density, pen, AI layers, threads, sketch, text, stitch,
   player, realistic, 3D) with key hints; zoom in/out with a % readout; and
   undo/redo that steps back and forth between the designs made this
@@ -232,15 +237,17 @@ Notes for the Containers runtime:
   apply. Trackpad-native navigation: two-finger scroll pans, pinch or
   ⌘-scroll zooms at the cursor, double-click refits.
 - **Design tools** — draw on the canvas and stitch what you drew: open
-  shapes (**1**: click to plot corners, right-click for curve points, Enter
-  or double-click to finish), closed shapes (**2**), freehand (**3**: drag;
-  end near the start and it closes), and an *Add shape* menu (rectangle,
+  shapes (**1**: click to plot corners, Shift-click for curve points; Enter,
+  right-click or double-click finishes and hands back to Select), closed
+  shapes (**2**), freehand (**3**: drag; end near the start and it closes),
+  and an *Add shape* menu (rectangle,
   rounded, circle, ellipse, triangle, hexagon, star, heart, arrow, ring).
   Every shape is an object: select it (**S**) to move, scale from the
   corner handles, stretch from the side handles, rotate from the top handle;
   Delete, ⌘D duplicates, ⌘Z / ⇧⌘Z undo and redo. The settings panel edits
   the selected shape (or the defaults for the next one): *Outlined* with a
-  run type — running, bean or satin at a set width — or *Filled* with a
+  run type — running, bean, satin, E-stitch, triangle, cross or a motif
+  chain, at a set width and spacing — or *Filled* with a
   pattern — tatami, satin, contour, circular or walk — plus angle, density
   and a satin border. *Stitch shapes* sews them through the AI-layers
   engine, so colour sequencing, underlay order, pull compensation and the

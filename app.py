@@ -924,6 +924,12 @@ def palettes():
     return threads.available()
 
 
+@app.get('/api/threads/all')
+def threads_all():
+    """The whole thread library (every brand) for the Colors panel."""
+    return threads.catalog()
+
+
 @app.get('/api/palettes/{name}')
 def palette_detail(name: str):
     try:
