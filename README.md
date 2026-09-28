@@ -215,9 +215,19 @@ Notes for the Containers runtime:
   preview, stitch plan and worksheet (`POST /api/recolor/{job}`). Save
   colourways as named **themes** and apply them to any design
   (`/api/themes`).
-- **Canvas workspace** — the whole right side is the canvas: a single-row
-  floating toolbox at the bottom switches views and opens Text / Design /
-  Details / Export as draggable popouts. One **Create** tab takes any file —
+- **Canvas workspace** — the studio (`/studio`) is a full-screen grey grid
+  canvas with floating dark panels: a name pill (rename, save, worksheet,
+  clients) top-left, the design's height/width in inches with fit-to-screen
+  and hoop toggles top-centre, Export / Save top-right; a settings panel on
+  the left (colour swatches, Outlined/Filled stitch type, Size & hoop, Fill
+  Settings, Density Control, Underlays, thread brand); a Layers dock on the
+  right listing every thread block with a stitched thumbnail, thread name
+  and number, colour dot and a recolour gear; an icon rail for layers, AI
+  layers, artwork, themes, settings and details; a bottom icon toolbar
+  (select, plan, density, pen, AI layers, threads, sketch, text, stitch,
+  player, realistic, 3D) with key hints; zoom in/out with a % readout; and
+  undo/redo that steps back and forth between the designs made this
+  session. Icons are the open-source Lucide set. One **Create** tab takes any file —
   PNG/JPG artwork, SVG, or a machine file — and shows only the settings that
   apply. Trackpad-native navigation: two-finger scroll pans, pinch or
   ⌘-scroll zooms at the cursor, double-click refits.

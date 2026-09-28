@@ -197,32 +197,196 @@
     vertical-align:-2px;margin-right:7px}
   @keyframes s{to{transform:rotate(360deg)}}
   .hide{display:none!important}
+
+  /* ================================================= studio workspace skin */
+  :root{--ink:#e7e9ef;--muted:#9aa1ad;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+    --accent:#3b82f6;--accent-press:#2f6fd6;--accent-soft:rgba(59,130,246,.2);--warnbg:rgba(168,98,10,.2);
+    --panel:rgba(43,46,53,.97);--panel2:#33363d;--field:#1f2228;--stage:#8d94a0}
+  html,body{height:100%;overflow:hidden}
+  body{background:var(--stage)}
+  main{position:fixed;inset:0;display:block;padding:0;max-width:none;margin:0}
+  main>div{overflow:visible;padding:0}
+  #work{position:absolute;inset:0;display:block}
+  .stage{position:absolute;inset:0;border-radius:0;background:var(--stage);
+    background-image:linear-gradient(rgba(255,255,255,.075) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.075) 1px,transparent 1px);background-size:64px 64px}
+  .stage>img{max-width:min(78%,1100px);max-height:78%;border-radius:0;transform:scale(var(--imgz,1));transform-origin:center}
+  #stageEmpty{color:#3f4552}#stageEmpty b{color:#2c3140}
+  .stagehint{color:#4a5060;left:auto;right:64px;bottom:22px}
+
+  /* panels */
+  .tpill{position:absolute;top:16px;z-index:40;display:flex;align-items:center;gap:8px;height:56px;
+    padding:0 12px;background:var(--panel);border-radius:14px;color:var(--ink);
+    box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+  #topLeft{left:16px;padding-right:8px}
+  #topLeft .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#3b82f6)}
+  #nameBtn{background:transparent;box-shadow:none;color:var(--ink);font-weight:600;font-size:15px;padding:8px 6px;display:flex;gap:10px;align-items:center;max-width:280px}
+  #nameBtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #nameBtn:hover{background:rgba(255,255,255,.06)}
+  #nameMenu{position:absolute;top:64px;left:0;min-width:220px;background:var(--panel);border-radius:12px;padding:6px;
+    box-shadow:0 14px 40px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.06)}
+  #nameMenu button{display:flex;width:100%;text-align:left;background:transparent;box-shadow:none;color:var(--ink);font-weight:500;padding:9px 10px;border-radius:8px;gap:9px;align-items:center}
+  #nameMenu button:hover{background:rgba(255,255,255,.07)}
+  #topSize{left:50%;transform:translateX(-50%);gap:6px}
+  #topSize .dim{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  #topSize .dim b{color:var(--ink);font-weight:600}
+  #topSize input{width:74px;height:36px;padding:0 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+  #topSize .ib{width:36px;height:36px;padding:0;display:grid;place-items:center;background:transparent;box-shadow:none;color:var(--ink);border-radius:9px}
+  #topSize .ib:hover{background:rgba(255,255,255,.08)}
+  #topSize .ib.on{background:rgba(255,255,255,.12)}
+  #topRight{right:16px;gap:10px;padding:0 10px}
+  #topRight button{height:38px;display:flex;align-items:center;gap:8px;font-size:14px;padding:0 16px}
+  .sep-v{width:1px;height:24px;background:var(--line2)}
+
+  /* left properties panel */
+  #leftPanel{position:absolute;left:16px;top:86px;max-height:calc(100vh - 262px);width:344px;z-index:35;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#4a4e58 transparent;
+    background:var(--panel);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+  #leftPanel .card{background:transparent;border:0;padding:16px 18px;box-shadow:none}
+  #leftPanel .card+.card{margin-top:0;border-top:1px solid var(--line)}
+  #leftPanel .card h2{color:var(--muted)}
+  .ptop{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .ptop .ptitle{font-size:16px;font-weight:600;color:var(--ink)}
+  .ptop .link{margin-left:auto;background:transparent;box-shadow:none;color:var(--muted);font-weight:500;font-size:13px;padding:4px 6px}
+  .ptop .link:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .swatches button{width:36px;height:36px;border-radius:8px;padding:0;box-shadow:none;border:1px solid rgba(255,255,255,.14)}
+  .swatches button.sel{outline:2px solid #fff;outline-offset:1px}
+  .swatches .add{background:var(--panel2);color:var(--ink);display:grid;place-items:center}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 12px}
+  .seg button{background:var(--panel2);color:var(--ink);box-shadow:none;border:1px solid var(--line2);border-radius:10px;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600}
+  .seg button.on{border-color:#fff;box-shadow:0 0 0 1px #fff inset}
+  .ptitle2{font-size:15px;font-weight:600;color:var(--ink);margin:12px 0 4px}
+  details.sec{margin:0;padding:0;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
+  details.sec>summary{list-style:none;display:flex;align-items:center;gap:8px;padding:14px 2px;font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer}
+  details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+  details.sec[open]>summary::after{transform:rotate(-135deg)}
+  details.sec>*:not(summary){margin-bottom:6px}
+  details.sec>div:last-child,details.sec>p:last-child{margin-bottom:14px}
+  details.sec:has(> .hide){display:none}
+  details.sec label{margin-top:8px}
+  details:not(.sec){background:var(--panel2);box-shadow:none;margin-top:10px}
+  details:not(.sec) summary{color:var(--ink)}
+  #go{margin-top:14px}
+
+  /* dark controls everywhere */
+  label{color:#c7ccd6}
+  input[type=number],input[type=text],input[type=email],input[type=search],select,textarea{background:var(--field);color:var(--ink);border-color:var(--line2)}
+  select{background-image:linear-gradient(45deg,transparent 50%,#9aa1ad 50%),linear-gradient(135deg,#9aa1ad 50%,transparent 50%);
+    background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;-webkit-appearance:none;appearance:none;padding-right:28px}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  button.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line2)}
+  button.ghost:hover{background:#3d4149;border-color:rgba(255,255,255,.2)}
+  button:disabled{background:#3a3d45;color:#7c8290}
+  .drop{background:#25282f;border-color:rgba(255,255,255,.16);color:var(--muted)}
+  .drop:hover{background:#2b2f38;border-color:var(--accent);color:var(--ink)}
+  .drop img{background:#fff;padding:6px}
+  .chip{background:var(--panel2);box-shadow:none}
+  .chip:hover{box-shadow:0 0 0 2px var(--accent-soft)}
+  .tabs{background:var(--field)}.tabs button.on{background:var(--panel2);color:#fff;box-shadow:none}
+  table td{border-color:var(--line)}
+  .pass{color:#cfd4dd;border-color:var(--line)}
+  .warn{color:#f5c27a}
+  .tgl{color:#c7ccd6}
+  .dpanel{background:var(--panel);color:var(--ink);box-shadow:0 12px 48px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06)}
+  .dhead{border-color:var(--line)}.dots{color:#5c616d}
+  .dbody .chip{background:var(--panel2)}
+  .theme-card{border-color:var(--line2)}.theme-card:hover{border-color:var(--accent)}
+  .blockrow:hover{background:rgba(255,255,255,.05)}
+  .blockrow.sel{background:var(--accent-soft);border-color:var(--accent)}
+  .blockrow .rowbtn{background:var(--panel2);color:#cfd4dd;border-color:transparent}
+  .swgrid button{border-color:rgba(255,255,255,.12)}
+  .dpfoot{border-color:var(--line)}
+  .modal{background:rgba(10,12,18,.6)}
+  .sheet{background:var(--panel);color:var(--ink)}
+  .sheet-head{border-color:var(--line)}
+  .player.floatbar{background:var(--panel);color:var(--ink);box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);bottom:96px}
+  .fontprev img{background:#fff}
+  #savedNote{top:84px}
+
+  /* bottom toolbar, zoom, history */
+  #bottomBar{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:40;display:flex;gap:4px;align-items:center;
+    background:var(--panel);border-radius:14px;padding:8px 10px;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+  .tb{position:relative;width:44px;height:44px;padding:0;display:grid;place-items:center;background:transparent;box-shadow:none;color:var(--ink);border-radius:10px}
+  .tb:hover{background:rgba(255,255,255,.08)}
+  .tb.on{background:rgba(255,255,255,.14)}
+  .tb:disabled{background:transparent;color:#5c616d}
+  .tb svg{width:22px;height:22px}
+  .tb .k{position:absolute;right:6px;bottom:4px;font-size:10px;color:var(--muted);font-weight:600}
+  .tb.primary{color:#fff;background:var(--accent)}
+  .tb.primary:hover{background:var(--accent-press)}
+  #zoomBox,#histBox{position:absolute;bottom:18px;z-index:40;background:var(--panel);border-radius:14px;
+    box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center}
+  #zoomBox{left:16px;padding:4px}
+  #zoomBox .zl{font-size:12.5px;font-weight:600;color:var(--ink);padding:8px 0;font-variant-numeric:tabular-nums}
+  #histBox{left:88px;flex-direction:row;padding:4px}
+
+  /* right rail + layers dock */
+  #rail{position:absolute;right:376px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:4px;padding:8px 6px;
+    background:var(--panel);border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+  #rail .tb{width:42px;height:42px}
+  #rail .rsep{height:1px;background:var(--line2);margin:4px 6px}
+  #designPanel{position:absolute;top:86px;right:16px;bottom:auto;left:auto;width:344px;max-height:calc(100vh - 180px);z-index:36;border-radius:16px}
+  #designPanel .dhead{cursor:default}
+  #designPanel .dbody{padding:12px 12px 14px}
+  .lrow{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 8px;border-radius:14px;background:var(--panel2);margin-bottom:8px;cursor:pointer;border:2px solid transparent;position:relative}
+  .lrow:hover{background:#3a3d45}
+  .lrow.sel{border-color:var(--accent);background:#3a3d45}
+  .lrow .grip{color:#6b7280;display:grid;place-items:center;width:14px;flex:none}
+  .lrow canvas{width:88px;height:88px;border-radius:50%;background:#1c1f26;flex:none}
+  .lrow .lmeta{flex:1;min-width:0}
+  .lrow .lname{font-size:16px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lrow .lsub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lrow .lside{display:flex;flex-direction:column;align-items:center;gap:8px;flex:none}
+  .lrow .lnum{min-width:26px;height:26px;border-radius:8px;background:#1f2228;color:var(--ink);font-size:12.5px;font-weight:600;display:grid;place-items:center}
+  .lrow .ldot{width:20px;height:20px;border-radius:5px;border:1px solid rgba(255,255,255,.2)}
+  .lrow .lgear{width:26px;height:26px;padding:0;background:transparent;box-shadow:none;color:var(--muted);display:grid;place-items:center;border-radius:7px}
+  .lrow .lgear:hover{background:rgba(255,255,255,.1);color:var(--ink)}
+  .lrow .lgear svg{width:18px;height:18px}
+  #dpBlocks{margin-bottom:10px}
+  .lhint{font-size:12.5px;color:var(--muted);margin:2px 0 10px}
+  .hide{display:none!important}
 </style>
 </head>
 <body>
-<header>
-  <div class="crumbs">Threads <span class="sep">›</span> <b id="crumbName">Create</b></div>
-  <nav class="topnav">
-    <button id="tabClients" onclick="location.href='/'">Clients</button>
-    <button id="tabImage" class="on">Create</button>
-  </nav>
-  <div class="hact">
-    <button class="mini" id="saveTop" disabled title="Keep this design in a client's library">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v14a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1zM8 3v5h7V3M8 21v-7h8v7"/></svg>
-      Save to client</button>
-    <button class="ghost mini" id="pdfTop" disabled>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5M6 3h8l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/></svg>
-      Worksheet</button>
-    <div class="avatar">J</div>
+<div id="topLeft" class="tpill">
+  <div class="avatar"></div>
+  <button id="nameBtn" title="Design"><span id="designName">Untitled design</span><i data-ic="chevron-down"></i></button>
+  <div id="nameMenu" class="hide">
+    <button id="nmRename"><i data-ic="pencil"></i>Rename</button>
+    <button id="nmSave"><i data-ic="cloud-upload"></i>Save to client</button>
+    <button id="nmSheet"><i data-ic="file"></i>Worksheet</button>
+    <button id="nmClients"><i data-ic="users"></i>Clients</button>
+    <button id="nmNew"><i data-ic="plus"></i>New design</button>
   </div>
-</header>
+</div>
+<div id="topSize" class="tpill">
+  <span class="dim"><b>H</b><input type="number" id="hIn" step="0.01" min="0.1" value="0"> in</span>
+  <span class="dim"><b>W</b><input type="number" id="wIn" step="0.01" min="0.1" value="0"> in</span>
+  <button class="ib on" id="lockBtn" title="Aspect ratio locked"><i data-ic="lock"></i></button>
+  <span class="sep-v"></span>
+  <button class="ib" id="fitBtn" title="Fit to screen"><i data-ic="maximize"></i></button>
+  <button class="ib" id="hoopBtn" title="Show the hoop"><i data-ic="frame"></i></button>
+</div>
+<div id="topRight" class="tpill">
+  <button class="ghost" id="exportTop"><i data-ic="download"></i>Export</button>
+  <button id="shareBtn" disabled><i data-ic="cloud-upload"></i>Save</button>
+</div>
+<div class="hide">
+  <span id="crumbName"></span>
+  <button id="tabImage" class="on">Create</button>
+  <button class="mini" id="saveTop" disabled>Save to client</button>
+  <button class="ghost mini" id="pdfTop" disabled>Worksheet</button>
+</div>
+
 
 <main>
-  <div>
+  <div id="leftPanel">
     <div class="card">
       <!-- ============================== create: image / svg / machine file -->
       <div id="paneImage">
-        <h2>1 · Create</h2>
+        <div class="ptop"><span class="ptitle">Color</span><button class="link" id="expandAll">Expand all</button></div>
+        <div class="swatches" id="colorRow"><button class="add" id="colorAdd" title="Add a thread brand"><i data-ic="plus"></i></button></div>
         <div class="drop" id="drop">
           <div id="dropText">Click or drop a file<br>
             <span class="muted">PNG · JPG · SVG · DST · PES · JEF · VP3 …</span></div>
@@ -231,7 +395,15 @@
         <input type="file" id="file" class="hide" multiple
                accept="image/*,.svg,.dst,.pes,.jef,.exp,.vp3,.xxx,.u01,.pec,.tbf,.hus,.pcs,.sew,.shv,.jpx,.dsb,.dsz,.csv,.json">
         <p class="muted" id="importName" style="margin:8px 0 0"></p>
+        <div id="stitchTypeBox" class="hide">
+          <div class="ptitle2">Stitch type</div>
+          <div class="seg">
+            <button id="stOutlined" title="Sketch — one-colour outline"><i data-ic="scan"></i>Outlined</button>
+            <button id="stFilled" class="on" title="Digitize — fills & satin"><i data-ic="layers"></i>Filled</button>
+          </div>
+        </div>
 
+        <details class="sec" open><summary>Size &amp; hoop</summary>
         <div id="sizeBox" class="hide">
           <div class="row">
             <div><label>Hoop</label><select id="hoop"></select></div>
@@ -255,10 +427,11 @@
           </div>
           <p class="muted" id="sizeInfo" style="margin:6px 0 0"></p>
         </div>
+        </details>
 
         <div id="setArt">
-          <div class="row">
-            <div><label>Mode</label>
+          <div>
+            <div class="hide"><label>Mode</label>
               <select id="artMode">
                 <option value="digitize" selected>Digitize — fills &amp; satin</option>
                 <option value="sketch">Sketch — one-colour outline</option>
@@ -269,6 +442,7 @@
                 <option>5</option><option>6</option>
               </select></div>
           </div>
+          <details class="sec" open><summary>Fill Settings</summary>
           <div id="setDigitize">
             <div class="row">
               <div><label>Fill method</label>
@@ -282,6 +456,8 @@
             </div>
             <label><input type="checkbox" id="autotune" checked> Auto-tune from QA</label>
           </div>
+          </details>
+          <details class="sec" open><summary>Sketch settings</summary>
           <div id="setSketch" class="hide">
             <div class="row3">
               <div><label>Detail <span class="muted" id="skDetailVal">3</span></label>
@@ -291,9 +467,11 @@
                 <select id="skBean"><option value="1" selected>Bean (triple)</option><option value="0">Single run</option></select></div>
             </div>
           </div>
+          </details>
         </div>
 
         <div id="stitchBox" class="hide">
+         <details class="sec" open><summary>Density Control</summary>
           <div class="row">
             <div><label>Fabric</label><select id="fabric"><option value="">—</option></select></div>
             <div><label>Machine</label><select id="machine"><option value="">—</option></select></div>
@@ -303,6 +481,8 @@
             <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
             <div><label>Pull comp (mm)</label><input type="number" id="pullComp" value="0.25" step="0.05" min="0" max="1"></div>
           </div>
+         </details>
+         <details class="sec" open><summary>Underlays</summary>
           <div class="row3">
             <div><label>Underlay</label>
               <select id="underlayMode">
@@ -315,8 +495,10 @@
             <div><label>&nbsp;</label><label class="tgl" style="margin:0;height:38px"><input type="checkbox" id="capMode"> Cap frame</label></div>
           </div>
           <input type="hidden" id="trimDist" value="2">
+         </details>
         </div>
 
+        <details class="sec" open><summary>SVG import</summary>
         <div id="setSvg" class="hide">
           <div class="row">
             <div><label>Fill method</label>
@@ -343,13 +525,15 @@
             <div><label>Gap (mm)</label><input type="number" id="importGap" value="5" step="1" min="0"></div>
           </div>
         </div>
+        </details>
 
         <button id="go" class="wide" disabled>Digitize</button>
         <button id="goLayers" class="wide ghost hide" style="margin-top:8px">✨ AI layers — edit before stitching</button>
       </div>
 
 
-      <label style="margin-top:16px">Thread palette</label>
+      <details class="sec"><summary>Thread brand</summary>
+      <label>Thread palette</label>
       <div class="palrow">
         <select id="palette"></select>
         <button class="mini ghost" id="palAdd" title="Add a thread brand">＋ Brand</button>
@@ -367,6 +551,7 @@
       </div>
       <button id="palDelete" class="mini ghost hide" style="margin-top:8px">Delete this custom brand</button>
 
+      </details>
       <details>
         <summary>Unit conversions (embTools)</summary>
         <div class="util"><input type="number" id="convMM" value="100"> mm ⇄ <input type="number" id="convIN" value="3.937"> in</div>
@@ -411,7 +596,7 @@
       <span class="muted" id="playInfo" style="min-width:110px;text-align:right">0 st</span>
     </div>
 
-    <div class="toolbox">
+    <div class="toolbox hide">
       <select id="viewSel" disabled title="View">
         <option value="photo" selected>Preview</option>
         <option value="plan">Stitch plan</option>
@@ -429,11 +614,22 @@
       <button class="ghost mini" id="detailsBtn" disabled>Details</button>
       <button class="ghost mini" id="exportBtn" disabled>Export</button>
     </div>
+    <div id="bottomBar"></div>
+    <div id="zoomBox">
+      <button class="tb" id="zoomIn" title="Zoom in"><i data-ic="zoom-in"></i></button>
+      <div class="zl" id="zoomLbl">100%</div>
+      <button class="tb" id="zoomOut" title="Zoom out"><i data-ic="zoom-out"></i></button>
+    </div>
+    <div id="histBox">
+      <button class="tb" id="undoBtn" title="Previous design" disabled><i data-ic="undo"></i></button>
+      <button class="tb" id="redoBtn" title="Next design" disabled><i data-ic="redo"></i></button>
+    </div>
+    <div id="rail"></div>
     <span class="stagehint" id="viewerHint"></span>
   </section>
 </main>
 
-<div id="layersPanel" class="dpanel hide" style="right:auto;left:440px">
+<div id="layersPanel" class="dpanel hide" style="right:auto;left:372px;top:86px">
   <div class="dhead" id="layersDrag" title="Drag to move · double-click to reset">
     <span class="dots">⠿</span>
     <span class="dcrumb">Layers</span>
@@ -475,7 +671,7 @@
   </div>
 </div>
 
-<div id="penPanel" class="dpanel hide" style="right:auto;left:440px">
+<div id="penPanel" class="dpanel hide" style="right:auto;left:372px;top:86px">
   <div class="dhead" id="penDrag" title="Drag to move · double-click to reset">
     <span class="dots">⠿</span>
     <span class="dcrumb">Pen digitizer</span>
@@ -523,7 +719,7 @@
   </div>
 </div>
 
-<div id="textPanel" class="dpanel hide" style="right:auto;left:460px">
+<div id="textPanel" class="dpanel hide" style="right:auto;left:372px;top:86px">
   <div class="dhead" id="textDrag" title="Drag to move · double-click to reset">
     <span class="dots">⠿</span>
     <span class="dcrumb">Text</span>
@@ -561,7 +757,7 @@
   </div>
 </div>
 
-<div id="detailsPanel" class="dpanel hide" style="right:410px">
+<div id="detailsPanel" class="dpanel hide" style="right:372px;top:86px">
   <div class="dhead" id="detailsDrag" title="Drag to move · double-click to reset">
     <span class="dots">⠿</span>
     <span class="dcrumb">Details</span>
@@ -575,7 +771,7 @@
   </div>
 </div>
 
-<div id="exportPanel" class="dpanel hide" style="top:auto;bottom:96px">
+<div id="exportPanel" class="dpanel hide" style="top:86px;right:16px;z-index:60">
   <div class="dhead" id="exportDrag" title="Drag to move · double-click to reset">
     <span class="dots">⠿</span>
     <span class="dcrumb">Export</span>
@@ -635,7 +831,7 @@
 <div id="designPanel" class="dpanel hide">
   <div class="dhead" id="dpDrag" title="Drag to move · double-click to reset">
     <span class="dots">⠿</span>
-    <span class="dcrumb" id="dpCrumb">Design</span>
+    <span class="dcrumb" id="dpCrumb">Layers</span>
     <button class="ghost mini" id="dpBack" style="margin-left:auto">‹ Themes</button>
     <button class="ghost mini" id="dpClose">✕</button>
   </div>
@@ -2180,7 +2376,6 @@ function makeDraggable(panel, handle) {
 }
 makeDraggable($('detailsPanel'), $('detailsDrag'));
 makeDraggable($('exportPanel'), $('exportDrag'));
-makeDraggable($('designPanel'), $('dpDrag'));
 makeDraggable($('textPanel'), $('textDrag'));
 $('textBtn').onclick = () => {
   const p = $('textPanel');
@@ -2200,7 +2395,7 @@ $('dpClose').onclick = () => $('designPanel').classList.add('hide');
 /* --------------------------- Design panel: themes + thread recolouring */
 let dpView = 'themes';
 $('designBtn').onclick = () => {
-  if ($('designPanel').classList.contains('hide')) openDesign('themes');
+  if ($('designPanel').classList.contains('hide')) openDesign('threads');
   else $('designPanel').classList.add('hide');
 };
 $('dpBack').onclick = () => dpShow('themes');
@@ -2221,8 +2416,8 @@ function dpShow(view) {
   $('dpFoot').classList.toggle('hide', view !== 'threads');
   $('dpBack').classList.toggle('hide', view === 'themes');
   $('dpCrumb').innerHTML = view === 'threads'
-    ? '<span class="dim">Design ›</span> Threads'
-    : view === 'wsheet' ? '<span class="dim">Design ›</span> Worksheet' : 'Design';
+    ? 'Layers'
+    : view === 'wsheet' ? '<span class="dim">Design ›</span> Worksheet' : 'Themes';
   if (view === 'threads') renderBlocks();
 }
 $('dpToWsheet').onclick = () => dpShow('wsheet');
@@ -2492,6 +2687,259 @@ $('saveModal').onclick = e => { if (e.target === $('saveModal')) $('saveModal').
     libCrumb();
   } catch (e) { alert('Could not open the saved design: ' + e.message); }
 })();
+
+/* ============================================================ workspace shell */
+const ICONS = {
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  'chevron-up': '<path d="m18 15-6-6-6 6"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  'cloud-upload': '<path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/>',
+  file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  maximize: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+  frame: '<line x1="22" x2="2" y1="6" y2="6"/><line x1="22" x2="2" y1="18" y2="18"/><line x1="6" x2="6" y1="2" y2="22"/><line x1="18" x2="18" y1="2" y2="22"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>',
+  layers: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+  'mouse-pointer': '<path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/>',
+  hand: '<path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  ruler: '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>',
+  'pen-tool': '<path d="M15.707 21.293a1 1 0 0 1-1.414 0l-1.586-1.586a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l1.586 1.586a1 1 0 0 1 0 1.414z"/><path d="m18 13-1.375-6.874a1 1 0 0 0-.746-.776L3.235 2.028a1 1 0 0 0-1.207 1.207L5.35 15.879a1 1 0 0 0 .776.746L13 18"/><path d="m2.3 2.3 7.286 7.286"/><circle cx="11" cy="11" r="2"/>',
+  pentagon: '<path d="M10.83 2.38a2 2 0 0 1 2.34 0l8 5.74a2 2 0 0 1 .73 2.25l-3.04 9.26a2 2 0 0 1-1.9 1.37H7.04a2 2 0 0 1-1.9-1.37L2.1 10.37a2 2 0 0 1 .73-2.25z"/>',
+  brush: '<path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>',
+  type: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
+  wand: '<path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>',
+  play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+  eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  box: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  'zoom-in': '<circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/>',
+  'zoom-out': '<circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="8" x2="14" y1="11" y2="11"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/>',
+  shapes: '<path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/>',
+  image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  palette: '<path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>',
+  sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  grip: '<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>',
+};
+function icon(name, size = 18) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
+}
+document.querySelectorAll('i[data-ic]').forEach(el => { el.outerHTML = icon(el.dataset.ic, +el.dataset.size || 18); });
+
+/* ---- bottom toolbar (icons drive the existing controls) */
+const TOOLS = [
+  { id: 'photo', ic: 'mouse-pointer', k: 'S', title: 'Preview', act: () => job && setMode('photo') },
+  { id: 'plan', ic: 'hand', k: '', title: 'Stitch plan — pan & zoom', act: () => job && setMode('plan') },
+  { id: 'density', ic: 'ruler', k: 'M', title: 'Density map', act: () => job && setMode('density') },
+  null,
+  { id: 'digitize', ic: 'pen-tool', k: '1', title: 'Pen digitizer', act: () => $('penBtn').click() },
+  { id: 'vector', ic: 'pentagon', k: '2', title: 'AI layers', act: () => vecLayers && vecLayers.length ? ($('layersPanel').classList.toggle('hide'), setMode('vector')) : $('goLayers').click() },
+  { id: 'design', ic: 'brush', k: '3', title: 'Threads & colours', act: () => $('designBtn').click() },
+  { id: 'sketch', ic: 'pencil', k: '4', title: 'Sketch mode (one-colour outline)', act: () => { if (window._fKind !== 'image') return; $('artMode').value = $('artMode').value === 'sketch' ? 'digitize' : 'sketch'; modeChanged(); syncStitchType(); } },
+  { id: 'text', ic: 'type', k: 'T', title: 'Text', act: () => $('textBtn').click() },
+  { id: 'go', ic: 'wand', k: '', title: 'Stitch it', act: () => $('go').click(), primary: true },
+  null,
+  { id: 'player', ic: 'play', k: '', title: 'Stitch player', act: () => job && setMode('player') },
+  { id: 'realistic', ic: 'eye', k: '', title: 'Realistic view', act: () => job && setMode('realistic') },
+  { id: '3d', ic: 'box', k: '', title: '3D view', act: () => job && setMode('3d') },
+];
+$('bottomBar').innerHTML = TOOLS.map(t => t ? `<button class="tb${t.primary ? ' primary' : ''}" data-tool="${t.id}" title="${t.title}">${icon(t.ic, 22)}${t.k ? `<span class="k">${t.k}</span>` : ''}</button>` : '<span class="sep-v"></span>').join('');
+TOOLS.filter(Boolean).forEach(t => { document.querySelector(`[data-tool="${t.id}"]`).onclick = t.act; });
+function syncToolbar() {
+  document.querySelectorAll('#bottomBar .tb').forEach(b => {
+    const id = b.dataset.tool;
+    b.classList.toggle('on', id === curMode || (id === 'sketch' && isSketch()) ||
+      (id === 'design' && !$('designPanel').classList.contains('hide')) ||
+      (id === 'text' && !$('textPanel').classList.contains('hide')));
+  });
+  const goB = document.querySelector('[data-tool="go"]');
+  goB.disabled = $('go').disabled;
+  goB.title = $('go').textContent.trim() || 'Stitch it';
+}
+const _setMode = setMode;
+setMode = function (m) { _setMode(m); syncToolbar(); updateZoomLabel(); };
+setInterval(syncToolbar, 400);
+
+/* ---- right rail */
+const RAIL = [
+  { ic: 'layers', title: 'Layers (thread blocks)', act: () => $('designBtn').click() },
+  { ic: 'shapes', title: 'AI layers', act: () => vecLayers && vecLayers.length ? $('layersPanel').classList.toggle('hide') : $('goLayers').click() },
+  { ic: 'image', title: 'Artwork', act: () => { $('leftPanel').classList.remove('hide'); $('leftPanel').scrollTop = 0; } },
+  null,
+  { ic: 'palette', title: 'Themes (colourways)', act: () => openDesign('themes') },
+  { ic: 'sliders', title: 'Show / hide the settings panel', act: () => $('leftPanel').classList.toggle('hide') },
+  { ic: 'info', title: 'Details', act: () => $('detailsBtn').click() },
+];
+$('rail').innerHTML = RAIL.map(r => r ? `<button class="tb" title="${r.title}">${icon(r.ic, 21)}</button>` : '<div class="rsep"></div>').join('');
+[...$('rail').querySelectorAll('button')].forEach((b, i) => { b.onclick = RAIL.filter(Boolean)[i].act; });
+
+/* ---- stitch type segmented control (Outlined = sketch, Filled = digitize) */
+function syncStitchType() {
+  const sk = $('artMode').value === 'sketch';
+  $('stOutlined').classList.toggle('on', sk);
+  $('stFilled').classList.toggle('on', !sk);
+  $('stitchTypeBox').classList.toggle('hide', window._fKind !== 'image');
+}
+$('stOutlined').onclick = () => { $('artMode').value = 'sketch'; modeChanged(); syncStitchType(); };
+$('stFilled').onclick = () => { $('artMode').value = 'digitize'; modeChanged(); syncStitchType(); };
+const _modeChanged = modeChanged;
+modeChanged = function () { _modeChanged(); syncStitchType(); };
+const _pick = pick;
+pick = async function (f) { await _pick(f); syncStitchType(); syncTopSize(); };
+$('expandAll').onclick = () => {
+  const secs = [...document.querySelectorAll('#leftPanel details.sec')];
+  const open = secs.some(d => !d.open);
+  secs.forEach(d => d.open = open);
+  $('expandAll').textContent = open ? 'Collapse all' : 'Expand all';
+};
+
+/* ---- top bar: size in inches, fit, hoop */
+function syncTopSize() {
+  let w = 0, h = 0;
+  if (art && layoutActive) { w = +$('width').value; h = w / art.aspect; }
+  else if (lastReport) { w = lastReport.width_mm; h = lastReport.height_mm; }
+  $('wIn').value = w ? (w / 25.4).toFixed(2) : '';
+  $('hIn').value = h ? (h / 25.4).toFixed(2) : '';
+  const editable = !!(art && layoutActive);
+  $('wIn').readOnly = $('hIn').readOnly = !editable;
+  $('hoopBtn').classList.toggle('on', layoutActive);
+}
+$('wIn').onchange = () => { if (!art) return; $('width').value = fmt(+$('wIn').value * 25.4); sizeChanged('width'); };
+$('hIn').onchange = () => { if (!art) return; $('height').value = fmt(+$('hIn').value * 25.4); sizeChanged('height'); };
+const _sizeChanged = sizeChanged;
+sizeChanged = function (from) { _sizeChanged(from); syncTopSize(); };
+$('fitBtn').onclick = () => {
+  if (cnv && bounds) { fitView(); drawFrame(); }
+  else if (canvas && curMode === 'plan') { loadPlanSvg(); }
+  else if (curMode === 'photo') { imgZoom = 1; $('preview').style.setProperty('--imgz', 1); }
+  updateZoomLabel();
+};
+$('hoopBtn').onclick = () => {
+  if (!art) return;
+  if (layoutActive) { layoutActive = false; if (job) setMode(curMode || 'photo'); else { clearSvg(); $('stageEmpty').classList.remove('hide'); } }
+  else { layoutActive = true; drawLayout(); }
+  syncTopSize();
+};
+
+/* ---- zoom */
+let imgZoom = 1;
+function zoomBy(f) {
+  if (cnv && bounds) { zoomAt(cnv._w / 2, cnv._h / 2, f); drawFrame(); }
+  else if (canvas && canvas.zoom) { try { canvas.zoom(canvas.zoom() * f); } catch (e) {} }
+  else if (curMode === 'photo' && job) { imgZoom = Math.max(0.2, Math.min(8, imgZoom * f)); $('preview').style.setProperty('--imgz', imgZoom); }
+  updateZoomLabel();
+}
+function updateZoomLabel() {
+  let pct = 100;
+  if (cnv && bounds && view.fit) pct = view.s / view.fit * 100;
+  else if (canvas && canvas.zoom && curMode === 'plan') { try { pct = canvas.zoom() / (canvas._z0 || (canvas._z0 = canvas.zoom())) * 100; } catch (e) {} }
+  else if (curMode === 'photo') pct = imgZoom * 100;
+  const t = Math.round(pct) + '%';
+  if ($('zoomLbl').textContent !== t) $('zoomLbl').textContent = t;
+}
+$('zoomIn').onclick = () => zoomBy(1.25);
+$('zoomOut').onclick = () => zoomBy(0.8);
+setInterval(updateZoomLabel, 300);
+
+/* ---- design history (undo / redo between results) */
+const hist = []; let histIdx = -1; let lastReport = null;
+function syncHist() { $('undoBtn').disabled = histIdx <= 0; $('redoBtn').disabled = histIdx >= hist.length - 1; }
+const _show = show;
+show = function (d) {
+  if (!d._replay) { hist.splice(histIdx + 1); hist.push(d); histIdx = hist.length - 1; }
+  lastReport = d.report || null;
+  imgZoom = 1; $('preview').style.setProperty('--imgz', 1);
+  _show(d);
+  $('shareBtn').disabled = false;
+  syncHist(); syncTopSize(); syncDesignName(); renderColorRow(); syncToolbar();
+};
+$('undoBtn').onclick = () => { if (histIdx > 0) { histIdx--; show({ ...hist[histIdx], _replay: true }); } };
+$('redoBtn').onclick = () => { if (histIdx < hist.length - 1) { histIdx++; show({ ...hist[histIdx], _replay: true }); } };
+
+/* ---- colour swatches (the design's thread blocks) */
+function renderColorRow() {
+  const add = $('colorAdd');
+  $('colorRow').querySelectorAll('button:not(#colorAdd)').forEach(b => b.remove());
+  (lastThreads || []).forEach((t, i) => {
+    const b = document.createElement('button');
+    b.style.background = t.thread_hex || t.hex;
+    b.title = `${i + 1}. ${t.thread_name || ''}`;
+    b.onclick = async () => { await openDesign('threads'); selBlock = i; renderBlocks(); };
+    $('colorRow').insertBefore(b, add);
+  });
+}
+$('colorAdd').onclick = () => { document.querySelector('#leftPanel details.sec:has(#palette)').open = true; $('palAdd').click(); };
+
+/* ---- name pill + menu */
+function syncDesignName() {
+  const n = (typeof libDesign !== 'undefined' && libDesign) ? libDesign.name
+    : ($('qName').value && $('qName').value !== 'design' ? $('qName').value : 'Untitled design');
+  $('designName').textContent = n;
+}
+$('nameBtn').onclick = e => { e.stopPropagation(); $('nameMenu').classList.toggle('hide'); };
+document.addEventListener('click', e => { if (!e.target.closest('#topLeft')) $('nameMenu').classList.add('hide'); });
+$('nmRename').onclick = async () => {
+  const cur = $('designName').textContent;
+  const n = prompt('Design name', cur === 'Untitled design' ? '' : cur);
+  if (n === null) return;
+  $('qName').value = n.trim() || 'design';
+  if (typeof libDesign !== 'undefined' && libDesign && n.trim()) {
+    const r = await fetch('/api/designs/' + libDesign.id, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name: n.trim() }) });
+    if (r.ok) libDesign = await r.json();
+  }
+  if (job) updateDl();
+  syncDesignName();
+};
+$('nmSave').onclick = () => $('saveTop').click();
+$('nmSheet').onclick = () => { if (!$('pdfTop').disabled) $('pdfTop').click(); };
+$('nmClients').onclick = () => { location.href = '/'; };
+$('nmNew').onclick = () => { location.href = '/studio'; };
+$('shareBtn').onclick = () => $('saveTop').click();
+$('exportTop').onclick = () => $('exportBtn').disabled ? null : $('exportBtn').click();
+
+/* ---- layers dock rows with stitched thumbnails */
+function drawBlockThumb(cv, block, hex) {
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1c1f26'; ctx.beginPath(); ctx.arc(W / 2, H / 2, W / 2, 0, 7); ctx.fill();
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+  for (const r of block.runs) for (const [x, y] of r) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
+  const w = Math.max(maxx - minx, 1e-3), h = Math.max(maxy - miny, 1e-3);
+  const s = Math.min(W * 0.72 / w, H * 0.72 / h);
+  const ox = (W - w * s) / 2 - minx * s, oy = (H - h * s) / 2 - miny * s;
+  ctx.strokeStyle = hex; ctx.lineWidth = Math.max(1.2, 3 * s); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (const r of block.runs) { ctx.moveTo(r[0][0] * s + ox, r[0][1] * s + oy); for (let i = 1; i < r.length; i++) ctx.lineTo(r[i][0] * s + ox, r[i][1] * s + oy); }
+  ctx.stroke();
+}
+function renderBlocks() {
+  if (!playerData) return;
+  $('dpBlocks').innerHTML = playerData.map((b, i) => {
+    const hex = blockColor(i);
+    const t = lastThreads[i] || {};
+    const label = pending[i] && pending[i].name ? pending[i].name : (t.thread_name || '');
+    const num = pending[i] && pending[i].number ? pending[i].number : (t.thread_number || '');
+    return `<div class="lrow ${i === selBlock ? 'sel' : ''}" data-bi="${i}">
+      <span class="grip">${icon('grip', 16)}</span>
+      <canvas width="112" height="112"></canvas>
+      <div class="lmeta"><div class="lname">Block ${i + 1}</div><div class="lsub">${label || hex}${num ? ' · #' + num : ''}</div></div>
+      <div class="lside"><span class="lnum">${i + 1}</span><span class="ldot" style="background:${hex}"></span>
+        <button class="lgear" title="Recolour">${icon('settings', 18)}</button></div></div>`;
+  }).join('');
+  document.querySelectorAll('#dpBlocks .lrow').forEach((el, i) => {
+    drawBlockThumb(el.querySelector('canvas'), playerData[i], blockColor(i));
+    el.onclick = () => { selBlock = i; renderBlocks(); };
+    el.querySelector('.lgear').onclick = e => { e.stopPropagation(); selBlock = i; renderBlocks(); $('dpSwatches').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+  });
+  $('dpSwatchHint').textContent = selBlock === null ? 'Pick a block, then a swatch' : `Block ${selBlock + 1}`;
+}
+syncStitchType(); syncTopSize(); syncDesignName(); syncHist(); syncToolbar();
 </script>
 </body>
 </html>
