@@ -2,7 +2,9 @@
 import numpy as np, pystitch
 from PIL import Image, ImageDraw
 
-def preview(pat, colors, out_path, px_wide=1000, bg=(141,148,160), shade=False):
+def preview(pat, colors, out_path, px_wide=1000, bg=None, shade=False):
+    """bg=None renders on a transparent background so the preview sits on
+    whatever the page puts behind it (the canvas grid, a dark thumbnail)."""
     """shade=True draws each stitch over a darker edge so threads read as
     separate strands (and white thread shows on a white page)."""
     xs=[s[0] for s in pat.stitches]; ys=[s[1] for s in pat.stitches]
@@ -10,7 +12,8 @@ def preview(pat, colors, out_path, px_wide=1000, bg=(141,148,160), shade=False):
     S=px_wide/max(maxx-minx, maxy-miny, 1)
     pad=int(px_wide*0.03)
     W=int((maxx-minx)*S)+2*pad; H=int((maxy-miny)*S)+2*pad
-    img=Image.new('RGB',(max(W,10),max(H,10)),bg); d=ImageDraw.Draw(img)
+    img=(Image.new('RGBA',(max(W,10),max(H,10)),(0,0,0,0)) if bg is None
+         else Image.new('RGB',(max(W,10),max(H,10)),bg)); d=ImageDraw.Draw(img)
     T=lambda x,y:((x-minx)*S+pad,(y-miny)*S+pad)
     lw=max(2,int(round(0.45*S*10)))
     ci=0; prev=None

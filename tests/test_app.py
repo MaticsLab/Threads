@@ -708,3 +708,35 @@ def test_sketch_mode():
     assert single['report']['stitches'] < dj['report']['stitches'] * 0.6
     blank = PImage.new('RGB', (200, 200), (255, 255, 255)); b2 = io.BytesIO(); blank.save(b2, 'PNG')
     assert client.post('/api/sketch', files={'image': ('b.png', b2.getvalue(), 'image/png')}).status_code == 400
+
+
+def test_drawn_shapes_lines_and_fill_patterns():
+    from inkstitchlib import layers as veclayers
+    import pystitch
+    box = lambda x, y, w, h: {'shell': [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], 'holes': []}
+    line = {'points': [[0, 0], [30, 0], [30, 20]]}
+    run = {'name': 'Run', 'color': '#a8201a', 'lines': [line], 'params': {'stitch': 'run', 'run_len_mm': 2.0}}
+    bean = {'name': 'Bean', 'color': '#a8201a', 'lines': [line], 'params': {'stitch': 'bean', 'run_len_mm': 2.0}}
+    satin = {'name': 'Satin', 'color': '#a8201a', 'lines': [line], 'params': {'stitch': 'satin', 'width_mm': 3.0, 'density': 0.4}}
+    n = {}
+    for L in (run, bean, satin):
+        pat, blocks = veclayers.stitch([L])
+        n[L['name']] = sum(1 for q in pat.stitches if (q[2] & 0xFF) == pystitch.STITCH)
+        assert len(blocks) == 1
+    assert n['Bean'] > n['Run'] * 2.0 and n['Satin'] > n['Bean']
+    # satin has real width; run stays on the line
+    pat, _ = veclayers.stitch([satin])
+    ys = [y for x, y, c in pat.stitches if (c & 0xFF) == pystitch.STITCH and x < 100]
+    assert max(ys) - min(ys) > 25
+    # fill patterns: walk is much lighter than tatami; satin pattern sews a blob
+    fill = {'name': 'F', 'color': '#1a3b69', 'polys': [box(0, 0, 20, 12)], 'params': {'stitch': 'fill', 'fill_method': 'tatami'}}
+    walk = dict(fill, params={'stitch': 'fill', 'fill_method': 'walk'})
+    sat = dict(fill, params={'stitch': 'fill', 'fill_method': 'satin'})
+    cnt = lambda p: sum(1 for q in p.stitches if (q[2] & 0xFF) == pystitch.STITCH)
+    assert cnt(veclayers.stitch([walk])[0]) < cnt(veclayers.stitch([fill])[0]) * 0.5
+    assert cnt(veclayers.stitch([sat])[0]) > 100
+    # mixed through the API, with a line and a polygon in one layer
+    r = client.post('/api/stitch_layers', json={'layers': [dict(fill, lines=[line])]})
+    assert r.status_code == 200, r.text
+    r = client.post('/api/stitch_layers', json={'layers': [{'name': 'x', 'color': '#000', 'lines': [{'points': [[0, 0]]}]}]})
+    assert r.status_code == 400
