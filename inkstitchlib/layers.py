@@ -154,33 +154,39 @@ def stitch(layers_in, max_satin=8.0):
             continue
         start_block(rgb, L.get('name') or 'Layer')
 
-        for g in core.order_by_nearest(flat, lambda q: (q.centroid.x, q.centroid.y), s.pos):
+        def sew_one(g, phase):
             # one uniform direction per object: its own principal axis unless
             # the layer sets an explicit angle
             ang = prm.get('angle')
             ang = (core.principal_angle(g) + 90.0) if (ang in (None, '', 'auto')) else float(ang)
             if stype == 'run':
-                core.sew_edge_run(s, g, inset=0.35, travel=g)
-                drawn += 1
-                continue
+                if phase != core.UNDER:
+                    core.sew_edge_run(s, g, inset=0.35, travel=g)
+                return
             if stype == 'outline':
                 ring = core.satin_ring(g, border, density)
                 if ring:
-                    core.sew_ring(s, ring, g)
-                    drawn += 1
-                continue
+                    core.sew_ring(s, ring, g, phase=phase)
+                return
             mw = core.poly_max_width(g)
             if stype == 'auto' and mw <= max_satin and g.area >= 1.5:
                 core.sew_blob(s, g, density, max_satin, min(border, mw * 0.3),
-                              travel=g, heavy_underlay=True)
-            else:
+                              travel=g, heavy_underlay=True, phase=phase)
+                return
+            if phase != core.TOP:
                 core.sew_edge_run(s, g, travel=g)
+            if phase != core.UNDER:
                 fills.sew_area(s, g, method, ang, density, 3.5, travel=g)
                 if stype == 'auto' and g.area >= 4.0:
                     ring = core.satin_ring(g, border, density)
                     if ring:
                         core.sew_ring(s, ring, g)
-            drawn += 1
+
+        # the whole layer's underlay first, then its top stitching
+        for phase in (core.UNDER, core.TOP):
+            for g in core.order_by_nearest(flat, lambda q: (q.centroid.x, q.centroid.y), s.pos):
+                sew_one(g, phase)
+        drawn += len(flat)
 
     if drawn == 0 or s.count == 0:
         raise LayerError('nothing to stitch — every layer is hidden or empty')

@@ -468,3 +468,140 @@ def test_client_design_library():
     assert d['id'] in [x['id'] for x in client.get('/api/designs?unassigned=true').json()]
     assert client.delete('/api/designs/%d' % d['id']).status_code == 200
     assert client.get('/api/designs/%d/preview.png' % d['id']).status_code == 404
+
+
+def _import_svg(svg, **data):
+    r = client.post('/api/import', files={'design': ('t.svg', svg.encode())}, data=data)
+    return r
+
+
+def test_svg_reader_handles_design_tool_exports():
+    """CSS classes, <use x y> placement, gradients, clip-paths, wide strokes,
+    paint-order — the constructs Illustrator/Canva/Figma exports rely on."""
+    # Illustrator: colours only in a <style> class; a stroke wider than the
+    # satin cap is sewn as a fill band under the fill (paint-order: stroke)
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">
+      <defs><style>.cls-1{fill:#fdf0e1;stroke:#0047ab;stroke-width:12px;paint-order:stroke}
+      .cls-2{fill:#0047ab}</style></defs>
+      <path class="cls-1" d="M20,10 h40 v20 h-40 z"/>
+      <rect class="cls-2" x="20" y="45" width="40" height="8"/></svg>'''
+    d = _import_svg(svg).json()
+    assert d['kind'] == 'svg', d
+    th = {t['hex'].upper() for t in d['threads']}
+    assert th == {'#FDF0E1', '#0047AB'}, th
+    # the band around the rect extends it by 6 units each side -> 52 of 100 units
+    assert 48 <= d['report']['width_mm'] / (d['import_info']['natural_width_mm'] / 100) <= 56
+
+    # Canva/cairo: glyphs in <defs>, placed with <use x y> (translate-only
+    # transforms used to be dropped and every glyph landed at the origin)
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+      width="100mm" height="40mm" viewBox="0 0 100 40">
+      <defs><path id="g" d="M0,0 h10 v10 h-10 z"/></defs>
+      <g fill="#a8201a"><use xlink:href="#g" x="5" y="5"/><use xlink:href="#g" x="85" y="25"/></g></svg>'''
+    d = _import_svg(svg).json()
+    assert 88 <= d['report']['width_mm'] <= 92 and 28 <= d['report']['height_mm'] <= 32, d['report']
+
+    # gradient fill sews the average stop colour; a clip-path cuts the shape
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="50mm" viewBox="0 0 100 50">
+      <defs><linearGradient id="gr"><stop offset="0" stop-color="#000000"/><stop offset="1" stop-color="#0000ff"/></linearGradient>
+      <clipPath id="c"><rect x="0" y="0" width="50" height="50"/></clipPath></defs>
+      <rect x="10" y="10" width="80" height="30" fill="url(#gr)" clip-path="url(#c)"/></svg>'''
+    d = _import_svg(svg).json()
+    assert d['threads'][0]['hex'].upper() == '#000080'
+    assert 38 <= d['report']['width_mm'] <= 42, d['report']
+
+    # text-only SVG: a clear error, not "no drawable shapes"
+    r = _import_svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+                    '<text x="1" y="8">Hi</text></svg>')
+    assert r.status_code == 400 and 'outlines' in r.json()['detail']
+    # shapes plus text: stitched, with a warning about the skipped text
+    d = _import_svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50">'
+                    '<rect x="5" y="5" width="30" height="30"/><text x="1" y="48">Hi</text></svg>').json()
+    assert d['warnings'] and 'text' in d['warnings'][0]
+
+
+def test_svg_colour_blocks_merge_when_layering_allows():
+    from inkstitchlib import svginput
+    # blue, cream, blue, cream ... per letter -> two blocks, not eight,
+    # because the outline pieces never cover an earlier fill
+    letters = ''.join('<path d="M%d,10 h8 v20 h-8 z" fill="#fdf0e1" stroke="#0047ab" '
+                      'stroke-width="2" paint-order="stroke"/>' % x for x in range(10, 90, 20))
+    pat, layers, info = svginput.digitize_svg(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40">%s</svg>' % letters)
+    assert len(layers) == 2
+    # a fill sewn over an earlier same-colour piece must not be merged under it
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40">'
+           '<rect x="10" y="5" width="30" height="30" fill="#0047ab"/>'
+           '<rect x="20" y="10" width="30" height="20" fill="#fdf0e1"/>'
+           '<rect x="30" y="15" width="30" height="10" fill="#0047ab"/></svg>')
+    pat, layers, info = svginput.digitize_svg(svg)
+    assert [L['hex'] for L in layers] == ['#0047AB', '#FDF0E1', '#0047AB']
+
+
+def _phase_log(monkeypatch):
+    """Record which kind of stitching each sew call is, in order."""
+    from digitizer import core
+    from inkstitchlib import fills
+    log = []
+    real_edge, real_area, real_col = core.sew_edge_run, fills.sew_area, core.sew_column
+    monkeypatch.setattr(core, 'sew_edge_run', lambda *a, **k: (log.append('U'), real_edge(*a, **k)))
+    monkeypatch.setattr(fills, 'sew_area', lambda *a, **k: (log.append('T'), real_area(*a, **k)))
+
+    def col(s, c, travel, phase='both'):
+        log.append('U' if phase == 'underlay' else 'T')
+        return real_col(s, c, travel, phase)
+    monkeypatch.setattr(core, 'sew_column', col)
+    return log
+
+
+def _underlay_first(log):
+    # once the first top stitch of a block goes down, no more underlay follows
+    return 'T' in log and log.index('T') > 0 and 'U' not in log[log.index('T'):]
+
+
+def test_underlay_sewn_first_per_block(monkeypatch):
+    from inkstitchlib import svginput, layers as veclayers
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">'
+           + ''.join('<rect x="%d" y="10" width="14" height="30" fill="#1a3b69"/>' % x
+                     for x in (5, 30, 55, 80)) + '</svg>')
+    log = _phase_log(monkeypatch)
+    pat, layers, info = svginput.digitize_svg(svg)
+    assert log.count('U') >= 4 and log.count('T') >= 4 and _underlay_first(log), log
+
+    # AI layers: four separate objects in one layer
+    lyr = [{'name': 'Bars', 'color': '#1a3b69', 'visible': True,
+            'params': {'stitch': 'fill'},
+            'polys': [{'shell': [[x, 10], [x + 14, 10], [x + 14, 40], [x, 40]], 'holes': []}
+                      for x in (5, 30, 55, 80)]}]
+    log.clear()
+    veclayers.stitch(lyr)
+    assert log.count('U') >= 4 and log.count('T') >= 4 and _underlay_first(log), log
+
+
+def test_image_digitizer_underlay_first(monkeypatch):
+    from digitizer import segment, engine
+    from PIL import Image as PImage, ImageDraw as PDraw
+    im = PImage.new('RGBA', (400, 200), (0, 0, 0, 0))
+    d = PDraw.Draw(im)
+    for x in (20, 120, 220, 320):
+        d.rectangle([x, 40, x + 60, 160], fill=(26, 59, 105, 255))
+    p = os.path.join(tempfile.mkdtemp(), 'bars.png')
+    im.save(p)
+    log = _phase_log(monkeypatch)
+    layers = segment.quantize(segment.load(p), 1)
+    engine.build_pattern(layers, 80.0, 400, engine.Params(target_width_mm=80, heavy_underlay=True))
+    assert log.count('U') >= 4 and log.count('T') >= 4 and _underlay_first(log), log
+
+
+def test_hoops():
+    r = client.get('/api/hoops').json()
+    assert any(h['name'] == '5" × 7"' and h['w_mm'] == 130 for h in r)
+    assert not any(h['custom'] for h in r)
+    r = client.post('/api/hoops', json={'name': 'Cap left', 'w_mm': 60, 'h_mm': 40})
+    assert r.status_code == 200 and r.json()['custom'] and r.json()['name'] == 'Cap left'
+    hid = r.json()['id']
+    assert any(h['id'] == hid for h in client.get('/api/hoops').json())
+    assert client.post('/api/hoops', json={'w_mm': 5, 'h_mm': 40}).status_code == 400
+    assert client.post('/api/hoops', json={'w_mm': 'x'}).status_code == 400
+    assert client.delete('/api/hoops/%d' % hid).status_code == 200
+    assert client.delete('/api/hoops/%d' % hid).status_code == 404

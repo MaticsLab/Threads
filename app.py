@@ -504,6 +504,7 @@ async def import_file(design: List[UploadFile] = File(...),
     base_frame = (base_meta.get('settings') or {}).get('frame') if adding else None
 
     new_job = job if adding else uuid.uuid4().hex[:12]
+    svg_warnings = []
     info = {}
     frame = None
     if exts[0] == '.svg':
@@ -514,6 +515,7 @@ async def import_file(design: List[UploadFile] = File(...),
         layers = []
         info = {'elements': 0, 'satin_columns': 0, 'fills': 0, 'strokes': 0,
                 'files': []}
+        svg_warnings = []
         for f, name in zip(design, names):
             data = await f.read()
             try:
@@ -539,6 +541,8 @@ async def import_file(design: List[UploadFile] = File(...),
             for k in ('elements', 'satin_columns', 'fills', 'strokes'):
                 info[k] += inf[k]
             info['files'].append(name)
+            svg_warnings += [('%s: %s' % (name, w)) if len(names) > 1 else w
+                             for w in inf.get('warnings', [])]
             info.setdefault('natural_width_mm', inf['natural_width_mm'])
         if len(names) > 1:
             for i, L in enumerate(layers):
@@ -625,7 +629,7 @@ async def import_file(design: List[UploadFile] = File(...),
     png = _store(job, pat, layers, rep, settings_out, kind=kind)
     return _native({'job': job, 'kind': kind, 'report': rep, 'import_info': info,
                     'threads': threads.match_layers(layers, palette),
-                    'warnings': [], 'preview': _b64(png)})
+                    'warnings': svg_warnings, 'preview': _b64(png)})
 
 
 # ------------------------------------------- AI layers (vector-first design)
@@ -1078,6 +1082,28 @@ def designs_open(did: int, palette: str = 'Madeira Rayon'):
                     'threads': threads.match_layers(layers, palette),
                     'warnings': [], 'preview': _b64(os.path.join(d, 'preview.png')),
                     'design': dsg, 'client': client})
+
+
+# ------------------------------------------------------------------ hoops
+@app.get('/api/hoops')
+def hoops_list():
+    return business.list_hoops()
+
+
+@app.post('/api/hoops')
+async def hoops_add(data: dict):
+    try:
+        hid = business.add_hoop(data.get('name'), data.get('w_mm'), data.get('h_mm'))
+    except (TypeError, ValueError) as e:
+        raise HTTPException(400, str(e) if str(e) else 'w_mm and h_mm are required')
+    return next(h for h in business.list_hoops() if h['id'] == hid)
+
+
+@app.delete('/api/hoops/{hid}')
+def hoops_delete(hid: int):
+    if not business.delete_hoop(hid):
+        raise HTTPException(404, 'unknown hoop')
+    return {'ok': True}
 
 
 # --------------------------------------------- business database (embTools)

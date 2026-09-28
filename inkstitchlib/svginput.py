@@ -53,21 +53,92 @@ def _length_px(s):
     return float(m.group(1)) * UNIT_PX.get(m.group(2), 1.0)
 
 
-def _style_of(el, inherited):
-    """Merge inherited presentation with this element's attrs + style."""
-    st = dict(inherited)
-    for k in ('fill', 'stroke', 'stroke-width', 'display', 'opacity'):
+# properties that cascade from groups / <use> down to shapes
+INHERITED = ('fill', 'stroke', 'stroke-width', 'fill-rule', 'visibility',
+             'fill-opacity', 'stroke-opacity', 'color')
+PRESENTATION = INHERITED + ('display', 'opacity')
+
+
+def _parse_css(root):
+    """Rules from every <style> block -> [(specificity, order, selector, decls)].
+    Handles the simple selectors design tools emit: .class, #id, tag,
+    tag.class, and comma lists (Illustrator's .cls-1{fill:#...})."""
+    rules = []
+    order = 0
+    for el in root.iter():
+        if el.tag.split('}')[-1] != 'style' or not el.text:
+            continue
+        css = re.sub(r'/\*.*?\*/', '', el.text, flags=re.S)
+        for sels, body in re.findall(r'([^{}]+)\{([^}]*)\}', css):
+            decls = {}
+            for part in body.split(';'):
+                if ':' in part:
+                    k, v = part.split(':', 1)
+                    decls[k.strip().lower()] = v.strip().replace('!important', '').strip()
+            for sel in sels.split(','):
+                sel = sel.strip()
+                if not sel or sel.startswith('@') or ' ' in sel or '>' in sel or ':' in sel:
+                    continue
+                spec = sel.count('#') * 100 + sel.count('.') * 10 + (0 if sel[0] in '.#*' else 1)
+                rules.append((spec, order, sel, decls))
+                order += 1
+    rules.sort(key=lambda r: (r[0], r[1]))
+    return rules
+
+
+def _css_match(sel, tag, classes, el_id):
+    m = re.fullmatch(r'([a-zA-Z][\w-]*|\*)?((?:[.#][\w-]+)*)', sel)
+    if not m:
+        return False
+    if m.group(1) and m.group(1) not in ('*', tag):
+        return False
+    for kind, name in re.findall(r'([.#])([\w-]+)', m.group(2) or ''):
+        if kind == '.' and name not in classes:
+            return False
+        if kind == '#' and name != el_id:
+            return False
+    return True
+
+
+def _style_of(el, inherited, css=()):
+    """Cascade: inherited < presentation attributes < <style> rules < style=""."""
+    st = {k: v for k, v in inherited.items() if k in INHERITED}
+    if inherited.get('_hidden'):
+        st['_hidden'] = True
+    for k in PRESENTATION:
         v = el.get(k)
         if v is not None:
             st[k] = v
+    if css:
+        tag = el.tag.split('}')[-1]
+        classes = set((el.get('class') or '').split())
+        el_id = el.get('id')
+        for _spec, _o, sel, decls in css:
+            if _css_match(sel, tag, classes, el_id):
+                st.update(decls)
     for part in (el.get('style') or '').split(';'):
         if ':' in part:
             k, v = part.split(':', 1)
-            st[k.strip()] = v.strip()
+            st[k.strip().lower()] = v.strip()
+    try:
+        if float(st.get('opacity', 1)) <= 0.001:
+            st['_hidden'] = True
+    except ValueError:
+        pass
+    st.pop('opacity', None)
     return st
 
 
-def _color(v):
+def _color(v, gradients=None, current=None):
+    if v is None:
+        return None
+    v = v.strip()
+    if v.lower() == 'currentcolor':
+        v = current or '#000000'
+    m = re.match(r'url\(\s*["\']?#([^)"\']+)["\']?\s*\)', v)
+    if m:
+        # gradients/patterns: sew the gradient's average colour
+        return (gradients or {}).get(m.group(1))
     try:
         c = Color(v)
         if c.value is None:
@@ -77,6 +148,32 @@ def _color(v):
         return None
 
 
+def _gradients(root, ids):
+    """Gradient id -> average stop colour (following xlink:href chains)."""
+    out = {}
+
+    def stops(g, depth=0):
+        cols = []
+        for st in g:
+            if st.tag.split('}')[-1] != 'stop':
+                continue
+            sty = _style_of(st, {})
+            c = _color(sty.get('stop-color', st.get('stop-color', '#000000')))
+            if c:
+                cols.append(c)
+        if not cols and depth < 5:
+            href = g.get('href') or g.get('{http://www.w3.org/1999/xlink}href')
+            if href and href.startswith('#') and href[1:] in ids:
+                return stops(ids[href[1:]], depth + 1)
+        return cols
+
+    for el in root.iter():
+        if el.tag.split('}')[-1] in ('linearGradient', 'radialGradient') and el.get('id'):
+            cols = stops(el)
+            if cols:
+                out[el.get('id')] = tuple(int(round(sum(c[i] for c in cols) / len(cols)))
+                                          for i in range(3))
+    return out
 def _shape_to_path(el):
     tag = el.tag.split('}')[-1]
     if tag == 'path':
@@ -126,55 +223,241 @@ def _shape_to_path(el):
     return None
 
 
-def _collect(root):
-    """Walk the tree in document order -> [(subpaths_px, style, attrs)]."""
-    out = []
+XLINK = '{http://www.w3.org/1999/xlink}href'
 
-    def walk(el, matrix, style):
-        tag = el.tag.split('}')[-1]
-        if tag in SKIP_TAGS:
+
+def _href(el):
+    h = el.get('href') or el.get(XLINK) or ''
+    return h[1:] if h.startswith('#') else None
+
+
+def _clip_ref(v):
+    m = re.match(r'url\(\s*["\']?#([^)"\']+)["\']?\s*\)', v or '')
+    return m.group(1) if m else None
+
+
+def _collect(root, step=0.6):
+    """Walk the tree in document order.
+
+    Returns (elements, notes): elements are (subpaths, style, attrs, clips)
+    with subpaths in root user units and clips a list of clip regions (each
+    a list of subpaths) the element must be cut to. <use> references are
+    expanded (glyph-per-<use> exports from Canva, cairo, PDF converters),
+    <style> classes and gradients resolve to colours, hidden and zero-opacity
+    shapes are dropped. notes counts what can't be sewn (text, images)."""
+    ids = {el.get('id'): el for el in root.iter() if el.get('id')}
+    css = _parse_css(root)
+    grads = _gradients(root, ids)
+    out = []
+    notes = {'text': 0, 'image': 0}
+    clip_cache = {}
+
+    def clip_region(cid, matrix, depth):
+        cp = ids.get(cid)
+        if cp is None or cp.tag.split('}')[-1] != 'clipPath' or depth > 4:
+            return None
+        m = matrix
+        tr = cp.get('transform')
+        if tr:
+            mm = Matrix(tr)
+            m = mm * m if m else mm
+        subs = []
+
+        def grab(e, mat, d):
+            t = e.tag.split('}')[-1]
+            tr2 = e.get('transform')
+            if tr2:
+                m2 = Matrix(tr2)
+                mat = m2 * mat if mat else m2
+            if t == 'use' and d < 8:
+                tgt = ids.get(_href(e))
+                if tgt is not None:
+                    x, y = float(e.get('x') or 0), float(e.get('y') or 0)
+                    mu = Matrix('translate(%f,%f)' % (x, y))
+                    grab(tgt, mu * mat if mat else mu, d + 1)
+                return
+            p = _shape_to_path(e)
+            if p is not None:
+                if mat:
+                    p *= mat
+                    p.reify()
+                subs.extend(flatten_path(p, step))
+            for ch in e:
+                grab(ch, mat, d + 1)
+
+        for ch in cp:
+            grab(ch, m, 0)
+        return subs or None
+
+    def walk(el, matrix, style, clips, depth=0, via_use=False):
+        if depth > 60:
             return
-        st = _style_of(el, style)
+        tag = el.tag.split('}')[-1]
+        if tag in SKIP_TAGS and not (via_use and tag == 'symbol'):
+            return
+        if tag in ('text', 'foreignObject'):
+            notes['text'] += 1
+            return
+        if tag == 'image':
+            notes['image'] += 1
+            return
+        st = _style_of(el, style, css)
         if st.get('display') == 'none':
             return
         tr = el.get('transform')
         if tr:
             m = Matrix(tr)
             matrix = m * matrix if matrix else m
+        cid = _clip_ref(st.get('clip-path') or el.get('clip-path'))
+        if cid:
+            reg = clip_region(cid, matrix, depth)
+            if reg:
+                clips = clips + [reg]
+        if tag == 'use':
+            tgt = ids.get(_href(el))
+            if tgt is not None and depth < 50:
+                x, y = float(el.get('x') or 0), float(el.get('y') or 0)
+                mu = Matrix('translate(%f,%f)' % (x, y))
+                walk(tgt, mu * matrix if matrix else mu, st, clips, depth + 1, via_use=True)
+            return
+        if tag == 'svg' and el is not root:
+            # nested <svg>: place its content at x/y
+            x, y = float(el.get('x') or 0), float(el.get('y') or 0)
+            if x or y:
+                mu = Matrix('translate(%f,%f)' % (x, y))
+                matrix = mu * matrix if matrix else mu
         p = _shape_to_path(el)
-        if p is not None:
+        if p is not None and not st.get('_hidden') and st.get('visibility') not in ('hidden', 'collapse'):
             if matrix:
+                # svgelements applies a translate-only matrix lazily; reify
+                # so the segments (not just the d string) carry the offset
                 p *= matrix
-            subs = flatten_path(p)
+                p.reify()
+            subs = flatten_path(p, step)
             if subs:
-                out.append((subs, st, dict(el.attrib)))
+                st = dict(st)
+                st['_fill_rgb'] = _fill_rgb(st, grads)
+                st['_stroke_rgb'] = _stroke_rgb(st, grads)
+                # scale stroke width by the transform
+                if matrix:
+                    try:
+                        sx = math.hypot(matrix.a, matrix.b)
+                        sy = math.hypot(matrix.c, matrix.d)
+                        st['_stroke_scale'] = math.sqrt(abs(sx * sy)) or 1.0
+                    except Exception:
+                        pass
+                out.append((subs, st, dict(el.attrib), clips))
         for child in el:
-            walk(child, matrix, st)
+            walk(child, matrix, st, clips, depth + 1, via_use)
 
-    walk(root, None, {})
-    return out
+    walk(root, None, {}, [])
+    return out, notes
 
 
-def _fill_polygon(subs_mm):
-    """Even-odd combination of the subpath rings, holes preserved."""
+def _opaque(v):
+    try:
+        return float(v) > 0.001
+    except (TypeError, ValueError):
+        return True
+
+
+def _fill_rgb(st, grads):
+    v = st.get('fill', '#000000')
+    if str(v).strip().lower() == 'none' or not _opaque(st.get('fill-opacity', 1)):
+        return None
+    return _color(v, grads, st.get('color'))
+
+
+def _stroke_rgb(st, grads):
+    v = st.get('stroke', 'none')
+    if str(v).strip().lower() == 'none' or not _opaque(st.get('stroke-opacity', 1)):
+        return None
+    return _color(v, grads, st.get('color'))
+
+
+def _rings(subs_mm):
     rings = []
-    for s in subs_mm:
-        if len(s) >= 3:
-            try:
-                q = Polygon(s)
-                if not q.is_valid:
-                    q = q.buffer(0)
-                if not q.is_empty and q.area > 0.05:
-                    rings.append(q)
-            except Exception:
-                pass
+    for sub in subs_mm:
+        if len(sub) < 3:
+            continue
+        try:
+            q = Polygon(sub)
+        except Exception:
+            continue
+        if q.is_empty:
+            continue
+        rings.append(sub)
+    return rings
+
+
+def _fill_polygon(subs_mm, rule='nonzero'):
+    """The filled region of a path's subpaths under its fill-rule.
+
+    Every face of the subpaths' arrangement is kept when its winding
+    number is non-zero (nonzero, the SVG default: overlapping outlines
+    merge, counters wound the other way stay holes) or odd (evenodd)."""
+    from shapely import contains_xy
+    from shapely.geometry import LineString, MultiPolygon
+    from shapely.ops import unary_union, polygonize
+
+    rings = _rings(subs_mm)
     if not rings:
         return None
-    g = rings[0]
-    for q in rings[1:]:
-        g = g.symmetric_difference(q)
+    if len(rings) == 1:
+        g = Polygon(rings[0])
+        g = g if g.is_valid else g.buffer(0)
+    else:
+        lines = unary_union([LineString(list(r) + [r[0]]) for r in rings])
+        faces = list(polygonize(lines))
+        if not faces:
+            return None
+        pts = [f.representative_point() for f in faces]
+        xs = np.array([p.x for p in pts]); ys = np.array([p.y for p in pts])
+        wind = np.zeros(len(faces), int)
+        for r in rings:
+            poly = Polygon(r)
+            if not poly.is_valid:
+                poly = poly.buffer(0)
+                if poly.is_empty:
+                    continue
+            a = np.asarray(r, float)
+            signed = 0.5 * np.sum(a[:, 0] * np.roll(a[:, 1], -1) - np.roll(a[:, 0], -1) * a[:, 1])
+            inside = contains_xy(poly, xs, ys)
+            wind += np.where(inside, 1 if signed >= 0 else -1, 0)
+        if rule == 'evenodd':
+            count = np.zeros(len(faces), int)
+            for r in rings:
+                poly = Polygon(r)
+                if not poly.is_valid:
+                    poly = poly.buffer(0)
+                count += contains_xy(poly, xs, ys).astype(int)
+            keep = count % 2 == 1
+        else:
+            keep = wind != 0
+        kept = [f for f, k in zip(faces, keep) if k]
+        if not kept:
+            return None
+        g = unary_union(kept)
     g = g.buffer(0).simplify(0.05, preserve_topology=True)
-    return None if g.is_empty else g
+    if g.is_empty:
+        return None
+    if g.geom_type == 'GeometryCollection':
+        polys = [q for q in g.geoms if q.geom_type in ('Polygon', 'MultiPolygon')]
+        g = unary_union(polys) if polys else None
+    return g
+
+
+def _clip_geom(clips_mm):
+    """Intersection of every clip region (each nonzero-filled)."""
+    g = None
+    for reg in clips_mm:
+        c = _fill_polygon(reg, 'nonzero')
+        if c is None:
+            return 'empty'
+        g = c if g is None else g.intersection(c)
+        if g.is_empty:
+            return 'empty'
+    return g
 
 
 def _ink(attrs, key, default=None):
@@ -211,6 +494,89 @@ def _sew_stroke(s, subs_mm, sw_mm, attrs, max_satin):
                 for _ in range(repeats):
                     s.run_to(a, run_len + 0.1)
                     s.run_to(b, run_len + 0.1)
+
+
+def _stroke_pieces(subs_mm, st, attrs, clip, stroke_c, unit2mm, max_satin,
+                   fill_method, fill_angle, row_spacing, max_stitch):
+    """One element's stroke as (footprint, sew_fn) pieces: zigzag/running
+    stitch, or a fill band when the stroke is wider than the satin cap."""
+    from shapely.geometry import LineString, LinearRing
+    from shapely.ops import unary_union
+    sw_mm = ((_length_px(st.get('stroke-width', '1')) or 1.0)
+             * st.get('_stroke_scale', 1.0) * unit2mm)
+    lines = subs_mm
+    if clip is not None:
+        lines = []
+        for sub in subs_mm:
+            if len(sub) < 2:
+                continue
+            part = LineString(sub).intersection(clip)
+            for ln in getattr(part, 'geoms', [part]):
+                if ln.geom_type == 'LineString' and len(ln.coords) > 1:
+                    lines.append(list(ln.coords))
+    lines = [ln for ln in lines if len(ln) >= 2]
+    if not lines:
+        return []
+    if sw_mm > max_satin:
+        # too wide for a zigzag: sew the stroke's outline as a fill
+        parts = []
+        for sub in lines:
+            closed = len(sub) > 2 and math.dist(sub[0], sub[-1]) < 1e-3
+            ln = LinearRing(sub) if closed else LineString(sub)
+            parts.append(ln.buffer(sw_mm / 2, join_style=2 if closed else 1,
+                                   mitre_limit=4.0))
+        band = unary_union(parts).buffer(0)
+        if clip is not None:
+            band = band.intersection(clip).buffer(0)
+        if band.is_empty:
+            return []
+        polys = [q for q in (band.geoms if band.geom_type == 'MultiPolygon' else [band])
+                 if q.geom_type == 'Polygon' and q.area >= 0.4]
+
+        def under(s, polys=polys):
+            for q in polys:
+                if q.area >= 3.0:
+                    core.sew_edge_run(s, q, travel=q)
+
+        def top(s, polys=polys):
+            for q in polys:
+                fills.sew_area(s, q, fill_method, fill_angle, row_spacing,
+                               max_stitch, travel=q)
+        return [(band, under, top)] if polys else []
+
+    foot = unary_union([LineString(ln).buffer(max(sw_mm, 0.6) / 2) for ln in lines])
+    return [(foot, None, lambda s, lines=lines: _sew_stroke(s, lines, sw_mm, attrs, max_satin))]
+
+
+def _plan_blocks(pieces):
+    """Group pieces into colour blocks, sewing order preserved where it
+    matters: a piece joins the latest block of its colour unless a piece
+    sewn after that block overlaps it (then it would be covered), in which
+    case a new block starts. Returns [(rgb, [(under_fn, top_fn), ...])]."""
+    blocks = []            # [rgb, [(under, top)], [footprints]]
+    for rgb, geom, fn in pieces:
+        target = None
+        for bi in range(len(blocks) - 1, -1, -1):
+            if blocks[bi][0] == rgb:
+                # an overlap too small to see isn't worth a colour change
+                limit = max(1.0, 0.02 * geom.area)
+                covered = False
+                for later in blocks[bi + 1:]:
+                    for g in later[2]:
+                        if g.intersects(geom) and g.intersection(geom).area > limit:
+                            covered = True
+                            break
+                    if covered:
+                        break
+                if not covered:
+                    target = blocks[bi]
+                break
+        if target is None:
+            target = [rgb, [], []]
+            blocks.append(target)
+        target[1].append(fn)
+        target[2].append(geom)
+    return [(b[0], b[1]) for b in blocks]
 
 
 def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
@@ -261,76 +627,123 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
         mult = float(scale)
     unit2mm *= mult
 
-    elements = _collect(root)
+    # flatten curves to ~0.15 mm whatever the document's unit size
+    step = max(1e-4, 0.15 / max(unit2mm, 1e-9))
+    elements, notes = _collect(root, step)
+    warnings = []
+    if notes['text']:
+        warnings.append('%d text element%s skipped — convert text to outlines/paths '
+                        'in your design tool before exporting the SVG.'
+                        % (notes['text'], '' if notes['text'] == 1 else 's'))
+    if notes['image']:
+        warnings.append('%d embedded picture%s skipped — upload the picture itself as a '
+                        'PNG/JPG to digitize it.' % (notes['image'], '' if notes['image'] == 1 else 's'))
     if not elements:
+        if notes['text'] or notes['image']:
+            raise SvgError('this SVG only contains %s, no vector shapes to stitch — '
+                           'convert text to outlines, or upload the picture as a PNG/JPG'
+                           % ('text' if notes['text'] and not notes['image'] else
+                              'an embedded picture' if not notes['text'] else 'text and pictures'))
         raise SvgError('no drawable shapes found in the SVG')
 
-    s = core.Sewer()
-    layers, block_colors = [], []
-    prev_rgb = None
     n_satin = n_fill = n_stroke = 0
+    pieces = []                       # (rgb, footprint, sew_fn) in document order
 
-    def start_block(rgb):
-        nonlocal prev_rgb
-        if rgb == prev_rgb:
-            return
-        th = pystitch.EmbThread()
-        th.color = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
-        th.description = 'Colour %d' % (len(block_colors) + 1)
-        if prev_rgb is None:
-            s.pattern.add_thread(th)
-        else:
-            s.color_break(th)
-        block_colors.append(rgb)
-        prev_rgb = rgb
-
-    for subs, st, attrs in elements:
-        subs_mm = [[((x - vbx) * unit2mm, (y - vby) * unit2mm) for x, y in sub]
-                   for sub in subs]
-        fill_c = _color(st.get('fill', '#000000')) if st.get('fill', '#000000').lower() != 'none' else None
-        stroke_c = _color(st.get('stroke', 'none')) if st.get('stroke', 'none').lower() != 'none' else None
+    to_mm = lambda subs: [[((x - vbx) * unit2mm, (y - vby) * unit2mm) for x, y in sub]
+                          for sub in subs]
+    for subs, st, attrs, clips in elements:
+        subs_mm = to_mm(subs)
+        fill_c = st.get('_fill_rgb')
+        stroke_c = st.get('_stroke_rgb')
+        clip = _clip_geom([to_mm(c) for c in clips]) if clips else None
+        if clip == 'empty':
+            continue
 
         if str(_ink(attrs, 'satin_column', '')).lower() == 'true' and len(subs_mm) >= 2:
             rgb = stroke_c or fill_c or (0, 0, 0)
-            start_block(rgb)
             spacing = float(_ink(attrs, 'zigzag_spacing_mm') or 0.35)
             zz = satin_zigzag(subs_mm, spacing)
             if zz:
                 under = center_run(subs_mm)
-                s.move_to(under[0] if under else zz[0], None)
-                for pnt in under:
-                    s.run_to(pnt, 2.5)
-                for pnt in reversed(under):
-                    s.run_to(pnt, 2.5)
-                for pnt in zz:
-                    s._st(pnt)
+
+                def satin_under(s, zz=zz, under=under):
+                    s.move_to(under[0] if under else zz[0], None)
+                    for pnt in under:
+                        s.run_to(pnt, 2.5)
+                    for pnt in reversed(under):
+                        s.run_to(pnt, 2.5)
+
+                def satin_top(s, zz=zz):
+                    s.move_to(zz[0], None)
+                    for pnt in zz:
+                        s._st(pnt)
+                from shapely.geometry import MultiPoint
+                pieces.append((rgb, MultiPoint(zz).convex_hull, (satin_under, satin_top)))
                 n_satin += 1
             continue
 
+        stroke_args = (subs_mm, st, attrs, clip, stroke_c, unit2mm, max_satin,
+                       fill_method, fill_angle, row_spacing, max_stitch)
+        stroke_first = str(st.get('paint-order', '')).split()[:1] == ['stroke']
+        if stroke_first and stroke_c is not None:
+            sp = _stroke_pieces(*stroke_args)
+            pieces += [(stroke_c, g, (u, t)) for g, u, t in sp]
+            n_stroke += bool(sp)
+            stroke_c = None
         if fill_c is not None:
-            g = _fill_polygon(subs_mm)
+            g = _fill_polygon(subs_mm, 'evenodd' if st.get('fill-rule') == 'evenodd' else 'nonzero')
+            if g is not None and clip is not None:
+                g = g.intersection(clip).buffer(0)
+                if g.is_empty:
+                    g = None
+            if g is not None and g.geom_type not in ('Polygon', 'MultiPolygon'):
+                polys = [q for q in getattr(g, 'geoms', []) if q.geom_type == 'Polygon']
+                from shapely.geometry import MultiPolygon
+                g = MultiPolygon(polys) if polys else None
             if g is not None:
-                start_block(fill_c)
                 angle = float(_ink(attrs, 'angle') or fill_angle)
                 spacing = float(_ink(attrs, 'row_spacing_mm') or row_spacing)
-                geoms = g.geoms if g.geom_type == 'MultiPolygon' else [g]
-                for q in geoms:
-                    if q.area < 0.4:
-                        continue
-                    if q.area >= 3.0:
-                        core.sew_edge_run(s, q, travel=q)
-                        if heavy_underlay:
-                            core.sew_fill(s, q, angle + 45, 2.5, 3.0,
-                                          stagger=False, start=s.pos, travel=q)
-                    fills.sew_area(s, q, fill_method, angle, spacing,
-                                   max_stitch, travel=q)
-                    n_fill += 1
+                geoms = [q for q in (g.geoms if g.geom_type == 'MultiPolygon' else [g])
+                         if q.area >= 0.4]
+
+                def fill_under(s, geoms=geoms, angle=angle):
+                    for q in geoms:
+                        if q.area >= 3.0:
+                            core.sew_edge_run(s, q, travel=q)
+                            if heavy_underlay:
+                                core.sew_fill(s, q, angle + 45, 2.5, 3.0,
+                                              stagger=False, start=s.pos, travel=q)
+
+                def fill_top(s, geoms=geoms, angle=angle, spacing=spacing):
+                    for q in geoms:
+                        fills.sew_area(s, q, fill_method, angle, spacing,
+                                       max_stitch, travel=q)
+                if geoms:
+                    pieces.append((fill_c, g, (fill_under, fill_top)))
+                    n_fill += len(geoms)
 
         if stroke_c is not None:
-            start_block(stroke_c)
-            sw_mm = (_length_px(st.get('stroke-width', '1')) or 1.0) * unit2mm
-            _sew_stroke(s, subs_mm, sw_mm, attrs, max_satin)
-            n_stroke += 1
+            sp = _stroke_pieces(*stroke_args)
+            pieces += [(stroke_c, g, (u, t)) for g, u, t in sp]
+            n_stroke += bool(sp)
+
+    s = core.Sewer()
+    layers, block_colors = [], []
+    for rgb, fns in _plan_blocks(pieces):
+        th = pystitch.EmbThread()
+        th.color = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
+        th.description = 'Colour %d' % (len(block_colors) + 1)
+        if not block_colors:
+            s.pattern.add_thread(th)
+        else:
+            s.color_break(th)
+        block_colors.append(rgb)
+        # the block's underlay first, then its top stitching
+        for under, _top in fns:
+            if under:
+                under(s)
+        for _under, top in fns:
+            top(s)
 
     if s.count == 0:
         raise SvgError('the SVG contained no stitchable geometry')
@@ -347,5 +760,5 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
             'natural_width_mm': round(natural_w_mm, 1),
             'page_w_mm': round(vw * unit2mm, 2),
             'page_h_mm': round(vh * unit2mm, 2) if vh else None,
-            'scale': mult}
+            'scale': mult, 'warnings': warnings}
     return s.pattern, layers, info

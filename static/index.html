@@ -226,14 +226,36 @@
         <h2>1 · Create</h2>
         <div class="drop" id="drop">
           <div id="dropText">Click or drop a file<br>
-            <span class="muted">PNG/JPG artwork · SVG (digitized like Ink/Stitch;<br>
-            pick several to combine them, positions kept) ·<br>
-            any machine file (DST, PES, JEF, VP3, …)</span></div>
+            <span class="muted">PNG · JPG · SVG · DST · PES · JEF · VP3 …</span></div>
           <img id="thumb" class="hide">
         </div>
         <input type="file" id="file" class="hide" multiple
                accept="image/*,.svg,.dst,.pes,.jef,.exp,.vp3,.xxx,.u01,.pec,.tbf,.hus,.pcs,.sew,.shv,.jpx,.dsb,.dsz,.csv,.json">
         <p class="muted" id="importName" style="margin:8px 0 0"></p>
+
+        <div id="sizeBox" class="hide">
+          <div class="row">
+            <div><label>Hoop</label><select id="hoop"></select></div>
+            <div><label>&nbsp;</label>
+              <div style="display:flex;gap:6px">
+                <button class="ghost" id="fitHoop" style="flex:1">Fit to hoop</button>
+                <button class="ghost mini hide" id="hoopDel" title="Remove this custom hoop">✕</button>
+              </div></div>
+          </div>
+          <div id="hoopCustom" class="row3 hide">
+            <div><label>Hoop width (mm)</label><input type="number" id="hoopW" value="100" min="20" max="1000"></div>
+            <div><label>Hoop height (mm)</label><input type="number" id="hoopH" value="100" min="20" max="1000"></div>
+            <div><label>Name</label>
+              <div style="display:flex;gap:6px"><input type="text" id="hoopName" placeholder="Left chest">
+              <button class="ghost mini" id="hoopSave">Save</button></div></div>
+          </div>
+          <div class="row3">
+            <div><label>Width (mm)</label><input type="number" id="width" value="90" step="1" min="5"></div>
+            <div><label>Height (mm)</label><input type="number" id="height" value="90" step="1" min="5"></div>
+            <div><label>Scale %</label><input type="number" id="scalePct" value="100" step="5" min="5"></div>
+          </div>
+          <p class="muted" id="sizeInfo" style="margin:6px 0 0"></p>
+        </div>
 
         <div id="setArt">
           <label>Thread colours</label>
@@ -241,18 +263,6 @@
             <option>2</option><option selected>3</option><option>4</option>
             <option>5</option><option>6</option>
           </select>
-
-          <div class="row">
-            <div><label>Width (mm)</label><input type="number" id="width" value="90" step="1" min="10"></div>
-            <div><label>Hoop</label>
-              <select id="hoop">
-                <option value="100x100" selected>4" × 4"</option>
-                <option value="100x235">4" × 9.25"</option>
-                <option value="130x180">5" × 7"</option>
-                <option value="200x300">8" × 12"</option>
-              </select>
-            </div>
-          </div>
 
           <div class="row">
             <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.28" max="0.5"></div>
@@ -276,15 +286,14 @@
 
         <div id="setSvg" class="hide">
           <div class="row">
-            <div><label>SVG width (mm) <span class="muted">0 = natural</span></label>
-              <input type="number" id="importWidth" value="0" step="5" min="0"></div>
-            <div><label>SVG fill method</label>
+            <div><label>Fill method</label>
               <select id="importFill">
                 <option value="tatami" selected>Tatami</option>
                 <option value="contour">Contour</option>
                 <option value="circular">Circular</option>
               </select>
             </div>
+            <div></div>
           </div>
           <div class="row">
             <div><label>Add to</label>
@@ -300,9 +309,6 @@
             </div>
             <div><label>Gap (mm)</label><input type="number" id="importGap" value="5" step="1" min="0"></div>
           </div>
-          <p class="muted" style="margin:6px 0 0">SVGs keep where they sit on their page, so layers
-            exported from the same artboard line up. <b>Keep SVG position</b> sews the new SVG at
-            the same scale and page position as the design's first SVG (width is ignored).</p>
         </div>
 
         <button id="go" class="wide" disabled>Digitize</button>
@@ -340,11 +346,9 @@
           <button id="bizSave">Add</button>
           <button id="bizDelete" class="ghost" disabled>Delete</button>
         </div>
-        <p class="muted" style="margin:8px 0 0">Click an entry to edit it; the selected
-          client's name is printed on the worksheet PDF.</p>
       </div>
 
-      <label style="margin-top:16px">Thread palette <span class="muted">(brand used for thread names &amp; true colours)</span></label>
+      <label style="margin-top:16px">Thread palette</label>
       <div class="palrow">
         <select id="palette"></select>
         <button class="mini ghost" id="palAdd" title="Add a thread brand">＋ Brand</button>
@@ -383,8 +387,6 @@
     <div class="card hide" id="layersCard">
       <h2>Colour layers</h2>
       <div id="layers"></div>
-      <p class="muted" style="margin:11px 0 0">Sewn lightest first so darker outline
-        colours cover the seams.</p>
     </div>
 
     <div class="card">
@@ -405,10 +407,7 @@
       <img id="preview" class="hide">
       <div id="stageEmpty">
         <div class="es-mark">🪡</div>
-        <b>The canvas shows your stitches here</b>
-        <p>Digitize artwork, stitch lettering, or import an SVG or machine file
-        from the panel on the left. Then explore it in 2D, realistic and 3D
-        views, recolour threads with the Design panel, and export.</p>
+        <b>No design yet</b>
       </div>
     </div>
 
@@ -480,8 +479,6 @@
       <button class="ghost mini" id="vecNames">✨ AI names</button>
       <span class="muted" id="vecNameStatus"></span>
     </div>
-    <p class="muted" id="vecHint" style="margin:10px 0 0">Layers sew top to bottom. Click a
-      shape on the canvas or a row to select; nothing is stitched until you stitch.</p>
     <button class="mini wide" id="vecStitch">Stitch layers →</button>
   </div>
 </div>
@@ -529,9 +526,7 @@
       <button class="ghost mini" id="penFinishBtn">Finish shape</button>
       <button class="ghost mini" id="penClear">Clear</button>
     </div>
-    <p class="muted" id="penHint" style="margin:8px 0 0">Click on the canvas to add points.
-      Rail pairs alternate left/right — the satin appears from the 4th point.
-      Double-click or Finish ends a shape; ⌫ removes the last point.</p>
+    <p class="muted" id="penHint" style="margin:8px 0 0"></p>
     <button class="mini wide" id="penStitch">Stitch it →</button>
   </div>
 </div>
@@ -543,7 +538,7 @@
     <button class="ghost mini" id="textClose" style="margin-left:auto">✕</button>
   </div>
   <div class="dbody">
-    <label style="margin-top:0">Font <span class="muted">(Ink/Stitch embroidery fonts)</span></label>
+    <label style="margin-top:0">Font</label>
     <select id="font"></select>
     <div class="fontprev"><img id="fontPrev" class="hide"><span id="fontMeta" class="muted"></span></div>
 
@@ -662,8 +657,6 @@
       <button class="mini" id="themeSave">Save</button>
     </div>
     <div id="themeList"></div>
-    <p class="muted" style="margin:10px 0 0">A theme saves the current thread colours as a
-      colourway you can apply to any design.</p>
     <button class="mini wide" id="dpToThreads">Edit thread colours →</button>
     <button class="mini wide ghost" id="dpToWsheet" style="margin-top:8px">Worksheet appearance →</button>
   </div>
@@ -732,7 +725,6 @@
       <select id="svClient"><option value="">— Unassigned —</option></select>
       <label>Design name</label>
       <input type="text" id="svName" placeholder="e.g. Front chest logo">
-      <p class="muted" id="svHint" style="margin:10px 0 0"></p>
       <div class="row" style="margin-top:16px">
         <button class="ghost" id="svAsNew">Save as new</button>
         <button id="svSave">Save</button>
@@ -806,7 +798,7 @@ async function bizLoad() {
   $('bizList').innerHTML = rows.map(r =>
     `<div class="chip" style="cursor:pointer" data-id="${r.id}">
        <span>${r.name}</span><span class="muted" style="margin-left:auto">${r.business_name || r.email || ''}</span>
-     </div>`).join('') || '<p class="muted">Empty — add the first entry below.</p>';
+     </div>`).join('') || '<p class="muted">No entries yet</p>';
   document.querySelectorAll('#bizList .chip').forEach(el => el.onclick = () => bizEdit(rows.find(r => r.id == el.dataset.id)));
   if ($('bizKind').value === 'client') {
     $('qClient').innerHTML = '<option value="">—</option>' +
@@ -966,6 +958,128 @@ function classify(f) {
   return 'machine';
 }
 
+/* ------------------------------------------------ hoop + size before digitizing */
+let hoops = [], art = null;          // art: {w_mm, h_mm (natural), aspect, src}
+let layoutActive = false;
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+async function loadHoops(selectKey) {
+  hoops = await (await fetch('/api/hoops')).json();
+  const want = selectKey || $('hoop').value || lsGet('hoop') || 'b:0';
+  $('hoop').innerHTML =
+    '<optgroup label="Saved">' + hoops.filter(h => h.custom).map(h =>
+      `<option value="c:${h.id}">${h.name} — ${h.w_mm} × ${h.h_mm} mm</option>`).join('') + '</optgroup>' +
+    '<optgroup label="Machines">' + hoops.filter(h => !h.custom).map((h, i) =>
+      `<option value="b:${i}">${h.name} — ${h.w_mm} × ${h.h_mm} mm</option>`).join('') + '</optgroup>' +
+    '<option value="custom">Custom size…</option>';
+  $('hoop').value = want;
+  if (!$('hoop').value) $('hoop').value = 'b:0';
+  hoopChanged();
+}
+function hoopDims() {
+  const v = $('hoop').value;
+  if (v === 'custom') return { w: +$('hoopW').value || 100, h: +$('hoopH').value || 100, name: 'custom hoop' };
+  const [k, i] = v.split(':');
+  const h = k === 'c' ? hoops.find(x => x.id == i) : hoops.filter(x => !x.custom)[+i];
+  return h ? { w: h.w_mm, h: h.h_mm, name: h.name } : { w: 100, h: 100, name: '4" × 4"' };
+}
+function hoopChanged() {
+  const v = $('hoop').value;
+  $('hoopCustom').classList.toggle('hide', v !== 'custom');
+  $('hoopDel').classList.toggle('hide', !v.startsWith('c:'));
+  if (v !== 'custom') lsSet('hoop', v);
+  sizeChanged('width');
+}
+$('hoop').onchange = hoopChanged;
+['hoopW', 'hoopH'].forEach(id => $(id).oninput = () => sizeChanged('width'));
+$('hoopSave').onclick = async () => {
+  const res = await fetch('/api/hoops', { method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ name: $('hoopName').value, w_mm: +$('hoopW').value, h_mm: +$('hoopH').value }) });
+  if (!res.ok) return alert((await res.json()).detail);
+  const h = await res.json();
+  await loadHoops('c:' + h.id);
+};
+$('hoopDel').onclick = async () => {
+  const v = $('hoop').value;
+  if (!v.startsWith('c:') || !confirm('Remove this saved hoop?')) return;
+  await fetch('/api/hoops/' + v.slice(2), { method: 'DELETE' });
+  await loadHoops('b:0');
+};
+// width / height / scale stay in step with the artwork's aspect ratio
+const fmt = v => v.toFixed(1).replace(/\.0$/, '');
+function sizeChanged(from) {
+  if (!art) return;
+  let w = +$('width').value, h = +$('height').value, pct = +$('scalePct').value;
+  if (from === 'height') w = h * art.aspect;
+  else if (from === 'scale') w = art.w_mm * pct / 100;
+  w = Math.max(1, w || art.w_mm);
+  h = w / art.aspect;
+  if (from !== 'width') $('width').value = fmt(w);
+  if (from !== 'height') $('height').value = fmt(h);
+  if (from !== 'scale') $('scalePct').value = Math.round(w / art.w_mm * 100);
+  const hp = hoopDims();
+  const fits = w <= hp.w && h <= hp.h;
+  $('sizeInfo').innerHTML = `${(w / 25.4).toFixed(2)}″ × ${(h / 25.4).toFixed(2)}″ · ` +
+    (fits ? `<span style="color:var(--ok)">fits ${hp.name}</span>`
+          : `<span style="color:var(--warn)">too big for ${hp.name} by ${Math.max(w - hp.w, h - hp.h).toFixed(0)} mm</span>`);
+  if (layoutActive) drawLayout();
+}
+$('width').oninput = () => sizeChanged('width');
+$('height').oninput = () => sizeChanged('height');
+$('scalePct').oninput = () => sizeChanged('scale');
+$('fitHoop').onclick = () => {
+  if (!art) return;
+  const hp = hoopDims(), m = 6;                     // keep 3 mm off each hoop edge
+  $('width').value = fmt(Math.min(hp.w - m, (hp.h - m) * art.aspect));
+  sizeChanged('width');
+};
+// natural size of an SVG document, the way the server reads it
+function svgNatural(text) {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml').documentElement;
+  const U = { '': 1, px: 1, mm: 96 / 25.4, cm: 96 / 2.54, in: 96, pt: 96 / 72, pc: 16 };
+  const len = v => { const m = /^\s*([0-9.eE+-]+)\s*([a-z%]*)/.exec(v || ''); return m && m[2] !== '%' ? parseFloat(m[1]) * (U[m[2]] || 1) : null; };
+  const vb = (doc.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  let vw = vb.length === 4 && vb[2] > 0 ? vb[2] : null, vh = vb.length === 4 && vb[3] > 0 ? vb[3] : null;
+  const wpx = len(doc.getAttribute('width')), hpx = len(doc.getAttribute('height'));
+  if (!vw) { vw = wpx || 100; vh = hpx || vw; }
+  const scale = wpx && vw ? wpx / vw : 1;
+  return { w_mm: vw * scale / (96 / 25.4), h_mm: vh * scale / (96 / 25.4) };
+}
+async function setArt(f, kind) {
+  const src = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result); fr.readAsDataURL(f); });
+  let w_mm, h_mm;
+  if (kind === 'svg') ({ w_mm, h_mm } = svgNatural(await f.text()));
+  else {
+    const im = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
+    w_mm = 90; h_mm = 90 * im.naturalHeight / Math.max(1, im.naturalWidth);
+  }
+  art = { w_mm, h_mm, aspect: w_mm / Math.max(h_mm, 1e-6), src };
+  $('width').value = fmt(w_mm);
+  layoutActive = true;
+  sizeChanged('width');
+}
+// the hoop and the artwork at its chosen size, on the canvas, before stitching
+function drawLayout() {
+  if (!art) return;
+  const hp = hoopDims();
+  const w = +$('width').value || art.w_mm, h = w / art.aspect;
+  const pad = Math.max(hp.w, hp.h, w, h) * 0.08;
+  const bw = Math.max(hp.w, w) + pad * 2, bh = Math.max(hp.h, h) + pad * 2;
+  const big = Math.max(bw, bh);
+  $('preview').classList.add('hide'); $('stageEmpty').classList.add('hide');
+  removeCanvas(); stopPlayer(); clearSvg();
+  canvas = SVG().addTo('#viewer').attr('viewBox', `${-bw / 2} ${-bh / 2} ${bw} ${bh}`).size('100%', '100%');
+  canvas.rect(hp.w, hp.h).center(0, 0).radius(Math.min(hp.w, hp.h) * 0.08)
+    .fill('#ffffff').stroke({ color: '#8b93a3', width: big * 0.004, dasharray: `${big * 0.02} ${big * 0.012}` });
+  const fits = w <= hp.w && h <= hp.h;
+  canvas.image(art.src).size(w, h).center(0, 0);
+  if (!fits) canvas.rect(w, h).center(0, 0).fill('none').stroke({ color: '#c2410c', width: big * 0.005 });
+  const font = { size: big * 0.03, family: 'Inter, system-ui, sans-serif', anchor: 'middle' };
+  canvas.text(`${hp.name} · ${hp.w} × ${hp.h} mm`).font(font).fill('#aab1bf').center(0, hp.h / 2 + pad * 0.5);
+  canvas.text(`${w.toFixed(0)} × ${h.toFixed(0)} mm`).font(font).fill(fits ? '#aab1bf' : '#c2410c').center(0, -hp.h / 2 - pad * 0.5);
+}
+loadHoops();
+
 $('drop').onclick = () => $('file').click();
 $('drop').ondragover = e => { e.preventDefault(); };
 $('drop').ondrop = e => { e.preventDefault(); pickMany(e.dataTransfer.files); };
@@ -989,6 +1103,8 @@ async function pick(f) {
   const kind = window._fKind;
   $('setArt').classList.toggle('hide', kind !== 'image');
   $('setSvg').classList.toggle('hide', kind !== 'svg');
+  $('sizeBox').classList.toggle('hide', kind === 'machine');
+  if (kind !== 'machine') setArt(f, kind);
   $('importName').textContent = kind === 'image' ? ''
     : window._files.length > 1 ? `${window._files.length} SVGs: ` + window._files.map(x => x.name).join(', ')
     : f.name;
@@ -1032,11 +1148,11 @@ $('go').onclick = async () => {
   try {
     let res;
     if (kind === 'image') {
-      const [hw, hh] = $('hoop').value.split('x');
+      const hp = hoopDims();
       const fd = new FormData();
       fd.append('job', job); fd.append('colors', $('colors').value);
       fd.append('width_mm', $('width').value);
-      fd.append('hoop_w', hw); fd.append('hoop_h', hh);
+      fd.append('hoop_w', hp.w); fd.append('hoop_h', hp.h);
       fd.append('density', $('density').value);
       fd.append('max_satin', $('satin').value);
       fd.append('heavy_underlay', $('underlay').checked);
@@ -1052,7 +1168,7 @@ $('go').onclick = async () => {
       fd.append('placement', placement);
       fd.append('gap_mm', $('importGap').value);
       if (placement !== 'new') fd.append('job', job);
-      fd.append('width_mm', $('importWidth').value);
+      fd.append('width_mm', placement === 'keep' ? 0 : $('width').value);
       fd.append('fill_method', $('importFill').value);
       fd.append('palette', $('palette').value);
       res = await fetch('/api/import', { method: 'POST', body: fd });
@@ -1091,9 +1207,15 @@ $('goText').onclick = async () => {
 let previewSrc = '';
 function show(d) {
   job = d.job; kind = d.kind; rev++;
+  layoutActive = false;
   $('saveTop').disabled = false;
   $('importPlacement').disabled = false;
   const r = d.report;
+  const hp = hoopDims();
+  if (r && (r.width_mm > hp.w || r.height_mm > hp.h)) {
+    d.warnings = (d.warnings || []).filter(w => !/hoop/i.test(w));
+    d.warnings.unshift(`Design is ${r.width_mm} × ${r.height_mm} mm — too big for the ${hp.name} hoop (${hp.w} × ${hp.h} mm).`);
+  }
   $('stageEmpty').classList.add('hide');
   ['viewSel', 'designBtn', 'detailsBtn', 'exportBtn'].forEach(id => $(id).disabled = false);
   $('warnings').innerHTML = (d.warnings || []).map(w => `<div class="warn">${w}</div>`).join('');
@@ -1800,9 +1922,8 @@ function penHintUpdate() {
   const n = penCur ? penCur.points.length : 0;
   $('penHint').textContent = penCur
     ? `${n} point${n === 1 ? '' : 's'} — ` +
-      (penCur.mode === 'pairs' ? (n % 2 ? 'next: right rail' : 'next: left rail')
-                               : 'keep tracing') + ' · double-click to finish'
-    : `${penShapes.length} shape${penShapes.length === 1 ? '' : 's'} ready — click the canvas to start the next, or Stitch it.`;
+      (penCur.mode === 'pairs' ? (n % 2 ? 'right rail' : 'left rail') : 'tracing')
+    : penShapes.length ? `${penShapes.length} shape${penShapes.length === 1 ? '' : 's'}` : '';
 }
 document.addEventListener('keydown', e => {
   if (curMode !== 'digitize') return;
@@ -2109,7 +2230,7 @@ async function renderThemes() {
          <button class="ghost mini" data-del="${t.id}" style="margin-left:auto">✕</button>
        </div>
      </div>`).join('') ||
-    '<p class="muted">No themes yet — set thread colours, then “Save as theme”.</p>';
+'';
   document.querySelectorAll('#themeList .theme-card').forEach(el => {
     el.onclick = async e => {
       if (e.target.closest('[data-del]')) return;
@@ -2158,8 +2279,8 @@ function renderBlocks() {
   document.querySelectorAll('#dpBlocks .blockrow').forEach(el =>
     el.onclick = () => { selBlock = +el.dataset.bi; renderBlocks(); });
   $('dpSwatchHint').textContent = selBlock === null
-    ? 'Pick a block above (or click a thread on the canvas), then a swatch.'
-    : `Recolouring block ${selBlock + 1} — pick a swatch.`;
+    ? ''
+    : `Block ${selBlock + 1}`;
 }
 async function renderDpBrand() {
   const cur = $('dpBrand').value || $('palette').value;
@@ -2307,8 +2428,6 @@ $('saveTop').onclick = async () => {
   $('svName').value = libDesign ? libDesign.name : ($('qName').value !== 'design' ? $('qName').value : '');
   $('svSave').textContent = libDesign ? 'Save changes' : 'Save';
   $('svAsNew').classList.toggle('hide', !libDesign);
-  $('svHint').textContent = libDesign ? `Save changes overwrites “${libDesign.name}”; Save as new keeps both.`
-    : 'The design, its colours and preview are kept in the client’s library on the Clients page.';
   $('saveModal').classList.remove('hide');
   setTimeout(() => $('svName').focus(), 30);
 };
