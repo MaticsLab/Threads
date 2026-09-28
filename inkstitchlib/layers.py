@@ -16,7 +16,7 @@ stitch parameters, and only stitch() turns the arrangement into a pattern
 """
 import numpy as np
 import cv2
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon, MultiPolygon, LineString
 
 from digitizer import segment, core
 from . import fills
@@ -101,14 +101,16 @@ def _poly_from_data(d):
         return None
 
 
-STITCH_TYPES = ('auto', 'fill', 'outline', 'run', 'applique', 'puff')
+STITCH_TYPES = ('auto', 'fill', 'outline', 'run', 'bean', 'satin', 'applique', 'puff')
+FILL_METHODS = ('tatami', 'contour', 'circular', 'walk', 'satin')
+LINE_TYPES = ('run', 'bean', 'satin')
 
 
 def _read_layer(L, max_satin):
     prm = {**DEFAULT_PARAMS, **(L.get('params') or {})}
     density = max(0.25, min(3.0, float(prm.get('density') or 0.4)))
     method = prm.get('fill_method')
-    if method not in ('tatami', 'contour', 'circular'):
+    if method not in FILL_METHODS:
         method = 'tatami'
     stype = prm.get('stitch')
     if stype not in STITCH_TYPES:
@@ -121,9 +123,11 @@ def _read_layer(L, max_satin):
     rgb = ((v >> 16) & 255, (v >> 8) & 255, v & 255)
     ang = prm.get('angle')
     ang = None if ang in (None, '', 'auto') else float(ang)
+    width = max(0.6, min(12.0, float(prm.get('width_mm') or 3.0)))
+    run_len = max(0.8, min(6.0, float(prm.get('run_len_mm') or 2.5)))
     return {'density': density, 'method': method, 'type': stype, 'border': border,
             'rgb': rgb, 'angle': ang, 'name': (L.get('name') or 'Layer')[:48],
-            'max_satin': max_satin}
+            'max_satin': max_satin, 'width': width, 'run_len': run_len}
 
 
 def stitch(layers_in, max_satin=8.0, settings=None):
@@ -157,11 +161,21 @@ def stitch(layers_in, max_satin=8.0, settings=None):
         for p in polys:
             flat.extend(p.geoms if isinstance(p, MultiPolygon) else [p])
         flat = [q for q in flat if q.area > 0.3]
-        if not flat:
+        # open paths (drawn shapes): running / bean / satin along the line
+        lines = []
+        for ln in L.get('lines') or []:
+            pts = [(float(p[0]), float(p[1])) for p in (ln.get('points') or []) if len(p) >= 2]
+            if len(pts) >= 2 and LineString(pts).length > 0.5:
+                lines.append(pts)
+        if not flat and not lines:
             continue
         key = info['rgb'] if info['type'] != 'applique' else (info['rgb'], 'applique', id(L))
         for g in flat:
             pieces.append((key, g, dict(info, g=g)))
+        ltype = info['type'] if info['type'] in LINE_TYPES else 'run'
+        for pts in lines:
+            foot = LineString(pts).buffer(max(0.6, info['width'] if ltype == 'satin' else 0.6) / 2)
+            pieces.append((info['rgb'], foot, dict(info, g=foot, line=pts, type=ltype)))
     if not pieces:
         raise LayerError('nothing to stitch — every layer is hidden or empty')
 
@@ -218,7 +232,47 @@ def stitch(layers_in, max_satin=8.0, settings=None):
     return s.pattern, block_layers
 
 
+def _sew_line(s, it, phase):
+    """An open path: running stitch, bean stitch, or centre-line satin."""
+    from . import pen
+    pts, stype = it['line'], it['type']
+    if stype in ('run', 'bean'):
+        if phase == core.UNDER:
+            return
+        path = pen._resample(pts, it['run_len'])
+        if stype == 'bean':
+            core.bean_run(s, path, it['run_len'] + 0.1)
+        else:
+            s.move_to(path[0], None)
+            for p in path[1:]:
+                s.run_to(p, it['run_len'] + 0.1)
+        return
+    zz, mids = pen.center_zigzag(pts, it['width'], max(0.25, min(3.0, it['density'])))
+    if len(zz) < 4:
+        return
+    under = pen._resample(mids, 2.5)
+    if it['width'] < core.MIN_SATIN:
+        if phase != core.UNDER:
+            core.bean_run(s, under, 2.0)
+        return
+    umode = core.underlay_mode()
+    if phase != core.TOP and umode != 'none':
+        s.move_to(under[0], None)
+        for p in under:
+            s.run_to(p, 2.5)
+        if umode != 'light' and it['width'] >= 2.0:
+            for p in reversed(under):
+                s.run_to(p, 2.5)
+    if phase != core.UNDER:
+        zz = core.widen_zigzag(zz)
+        s.move_to(zz[0], None)
+        for p in zz:
+            s._st(p)
+
+
 def _sew_one(s, it, phase):
+    if it.get('line') is not None:
+        return _sew_line(s, it, phase)
     g, stype = it['g'], it['type']
     density, border, method = it['density'], it['border'], it['method']
     # one uniform direction per object: its own principal axis unless the
@@ -250,6 +304,18 @@ def _sew_one(s, it, phase):
         core.outline_run(s, g, step=1.0, travel=g)
         return
     mw = core.poly_max_width(g)
+    if stype in ('run', 'bean'):
+        # an outline-only shape: run the outline
+        if phase != core.UNDER:
+            core.outline_run(s, g, step=it['run_len'], travel=g) if stype == 'run' else \
+                core.bean_run(s, list(g.exterior.simplify(0.2).coords), it['run_len'], g)
+        return
+    if stype == 'satin' or (method == 'satin' and stype in ('auto', 'fill')):
+        if mw <= it['max_satin'] and g.area >= 1.5:
+            core.sew_blob(s, g, density, it['max_satin'], min(border, mw * 0.3),
+                          travel=g, heavy_underlay=True, phase=phase)
+            return
+        method = 'tatami'                      # too wide to satin across
     if stype == 'auto' and mw <= it['max_satin'] and g.area >= 1.5:
         core.sew_blob(s, g, density, it['max_satin'], min(border, mw * 0.3),
                       travel=g, heavy_underlay=True, phase=phase)

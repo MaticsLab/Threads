@@ -1152,6 +1152,10 @@ def designs_open(did: int, palette: str = 'Madeira Rayon'):
     with open(os.path.join(d, 'plan.svg'), 'w') as f:
         f.write(stitch_svg.render(pat, realistic=False))
     layers = _job_layers(meta)
+    # re-render the preview (older saves baked a grey background into it)
+    # and refresh the library copy so the clients page picks it up too
+    render.preview(pat, [tuple(L['rgb']) for L in layers], os.path.join(d, 'preview.png'))
+    shutil.copyfile(os.path.join(d, 'preview.png'), os.path.join(src, 'preview.png'))
     client = business.get_contact('client', dsg['client_id']) if dsg['client_id'] else None
     return _native({'job': job, 'kind': meta.get('kind', 'import'),
                     'report': meta.get('report') or basic_report(pat),

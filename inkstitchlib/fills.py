@@ -123,6 +123,11 @@ def sew_area(sewer, poly, method, angle, spacing, max_stitch,
         grown = poly.buffer(comp, join_style=2, mitre_limit=2.0)
         if grown.geom_type == 'Polygon' and not grown.is_empty:
             poly = grown
+    if method == 'walk':
+        # open running-stitch fill: light coverage that lets the fabric show
+        core.sew_fill(sewer, poly, angle, max(spacing * 3.0, 1.2), max(max_stitch, 3.5),
+                      stagger=True, start=sewer.pos, travel=travel)
+        return
     if method == 'contour':
         rings = contour_rings(poly, spacing, step=min(1.8, max_stitch))
         if rings:

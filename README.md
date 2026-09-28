@@ -231,6 +231,20 @@ Notes for the Containers runtime:
   PNG/JPG artwork, SVG, or a machine file — and shows only the settings that
   apply. Trackpad-native navigation: two-finger scroll pans, pinch or
   ⌘-scroll zooms at the cursor, double-click refits.
+- **Design tools** — draw on the canvas and stitch what you drew: open
+  shapes (**1**: click to plot corners, right-click for curve points, Enter
+  or double-click to finish), closed shapes (**2**), freehand (**3**: drag;
+  end near the start and it closes), and an *Add shape* menu (rectangle,
+  rounded, circle, ellipse, triangle, hexagon, star, heart, arrow, ring).
+  Every shape is an object: select it (**S**) to move, scale from the
+  corner handles, stretch from the side handles, rotate from the top handle;
+  Delete, ⌘D duplicates, ⌘Z / ⇧⌘Z undo and redo. The settings panel edits
+  the selected shape (or the defaults for the next one): *Outlined* with a
+  run type — running, bean or satin at a set width — or *Filled* with a
+  pattern — tatami, satin, contour, circular or walk — plus angle, density
+  and a satin border. *Stitch shapes* sews them through the AI-layers
+  engine, so colour sequencing, underlay order, pull compensation and the
+  fabric/machine presets all apply. Press **?** for the shortcut list.
 - **Text tool** — lettering is a canvas add-on: type text and place it
   below/above/beside/centered on the current design (appended as a new
   colour block, `POST /api/lettering` with `job` + `placement`), or start a
@@ -345,6 +359,8 @@ GET  /api/presets                fabric + machine presets
 POST /api/vectorize              image -> editable vector layers (no stitches yet)
 POST /api/name_layers            vision-model names for the extracted layers
 POST /api/stitch_layers          sew the arranged layers into a design
+                                 layers may carry `lines` (open paths) sewn as
+                                 run / bean / satin; fill_method adds walk, satin
 GET  /api/fonts                  bundled fonts (+ /api/fonts/{id}/preview.png)
 GET  /api/palettes               thread palettes [{name, custom}]
 GET  /api/palettes/{name}        a palette's colours
