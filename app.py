@@ -782,6 +782,7 @@ async def stitch_layers(data: dict):
     png = _store(job, pat, block_layers, rep, {'layers': len(lyrs)}, kind='layers')
     return _native({'job': job, 'kind': 'layers', 'report': rep,
                     'origin_mm': pat.extras.get('origin_mm'),
+                    'counts': dict(veclayers.STITCH_COUNTS),
                     'layer_info': {'layers': len(lyrs), 'blocks': len(block_layers)},
                     'threads': threads.match_layers(block_layers,
                                                     data.get('palette', 'Madeira Rayon')),
@@ -846,23 +847,74 @@ async def pen_digitize(data: dict):
 ZIP_FORMATS = ('dst', 'pes', 'jef', 'exp', 'vp3', 'xxx')
 
 
+ORIGINS = ('tl', 'tc', 'tr', 'ml', 'c', 'mr', 'bl', 'bc', 'br')
+
+
+def _with_origin(pat, origin):
+    """A copy of the pattern with the chosen point of its bounding box at
+    (0, 0): the machine's origin. 'c' (the centre) is how designs are kept."""
+    if origin not in ORIGINS or origin == 'c':
+        return pat
+    minx, miny, maxx, maxy = pat.bounds()
+    col, row = {'l': minx, 'c': (minx + maxx) / 2, 'r': maxx}, {'t': miny, 'm': (miny + maxy) / 2, 'b': maxy}
+    if origin == 'c':
+        return pat
+    ox = col[{'tl': 'l', 'tc': 'c', 'tr': 'r', 'ml': 'l', 'mr': 'r', 'bl': 'l', 'bc': 'c', 'br': 'r'}[origin]]
+    oy = row[origin[0]]
+    q = pat.copy()
+    q.translate(-ox, -oy)
+    return q
+
+
+def _safe_name(name):
+    import re
+    return re.sub(r'[^\w. -]+', '', str(name or '')).strip()[:80] or 'design'
+
+
+def _quote_params(kw):
+    """Quote parameters from query values; None when no pricing was given."""
+    p = {k: kw.get(k) or 0 for k in worksheet.QUOTE_FIELDS}
+    if not any(p.values()):
+        return None
+    return p
+
+
 @app.get('/api/download/{job}')
-def download(job: str, fmt: str = 'dst'):
+def download(job: str, fmt: str = 'dst', formats: str = '', origin: str = 'c', name: str = 'design',
+             worksheet_pdf: int = 0, quote_pdf: int = 0, palette: str = 'Madeira Rayon',
+             client: str = '', wtheme: int = 0, layout: str = 'production', notes: str = '',
+             setup: float = 0.0, price_per_1000: float = 0.0, min_digitizing: float = 0.0,
+             garment_qty: int = 0, garment_base: float = 0.0, markup_pct: float = 0.0,
+             run_per_1000: float = 0.0, colour_fee: float = 0.0, extra_per_piece: float = 0.0,
+             discount_pct: float = 0.0, rush_pct: float = 0.0, tax_pct: float = 0.0):
+    """One machine file, or a zip of several formats plus the worksheet and
+    quote PDFs. `formats` is a comma list (or 'all'); `fmt=zip` is the old
+    export-everything."""
     fmt = fmt.lower()
-    if fmt == 'zip':
-        return _zip_export(job)
-    if fmt not in EXPORT_FORMATS:
-        raise HTTPException(400, 'format must be one of: zip, ' + ', '.join(sorted(EXPORT_FORMATS)))
-    d = _job_dir(job)
-    out = os.path.join(d, 'design.' + fmt)
-    if fmt == 'dst' and os.path.exists(out):
-        return FileResponse(out, filename='design.dst', media_type='application/octet-stream')
-    pat = _load_pattern(job)
-    try:
-        EXPORT_FORMATS[fmt](pat, out)
-    except Exception as e:
-        raise HTTPException(500, 'export to %s failed: %s' % (fmt, e))
-    return FileResponse(out, filename='design.' + fmt, media_type='application/octet-stream')
+    name = _safe_name(name)
+    wanted = [f.strip().lower() for f in formats.split(',') if f.strip()]
+    if fmt == 'zip' or 'all' in wanted:
+        wanted = list(ZIP_FORMATS) if (fmt == 'zip' and not wanted) or 'all' in wanted else wanted
+        if fmt == 'zip' and not worksheet_pdf and not quote_pdf and not formats:
+            worksheet_pdf = 1
+    elif not wanted:
+        wanted = [fmt]
+    bad = [f for f in wanted if f not in EXPORT_FORMATS]
+    if bad:
+        raise HTTPException(400, 'format must be one of: zip, all, ' + ', '.join(sorted(EXPORT_FORMATS)))
+    qp = _quote_params(locals())
+    if len(wanted) == 1 and not worksheet_pdf and not quote_pdf:
+        f = wanted[0]
+        d = _job_dir(job)
+        out = os.path.join(d, 'export.' + f)
+        pat = _with_origin(_load_pattern(job), origin)
+        try:
+            EXPORT_FORMATS[f](pat, out)
+        except Exception as e:
+            raise HTTPException(500, 'export to %s failed: %s' % (f, e))
+        return FileResponse(out, filename='%s.%s' % (name, f), media_type='application/octet-stream')
+    return _zip_export(job, wanted, origin, name, worksheet_pdf, quote_pdf, qp, palette, client,
+                       wtheme, layout, notes)
 
 
 @app.get('/api/plan/{job}.svg')
@@ -877,42 +929,122 @@ def plan_svg(job: str, realistic: bool = False):
     return FileResponse(p, media_type='image/svg+xml')
 
 
-def _zip_export(job):
-    """Ink/Stitch style batch export: every major format + worksheet in one zip."""
+def _theme_of(wtheme):
+    if wtheme:
+        wt = business.get_wtheme(wtheme)
+        if wt:
+            return wt['config'], wt.get('logo_path')
+    return None, None
+
+
+def _zip_export(job, formats, origin='c', name='design', worksheet_pdf=1, quote_pdf=0,
+                quote_params=None, palette='Madeira Rayon', client='', wtheme=0,
+                layout='production', notes=''):
+    """Batch export: the chosen formats + worksheet / quote PDFs + thread list in one zip."""
     import zipfile
     d = _job_dir(job)
-    pat = _load_pattern(job)
+    pat0 = _load_pattern(job)
+    pat = _with_origin(pat0, origin)
     meta = _load_meta(job)
     layers = meta['layers']
+    for L in layers:
+        L.setdefault('rgb', [int(L['hex'][1:3], 16), int(L['hex'][3:5], 16), int(L['hex'][5:7], 16)])
     try:
-        matches = threads.match_layers(
-            [{**L, 'rgb': tuple(L['rgb'])} for L in layers], 'Madeira Rayon')
+        matches = threads.match_layers([{**L, 'rgb': tuple(L['rgb'])} for L in layers], palette)
     except Exception:
         matches = None
-    out = os.path.join(d, 'design.zip')
+    theme, logo_path = _theme_of(wtheme)
+    out = os.path.join(d, 'export.zip')
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
-        for fmt in ZIP_FORMATS:
-            p = os.path.join(d, 'design.' + fmt)
+        for fmt in formats:
+            p = os.path.join(d, 'export.' + fmt)
             try:
                 EXPORT_FORMATS[fmt](pat, p)
-                z.write(p, 'design.' + fmt)
+                z.write(p, '%s.%s' % (name, fmt))
             except Exception:
                 pass
-        z.writestr('threadlist.txt',
-                   threads.threadlist_txt('design', meta['report'], layers, matches))
+        z.writestr('%s-threads.txt' % name,
+                   threads.threadlist_txt(name, meta['report'], layers, matches))
         plan = os.path.join(d, 'plan.svg')
         if os.path.exists(plan):
-            z.write(plan, 'stitch_plan.svg')
-        try:
-            pdf = os.path.join(d, 'worksheet.pdf')
-            preview, saved_at = _sheet_preview(d, pat, layers)
-            worksheet.build(pdf, pat, meta['report'], layers, thread_matches=matches,
-                            preview_png=preview, design_name='design',
-                            saved_at=saved_at)
-            z.write(pdf, 'worksheet.pdf')
-        except Exception:
-            pass
-    return FileResponse(out, filename='design.zip', media_type='application/zip')
+            z.write(plan, '%s-stitch-plan.svg' % name)
+        if worksheet_pdf:
+            try:
+                pdf = os.path.join(d, 'worksheet.pdf')
+                if layout == 'classic':
+                    preview, saved_at = os.path.join(d, 'preview.png'), None
+                else:
+                    preview, saved_at = _sheet_preview(d, pat0, layers)
+                worksheet.build(pdf, pat0, meta['report'], layers, thread_matches=matches,
+                                preview_png=preview, design_name=name, quote_params=quote_params,
+                                client=client, theme=theme, logo_path=logo_path, layout=layout,
+                                saved_at=saved_at)
+                z.write(pdf, '%s-worksheet.pdf' % name)
+            except Exception:
+                traceback.print_exc()
+        if quote_pdf and quote_params:
+            try:
+                qpdf = os.path.join(d, 'quote.pdf')
+                worksheet.build_quote(qpdf, meta['report'].get('stitches', 0), quote_params,
+                                      design_name=name, client=client, theme=theme,
+                                      logo_path=logo_path,
+                                      colour_changes=meta['report'].get('colour_changes', 0),
+                                      notes=notes)
+                z.write(qpdf, '%s-quote.pdf' % name)
+            except Exception:
+                traceback.print_exc()
+    return FileResponse(out, filename='%s.zip' % name, media_type='application/zip')
+
+
+@app.get('/api/quote/{job}.pdf')
+def quote_pdf(job: str, name: str = 'design', client: str = '', wtheme: int = 0, inline: bool = False,
+              notes: str = '',
+              setup: float = 0.0, price_per_1000: float = 0.0, min_digitizing: float = 0.0,
+              garment_qty: int = 0, garment_base: float = 0.0, markup_pct: float = 0.0,
+              run_per_1000: float = 0.0, colour_fee: float = 0.0, extra_per_piece: float = 0.0,
+              discount_pct: float = 0.0, rush_pct: float = 0.0, tax_pct: float = 0.0):
+    """The quote alone, as a one-page PDF."""
+    meta = _load_meta(job)
+    qp = _quote_params(locals()) or {}
+    theme, logo_path = _theme_of(wtheme)
+    out = os.path.join(_job_dir(job), 'quote.pdf')
+    worksheet.build_quote(out, meta['report'].get('stitches', 0), qp, design_name=_safe_name(name),
+                          client=client, theme=theme, logo_path=logo_path,
+                          colour_changes=meta['report'].get('colour_changes', 0), notes=notes)
+    fname = '%s-quote.pdf' % _safe_name(name)
+    if inline:
+        return FileResponse(out, media_type='application/pdf',
+                            headers={'Content-Disposition': 'inline; filename="%s"' % fname})
+    return FileResponse(out, filename=fname, media_type='application/pdf')
+
+
+@app.post('/api/quote_calc')
+async def quote_calc(data: dict):
+    """Price a design: {stitches, colour_changes, params} -> the breakdown."""
+    p = {k: float(v) for k, v in (data.get('params') or {}).items() if k in worksheet.QUOTE_FIELDS}
+    return worksheet.quote(data.get('stitches', 0), colour_changes=data.get('colour_changes', 0), **p)
+
+
+@app.get('/api/quotes')
+def quotes_list():
+    """Saved quote templates [{id, name, params}]."""
+    return business.list_quote_tpls()
+
+
+@app.post('/api/quotes')
+async def quotes_save(data: dict):
+    try:
+        qid = business.save_quote_tpl(data.get('name'), data.get('params') or {})
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {'id': qid}
+
+
+@app.delete('/api/quotes/{qid}')
+def quotes_delete(qid: int):
+    if not business.delete_quote_tpl(qid):
+        raise HTTPException(404, 'no such quote template')
+    return {'ok': True}
 
 
 @app.get('/api/stitches/{job}')
@@ -1288,6 +1420,8 @@ def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon'
                   setup: float = 0.0, price_per_1000: float = 0.0,
                   garment_qty: int = 0, garment_base: float = 0.0,
                   markup_pct: float = 0.0, discount_pct: float = 0.0,
+                  min_digitizing: float = 0.0, run_per_1000: float = 0.0, colour_fee: float = 0.0,
+                  extra_per_piece: float = 0.0, rush_pct: float = 0.0, tax_pct: float = 0.0,
                   layout: str = 'production', title: str = ''):
     d = _job_dir(job)
     pat = _load_pattern(job)
@@ -1300,16 +1434,10 @@ def worksheet_pdf(job: str, name: str = 'design', palette: str = 'Madeira Rayon'
         matches = threads.match_layers(layers, palette)
     except Exception:
         matches = None
-    quote_params = None
-    if setup or price_per_1000 or garment_qty:
-        quote_params = {'setup': setup, 'price_per_1000': price_per_1000,
-                        'garment_qty': garment_qty, 'garment_base': garment_base,
-                        'markup_pct': markup_pct, 'discount_pct': discount_pct}
-    theme = logo_path = None
-    if wtheme:
-        wt = business.get_wtheme(wtheme)
-        if wt:
-            theme, logo_path = wt['config'], wt.get('logo_path')
+    quote_params = _quote_params(locals())
+    if quote_params:
+        quote_params['colour_changes'] = meta['report'].get('colour_changes', 0)
+    theme, logo_path = _theme_of(wtheme)
     out = os.path.join(d, 'worksheet.pdf')
     if layout == 'classic':
         preview, saved_at = os.path.join(d, 'preview.png'), None

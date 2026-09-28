@@ -219,7 +219,8 @@
     padding:0 12px;background:var(--panel);border-radius:14px;color:var(--ink);
     box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
   #topLeft{left:12px;padding-right:8px}
-  #topLeft .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#3b82f6)}
+  #topLeft .backBtn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--ink);text-decoration:none}
+  #topLeft .backBtn:hover{background:rgba(255,255,255,.1)}
   #nameBtn{background:transparent;box-shadow:none;color:var(--ink);font-weight:600;font-size:15px;padding:8px 6px;display:flex;gap:10px;align-items:center;max-width:280px}
   #nameBtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #nameBtn:hover{background:rgba(255,255,255,.06)}
@@ -239,8 +240,31 @@
   .sep-v{width:1px;height:24px;background:var(--line2)}
 
   /* left properties panel */
-  #leftPanel{position:absolute;left:12px;top:80px;max-height:calc(100vh - 256px);width:300px;z-index:35;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#4a4e58 transparent;
-    background:var(--panel);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+  #leftPanel{position:absolute;left:12px;top:80px;max-height:calc(100vh - 256px);width:250px;z-index:35;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#4a4e58 transparent;
+    background:rgba(28,30,36,.82);backdrop-filter:blur(18px);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.1)}
+  #leftPanel .card{padding:10px 12px 12px}
+  #leftPanel .ptop .ptitle{font-size:14px}
+  #leftPanel .ptitle2{font-size:13px;margin:8px 0 4px}
+  #leftPanel label{font-size:11.5px;margin:7px 0 3px}
+  #leftPanel input[type=number],#leftPanel input[type=text],#leftPanel select{padding:6px 8px;font-size:13px;height:32px}
+  #leftPanel .seg button{height:34px;font-size:12.5px}
+  #leftPanel details.sec>summary{font-size:13px;padding:9px 2px}
+  #leftPanel .tglrow{font-size:12.5px;margin:8px 0 2px}
+  #leftPanel .tog{width:36px;height:20px}#leftPanel .tog i::after{width:14px;height:14px}#leftPanel .tog input:checked+i::after{transform:translateX(16px)}
+  #leftPanel .swatches button{width:26px;height:26px;border-radius:6px}
+  #leftPanel .runtypes button{width:44px;height:38px}
+  #leftPanel .fillpick{padding:4px 8px;font-size:13px}#leftPanel .fillpick img{width:28px;height:28px}
+  .ulrow{border:1px solid var(--line2);border-radius:9px;margin:6px 0;overflow:hidden}
+  .ulrow .ulhead{display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,.05);font-size:12px}
+  .ulrow .ulhead .ib{margin-left:auto;width:22px;height:22px;padding:0;background:transparent;box-shadow:none;color:var(--muted);display:grid;place-items:center;border-radius:5px}
+  .ulrow .ulhead .ib:hover{color:#f87171;background:rgba(255,255,255,.08)}
+  .ulrow .ulbody{display:flex;align-items:center;gap:6px;padding:6px 8px}
+  .ulrow .ulk{display:flex;gap:4px}
+  .ulrow .ulk button{width:28px;height:28px;padding:0;background:transparent;box-shadow:none;border:1px solid var(--line2);color:var(--ink);border-radius:7px;display:grid;place-items:center;font-size:12px}
+  .ulrow .ulk button.on{background:rgba(255,255,255,.3)}
+  .ulrow .ulbody .unit{width:92px;margin-left:auto}
+  .ulrow .ulbody .unit input{height:26px!important;font-size:12px!important;padding:2px 6px!important}
+  .fracl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:-4px}
   #leftPanel .card{background:transparent;border:0;padding:12px 14px 14px;box-shadow:none}
   #leftPanel label{font-size:12px;margin:9px 0 4px}
   #leftPanel input[type=number],#leftPanel input[type=text],#leftPanel select{padding:7px 9px;font-size:13.5px}
@@ -366,6 +390,16 @@
   .istat{display:flex;justify-content:space-between;align-items:center;background:var(--panel2);border-radius:14px;padding:15px 16px;margin-bottom:8px;font-size:15px;color:#cfd4dd}
   .istat b{color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums}
   .pdesc{color:var(--muted);font-size:13.5px;margin:-4px 0 12px}
+  .vis .vrow{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:14.5px;color:var(--ink)}
+  .vis .vrow>span{flex:1;display:flex;flex-direction:column;gap:2px}
+  .vis .vrow>span i{display:inline-flex;vertical-align:middle;margin-right:4px}
+  .vis .vrow small{color:var(--muted);font-size:12.5px;font-weight:400}
+  .vis .vrow.col{flex-direction:column;align-items:stretch}
+  .vis .vsep{height:1px;background:var(--line2);margin:10px 0}
+  .seg2{display:flex;background:#1f2228;border-radius:9px;padding:3px}
+  .seg2 button{background:transparent;box-shadow:none;color:var(--muted);padding:5px 12px;border-radius:7px;font-size:13px}
+  .seg2 button.on{background:#3a3d45;color:var(--ink)}
+  .vis .unit input{padding:6px 8px;font-size:13px}
   #reopenPanel{position:absolute;left:12px;top:80px;z-index:34}
   #toolHint{padding-right:40px}
   #toolHintClose{position:absolute;right:8px;top:8px}
@@ -415,14 +449,87 @@
   #fillsGrid button.on{border-color:var(--accent)}
   #fillsGrid img{width:84px;height:84px;border-radius:10px;background:#2a2d34;object-fit:cover}
   #artBody .drop{margin-top:2px}
+  .irow{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 8px;border-radius:14px;background:var(--panel2);margin:8px 0;cursor:pointer;border:2px solid transparent}
+  .irow.sel{border-color:var(--accent)}
+  .irow img{width:72px;height:72px;border-radius:12px;object-fit:contain;background:#9ca3af;flex:none}
+  .irow .lside{display:flex;flex-direction:column;align-items:center;gap:8px;flex:none}
+  .irow .lnum{min-width:26px;height:26px;border-radius:8px;background:#1f2228;color:var(--ink);font-size:12.5px;font-weight:600;display:grid;place-items:center}
+  .irow .imeta{flex:1;min-width:0}
+  .irow .iname{font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .irow .isub{font-size:12px;color:var(--muted)}
+  .irow input[type=range]{width:64px;padding:0;accent-color:#fff}
+  .irow .ib{width:28px;height:28px;padding:0;background:transparent;box-shadow:none;color:var(--muted);display:grid;place-items:center;border-radius:7px}
+  .irow .ib:hover{background:rgba(255,255,255,.1);color:var(--ink)}
   .runtypes{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
   .runtypes button{width:52px;height:44px;padding:0;background:var(--panel2);color:var(--ink);box-shadow:none;border:1px solid var(--line2);border-radius:10px;display:grid;place-items:center}
   .runtypes button.on{border-color:#fff;box-shadow:0 0 0 1px #fff inset}
   #objColor{width:36px;height:36px;padding:2px;border:1px solid var(--line2);border-radius:8px;background:var(--field)}
-  #toolHint{position:absolute;top:80px;right:12px;z-index:41;max-width:420px;background:var(--panel);color:var(--ink);border-radius:14px;padding:12px 16px;
+  #toolHint{position:absolute;top:80px;left:50%;transform:translateX(-50%);z-index:41;max-width:380px;background:var(--panel);color:var(--ink);border-radius:12px;padding:9px 14px;font-size:12.5px;
     box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06);font-size:13.5px;line-height:1.5}
   #toolHint b{display:flex;align-items:center;gap:8px;color:#93b4ff;margin-bottom:2px;font-size:14px}
   #toolHint span{color:var(--muted)}
+  .xsheet{width:min(600px,96vw);height:auto;max-height:94vh;display:flex;flex-direction:column;background:#0f1115;border-radius:18px;box-shadow:0 0 0 1px rgba(255,255,255,.14),0 30px 80px rgba(0,0,0,.6)}
+  .xhead{display:flex;align-items:flex-start;gap:10px;padding:22px 24px 8px}
+  .xhead b{font-size:22px;font-weight:600}.xhead p{margin:6px 0 0;color:var(--muted);font-size:15px}
+  .xbody{padding:6px 24px 10px;overflow-y:auto;scrollbar-width:thin}
+  .xbody label{font-size:14px;color:#c7ccd6;margin:14px 0 6px;display:block}
+  .xstats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 4px}
+  .xstats>div{background:#16181d;border:1px solid var(--line2);border-radius:12px;padding:12px 16px}
+  .xstats small{display:block;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-size:12px}.xstats b{font-size:18px;font-weight:600}
+  .xext{display:grid;place-items:center;background:#16181d;border:1px solid var(--line2);border-radius:10px;padding:0 14px;font-size:15px}
+  .xrowh{display:flex;align-items:center;margin-top:14px}
+  .fchips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}
+  .fchip{background:#16181d;border:1px solid var(--line2);box-shadow:none;color:var(--ink);border-radius:10px;padding:7px 4px;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:1px}
+  .fchip small{font-size:10px;color:var(--muted);font-weight:500}
+  .fchip.on{border-color:#fff;box-shadow:0 0 0 1px #fff inset}
+  .xinc{background:#16181d;border:1px solid var(--line2);border-radius:12px;padding:6px 14px 12px}
+  .xinc .tglrow{font-size:15px;color:var(--ink)}
+  .xsec{background:#16181d;border:1px solid var(--line2);border-radius:12px;padding:0 16px;margin-top:14px}
+  .xsec>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:14px 0;font-size:15px;cursor:pointer}
+  .xsec>summary em{font-style:normal;color:var(--muted);flex:1}
+  .xsec>summary::-webkit-details-marker{display:none}
+  .xsec>summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg)}
+  .xsec[open]>summary::after{transform:rotate(-135deg)}
+  .xorig{display:flex;align-items:center;gap:18px;padding:4px 0 16px}
+  .xorig>div:first-child{flex:1}.xorig b{font-size:18px}.xorig p{color:var(--muted);margin:4px 0 0;font-size:14px}
+  .ogrid{display:grid;grid-template-columns:repeat(3,54px);gap:6px;background:#0b0c10;border:1px solid var(--line2);border-radius:14px;padding:8px}
+  .ogrid button{width:54px;height:54px;padding:0;border-radius:10px;background:#1c1f26;box-shadow:none;display:grid;place-items:center}
+  .ogrid button i{width:10px;height:10px;border-radius:50%;background:#6b7280}
+  .ogrid button.on{background:var(--accent)}.ogrid button.on i{background:#fff}
+  .qgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 10px}
+  .qgrid label{margin:8px 0 4px;font-size:12.5px}
+  .qcalc{margin-top:12px;border-top:1px solid var(--line2);padding-top:8px;font-size:14px}
+  .qcalc div{display:flex;justify-content:space-between;padding:3px 0;color:#c7ccd6}
+  .qcalc div.tot{border-top:1px solid var(--line2);margin-top:4px;padding-top:8px;color:var(--ink);font-weight:600;font-size:16px}
+  .xfoot{display:flex;align-items:center;gap:10px;padding:14px 24px 22px}
+  .xfoot button{height:44px;padding:0 22px;font-size:15px}
+  #xExport{display:flex;align-items:center;gap:8px}
+  #editBar{position:absolute;z-index:44;display:flex;align-items:center;gap:2px;background:var(--panel);border-radius:12px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08);transform:translate(-50%,-100%)}
+  #editBar .tb{width:40px;height:40px}
+  #editBar .ebtxt{background:transparent;box-shadow:none;color:var(--ink);height:40px;padding:0 12px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;border-radius:9px}
+  #editBar .ebtxt:hover,#editBar .tb.on{background:rgba(255,255,255,.14)}
+  #editBar #ebShape,#editBar #ebImage{display:flex;gap:2px}
+  #ebMenu{position:absolute;top:100%;left:0;margin-top:6px;min-width:170px;background:var(--panel);border-radius:12px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.08);display:flex;flex-direction:column}
+  #ebMenu button{background:transparent;box-shadow:none;color:var(--ink);text-align:left;padding:8px 10px;border-radius:8px;font-size:13.5px;font-weight:500}
+  #ebMenu button:hover{background:rgba(255,255,255,.1)}
+  #propsPanel{position:absolute;left:274px;top:80px;width:300px;max-height:calc(100vh - 100px);overflow-y:auto;z-index:47;background:#0f1115;color:var(--ink);border-radius:16px;padding:14px 16px 16px;
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.1)}
+  #propsPanel .phead{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:10px;font-size:16px}
+  #propsPanel .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  #propsPanel .pgrid small{display:block;color:var(--muted);font-size:13px}#propsPanel .pgrid b{font-size:15px;font-weight:500}
+  #propsPanel label{font-size:13.5px;color:#c7ccd6;margin:12px 0 5px;display:block}
+  #propsPanel .prcolor{display:flex;gap:8px;align-items:center}
+  #propsPanel .prcolor input[type=color]{width:44px;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px;background:var(--field)}
+  #propsPanel .tgl{margin:6px 0;font-size:14px;color:var(--ink)}
+  #propsPanel input[type=range]{flex:1;accent-color:#fff}
+  #playBar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:41;display:flex;gap:4px;align-items:center;width:min(560px,90vw);height:60px;
+    background:var(--panel);border-radius:14px;padding:8px 10px;box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.06)}
+  #playBar .ptrack{flex:1;position:relative;padding:0 10px 10px}
+  #playBar input[type=range]{width:100%;accent-color:#fff;padding:0;margin:0;height:22px}
+  #pbMarks{position:absolute;left:10px;right:10px;bottom:0;height:8px}
+  #pbMarks i{position:absolute;top:0;width:7px;height:7px;border-radius:50%;transform:translateX(-50%);border:1px solid rgba(255,255,255,.4)}
+  #playBar .pspeed{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:10.5px;font-weight:600;line-height:1}
+  #playBar .tb{width:44px;height:44px}
   #shapesMenu{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:45;background:var(--panel);border-radius:14px;padding:10px;
     box-shadow:0 14px 40px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.06);display:grid;grid-template-columns:repeat(5,64px);gap:6px}
   #shapesMenu button{width:64px;height:64px;padding:4px;background:transparent;box-shadow:none;color:var(--ink);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:500}
@@ -433,6 +540,7 @@
   #helpOverlay table{font-size:13.5px}#helpOverlay td{padding:6px 8px;border-color:var(--line)}
   #helpOverlay kbd{display:inline-block;min-width:22px;padding:2px 7px;border-radius:6px;background:var(--field);border:1px solid var(--line2);font:600 12px/1.4 ui-monospace,monospace;color:var(--ink);margin-right:4px}
   .vhide{display:none!important}
+  .stage.nogrid{background-image:none!important}
   .stage>canvas.tool-draw{cursor:crosshair!important}
   .stage>canvas.tool-pan{cursor:grab!important}
   .lhint{font-size:12.5px;color:var(--muted);margin:2px 0 10px}
@@ -441,7 +549,7 @@
 </head>
 <body>
 <div id="topLeft" class="tpill">
-  <div class="avatar"></div>
+  <a class="backBtn" href="/" title="Back to clients &amp; designs"><i data-ic="arrow-left" data-size="20"></i></a>
   <button id="nameBtn" title="Design"><span id="designName">Untitled design</span><i data-ic="chevron-down"></i></button>
   <div id="nameMenu" class="hide">
     <button id="nmRename"><i data-ic="pencil"></i>Rename</button>
@@ -530,21 +638,26 @@
               <label>Angle <span class="muted">auto or degrees</span></label><input type="text" id="objAngle" value="auto">
               <div class="tglrow"><span>Hand Stitch</span><input type="range" id="objHand" min="0" max="1" step="0.1" value="0"><b id="objHandV">0</b></div>
               <div class="tglrow"><span>Underpath</span><label class="tog"><input type="checkbox" id="objUnderpath" checked><i></i></label></div>
+              <div class="tglrow"><span>Gradient</span><label class="tog"><input type="checkbox" id="objGradient"><i></i></label></div>
+              <div id="gradRow" class="hide">
+                <label>End row space <span class="muted">rows open up towards the far edge</span></label>
+                <div class="unit"><input type="number" id="objGradTo" value="1.5" step="0.1" min="0.3" max="4"><span>mm</span></div>
+                <div class="tglrow"><span>Reverse direction</span><label class="tog"><input type="checkbox" id="objGradFlip"><i></i></label></div>
+              </div>
               <div class="tglrow"><span>Satin border</span><label class="tog"><input type="checkbox" id="objBorder" checked><i></i></label></div>
             </details>
           </div>
           <details class="sec" open><summary>Density Control<i class="qhelp" title="On the inside of a bend satin needle points crowd together. Row shortening pulls every other one back once the inner step drops below the trigger × the outer step.">?</i></summary>
-            <div class="tglrow"><span>Row shortening</span><label class="tog"><input type="checkbox" id="objRowShort" checked><i></i></label></div>
-            <div class="tglrow"><span>Density trigger</span><input type="range" id="objTrigger" min="0.2" max="1" step="0.05" value="0.5"><b id="objTriggerV">0.5</b></div>
+            <div class="tglrow"><span>Stitch Shortening</span><label class="tog"><input type="checkbox" id="objRowShort" checked><i></i></label></div>
+            <div class="tglrow"><span>Trigger Spacing</span><input type="range" id="objTrigger" min="0.2" max="1" step="0.05" value="0.5"><b id="objTriggerV">50%</b></div>
+            <div class="tglrow"><span>Fractional Spacing</span><input type="range" id="objShortFrac" min="0" max="1" step="0.01" value="0.45"><b id="objShortFracV">0.45</b></div>
+            <div class="fracl"><span>Outside</span><span>Inside</span></div>
           </details>
           <details class="sec" open><summary>Underlays <span id="objUnderN" class="muted">(1)</span><i class="qhelp" title="Stitching sewn first to hold the fabric and give the top stitching something to sit on: an edge walk and an open pass under fills, a centre run and zigzag under satin.">?</i></summary>
-            <select id="objUnderlay">
-              <option value="auto" selected>Auto — by width</option>
-              <option value="light">Light — edge walk / centre run</option>
-              <option value="heavy">Heavy — cross-hatch / zigzag</option>
-              <option value="none">None</option>
-            </select>
-            <p class="muted" id="objUnderInfo" style="margin:6px 0 0"></p>
+            <div style="display:none"><select id="objUnderlay"><option value="auto" selected>Auto</option><option value="light">Light</option><option value="heavy">Heavy</option><option value="none">None</option></select></div>
+            <div id="ulList"></div>
+            <button class="mini wide ghost" id="ulAdd" style="margin-top:4px;height:28px;font-size:12px">＋ Add Underlay</button>
+            <p class="muted" id="objUnderInfo" style="margin:6px 0 0;font-size:11.5px"></p>
           </details>
           <div class="row" style="margin-top:12px">
             <button class="ghost" id="objDup">Duplicate</button>
@@ -612,6 +725,44 @@
     <button class="tb hide" id="reopenPanel" title="Show the settings panel"></button>
     <div id="toolHint" class="hide"><button class="ghost mini" id="toolHintClose" title="Hide">✕</button><b id="toolHintTitle"></b><span id="toolHintText"></span></div>
     <div id="shapesMenu" class="hide"></div>
+    <div id="editBar" class="hide">
+      <div id="ebShape"><button class="ebtxt" id="ebEdit">Edit shape <i data-ic="chevron-down" data-size="14"></i></button></div>
+      <div id="ebImage"><button class="tb" id="ebAI" title="AI layers — trace into editable shapes"><i data-ic="wand" data-size="18"></i></button><button class="tb" id="ebDigi" title="Auto digitize"><i data-ic="sparkles" data-size="18"></i></button></div>
+      <span class="sep-v"></span>
+      <button class="tb" id="ebLock" title="Lock / unlock"><i data-ic="lock" data-size="18"></i></button>
+      <span class="sep-v"></span>
+      <button class="tb" id="ebDel" title="Delete"><i data-ic="trash" data-size="18"></i></button>
+      <div id="ebMenu" class="hide">
+        <button data-act="props">Properties</button><button data-act="dup">Duplicate</button>
+        <button data-act="front">Bring to front</button><button data-act="back">Send to back</button>
+        <button data-act="fliph">Flip horizontal</button><button data-act="flipv">Flip vertical</button>
+      </div>
+    </div>
+    <div id="propsPanel" class="hide">
+      <div class="phead"><i data-ic="move" data-size="16"></i><b>Properties</b><button class="ghost mini" id="propsClose" style="margin-left:auto">✕</button></div>
+      <div class="pgrid"><div><small>Stitch Type:</small><b id="prStitch">—</b></div><div><small>Type:</small><b id="prType">—</b></div><div><small>Points:</small><b id="prPoints">—</b></div><div><small>Stitches:</small><b id="prStitches">—</b></div></div>
+      <label>Name</label><input type="text" id="prName">
+      <label>Color</label><div class="prcolor"><input type="color" id="prColor"><input type="text" id="prHex" style="font-family:ui-monospace,monospace"></div>
+      <label>Visibility</label><button class="ghost wide" id="prVis" style="margin-top:0;height:36px"></button>
+      <label>Transparency</label><div class="tglrow" style="margin:0"><input type="range" id="prAlpha" min="0.1" max="1" step="0.01" value="1"><input type="number" id="prAlphaN" min="0.1" max="1" step="0.05" value="1" style="width:72px"></div>
+      <details class="sec" open><summary>Advanced</summary>
+        <div class="ptitle2" style="margin-top:2px">Stitch Options</div>
+        <label class="tgl"><input type="checkbox" id="prTieOn" checked> Tie On</label>
+        <label class="tgl"><input type="checkbox" id="prTieOff" checked> Tie Off</label>
+        <label class="tgl"><input type="checkbox" id="prTrim"> Trim After</label>
+        <div class="ptitle2">Speed</div>
+        <label class="tgl"><input type="radio" name="prSpeed" value="slow"> Slow</label>
+        <label class="tgl"><input type="radio" name="prSpeed" value="fast" checked> Fast</label>
+      </details>
+    </div>
+    <div id="playBar" class="hide">
+      <div class="ptrack"><input type="range" id="pbPos" min="0" max="1000" value="0"><div id="pbMarks"></div></div>
+      <button class="tb" id="pbSpeed" title="Playback speed"><span class="pspeed"><b id="pbSpeedV">16x</b></span></button>
+      <button class="tb" id="pbPlay" title="Play / pause"></button>
+      <span class="sep-v"></span>
+      <button class="tb" id="pbClose" title="Close the player"></button>
+      <button class="tb" id="pbReal" title="Toggle realistic view"></button>
+    </div>
     <div id="fillsPanel" class="hide">
       <div class="fhead"><b>Available Fills</b><button class="ghost mini" id="fillsClose" style="margin-left:auto">✕</button></div>
       <div id="fillsGrid"></div>
@@ -635,6 +786,22 @@
         <input type="file" id="file" class="hide" multiple
                accept="image/*,.svg,.dst,.pes,.jef,.exp,.vp3,.xxx,.u01,.pec,.tbf,.hus,.pcs,.sew,.shv,.jpx,.dsb,.dsz,.csv,.json">
         <p class="muted" id="importName" style="margin:8px 0 0"></p>
+        <div id="imgList"></div>
+        <button class="wide" id="uploadImg" style="margin-top:10px;background:#0b0c10;display:flex;align-items:center;justify-content:center;gap:8px"><i data-ic="upload" data-size="18"></i>Upload Image</button>
+        <details class="sec" open id="sizeSec"><summary>Size</summary>
+        <div id="sizeBox" class="hide">
+          <div class="row3">
+            <div><label>Width (mm)</label><input type="number" id="width" value="90" step="1" min="5"></div>
+            <div><label>Height (mm)</label><input type="number" id="height" value="90" step="1" min="5"></div>
+            <div><label>Scale %</label><input type="number" id="scalePct" value="100" step="5" min="5"></div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="ghost mini" id="fitHoop">Fit to hoop</button>
+            <button class="ghost mini" id="centerHoop">Centre in hoop</button>
+          </div>
+          <p class="muted" id="sizeInfo" style="margin:6px 0 0"></p>
+        </div>
+        </details>
         <div id="stitchTypeBox" class="hide">
           <div class="ptitle2">Stitch type</div>
           <div class="seg">
@@ -643,31 +810,6 @@
           </div>
         </div>
 
-        <details class="sec" open><summary>Size &amp; hoop</summary>
-        <div id="sizeBox" class="hide">
-          <div class="row">
-            <div><label>Hoop</label><select id="hoop"></select></div>
-            <div><label>&nbsp;</label>
-              <div style="display:flex;gap:6px">
-                <button class="ghost" id="fitHoop" style="flex:1">Fit to hoop</button>
-                <button class="ghost mini hide" id="hoopDel" title="Remove this custom hoop">✕</button>
-              </div></div>
-          </div>
-          <div id="hoopCustom" class="row3 hide">
-            <div><label>Hoop width (mm)</label><input type="number" id="hoopW" value="100" min="20" max="1000"></div>
-            <div><label>Hoop height (mm)</label><input type="number" id="hoopH" value="100" min="20" max="1000"></div>
-            <div><label>Name</label>
-              <div style="display:flex;gap:6px"><input type="text" id="hoopName" placeholder="Left chest">
-              <button class="ghost mini" id="hoopSave">Save</button></div></div>
-          </div>
-          <div class="row3">
-            <div><label>Width (mm)</label><input type="number" id="width" value="90" step="1" min="5"></div>
-            <div><label>Height (mm)</label><input type="number" id="height" value="90" step="1" min="5"></div>
-            <div><label>Scale %</label><input type="number" id="scalePct" value="100" step="5" min="5"></div>
-          </div>
-          <p class="muted" id="sizeInfo" style="margin:6px 0 0"></p>
-        </div>
-        </details>
 
         <div id="setArt">
           <div>
@@ -710,33 +852,6 @@
           </details>
         </div>
 
-        <div id="stitchBox" class="hide">
-         <details class="sec" open><summary>Density Control</summary>
-          <div class="row">
-            <div><label>Fabric</label><select id="fabric"><option value="">—</option></select></div>
-            <div><label>Machine</label><select id="machine"><option value="">—</option></select></div>
-          </div>
-          <div class="row3">
-            <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.25" max="0.6"></div>
-            <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
-            <div><label>Pull comp (mm)</label><input type="number" id="pullComp" value="0.25" step="0.05" min="0" max="1"></div>
-          </div>
-         </details>
-         <details class="sec" open><summary>Underlays</summary>
-          <div class="row3">
-            <div><label>Underlay</label>
-              <select id="underlayMode">
-                <option value="auto" selected>Auto (by width)</option>
-                <option value="light">Light</option>
-                <option value="heavy">Heavy</option>
-                <option value="none">None</option>
-              </select></div>
-            <div><label>&nbsp;</label><label class="tgl" style="margin:0;height:38px"><input type="checkbox" id="knockdown"> Knockdown</label></div>
-            <div><label>&nbsp;</label><label class="tgl" style="margin:0;height:38px"><input type="checkbox" id="capMode"> Cap frame</label></div>
-          </div>
-          <input type="hidden" id="trimDist" value="2">
-         </details>
-        </div>
 
         <details class="sec" open><summary>SVG import</summary>
         <div id="setSvg" class="hide">
@@ -769,6 +884,78 @@
 
         <button id="go" class="wide" disabled>Digitize</button>
         <button id="goLayers" class="wide ghost hide" style="margin-top:8px">✨ AI layers — edit before stitching</button>
+    <div class="card hide" id="layersCard">
+      <h2>Colour layers</h2>
+      <div id="layers"></div>
+    </div>
+  </div>
+</div>
+
+<div id="settingsPanel" class="dpanel rdock hide">
+  <div class="dhead">
+    <span class="dcrumb">Settings</span>
+    <button class="ghost mini" id="settingsClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="dbody">
+      <div class="ptitle" style="font-size:16px;font-weight:600;margin:2px 0 2px">Visibility</div>
+      <p class="pdesc">Units, grid, snapping, rulers, and stitch overlays.</p>
+      <div class="vis" id="visBox">
+        <div class="vrow"><span>Units</span><div class="seg2"><button data-unit="in" class="on">in</button><button data-unit="cm">cm</button><button data-unit="mm">mm</button></div></div>
+        <div class="vrow"><span>Grid size</span><div class="unit" style="width:120px"><input type="number" id="visGrid" value="0.5" step="0.1" min="0.05"><span id="visGridUnit">in</span></div></div>
+        <div class="vrow"><span>Show grid</span><label class="tog"><input type="checkbox" id="visShowGrid" checked><i></i></label></div>
+        <div class="vrow col"><div class="vrow" style="padding:0"><span>Snap to grid<small>Snaps drags to the fine grid.</small></span><label class="tog"><input type="checkbox" id="visSnapGrid"><i></i></label></div>
+          <div class="vrow" style="padding:8px 0 0"><span>Fine grid</span><div class="unit" style="width:120px"><input type="number" id="visFine" value="5" step="1" min="1" max="20"><span>/cell</span></div></div></div>
+        <div class="vrow"><span>Snap to objects<small>Aligns to other shapes' edges and centers.</small></span><label class="tog"><input type="checkbox" id="visSnapObj"><i></i></label></div>
+        <div class="vrow"><span>Show rulers</span><label class="tog"><input type="checkbox" id="visRulers"><i></i></label></div>
+        <div class="vsep"></div>
+        <div class="vrow"><span><i data-ic="move-right" data-size="16"></i> Show jumps</span><label class="tog"><input type="checkbox" id="visJumps"><i></i></label></div>
+        <div class="vrow"><span><i data-ic="scissors" data-size="16"></i> Show trims</span><label class="tog"><input type="checkbox" id="visTrims"><i></i></label></div>
+        <div class="vrow"><span><i data-ic="tie" data-size="16"></i> Show tie-ons</span><label class="tog"><input type="checkbox" id="visTies"><i></i></label></div>
+        <div class="vrow"><span>Show selected needle points</span><label class="tog"><input type="checkbox" id="visNeedles"><i></i></label></div>
+      </div>
+      <details class="sec" open><summary>Hoop <span class="muted" style="font-weight:500;font-size:12px;margin-left:6px">the guide on the canvas</span></summary>
+        <div>
+        <div class="row">
+          <div><label>Hoop</label><select id="hoop"></select></div>
+          <div><label>&nbsp;</label><button class="ghost mini hide" id="hoopDel" title="Remove this custom hoop">Remove saved hoop</button></div>
+        </div>
+        <div id="hoopCustom" class="row3 hide">
+          <div><label>Hoop width (mm)</label><input type="number" id="hoopW" value="100" min="20" max="1000"></div>
+          <div><label>Hoop height (mm)</label><input type="number" id="hoopH" value="100" min="20" max="1000"></div>
+          <div><label>Name</label>
+            <div style="display:flex;gap:6px"><input type="text" id="hoopName" placeholder="Left chest">
+            <button class="ghost mini" id="hoopSave">Save</button></div></div>
+        </div>
+        <p class="muted" id="hoopInfo" style="margin:6px 0 0">The canvas is the hoop; the dashed line is the sewing field.</p>
+        </div>
+      </details>
+        <div id="stitchBox">
+         <details class="sec" open><summary>Density Control</summary>
+          <div class="row">
+            <div><label>Fabric</label><select id="fabric"><option value="">—</option></select></div>
+            <div><label>Machine</label><select id="machine"><option value="">—</option></select></div>
+          </div>
+          <div class="row3">
+            <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.25" max="0.6"></div>
+            <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
+            <div><label>Pull comp (mm)</label><input type="number" id="pullComp" value="0.25" step="0.05" min="0" max="1"></div>
+          </div>
+         </details>
+         <details class="sec" open><summary>Underlays</summary>
+          <div class="row3">
+            <div><label>Underlay</label>
+              <select id="underlayMode">
+                <option value="auto" selected>Auto (by width)</option>
+                <option value="light">Light</option>
+                <option value="heavy">Heavy</option>
+                <option value="none">None</option>
+              </select></div>
+            <div><label>&nbsp;</label><label class="tgl" style="margin:0;height:38px"><input type="checkbox" id="knockdown"> Knockdown</label></div>
+            <div><label>&nbsp;</label><label class="tgl" style="margin:0;height:38px"><input type="checkbox" id="capMode"> Cap frame</label></div>
+          </div>
+          <input type="hidden" id="trimDist" value="2">
+         </details>
+        </div>
       <details class="sec"><summary>Thread brand</summary>
       <label>Thread palette</label>
       <div class="palrow">
@@ -805,10 +992,6 @@
           <div><label>Sec / trim</label><input type="number" id="rtTrimSec" value="5"></div></div>
         <p style="margin:10px 0 0;font-weight:600">≈ <span id="rtOut">7.1</span> min per piece</p>
       </details>
-    <div class="card hide" id="layersCard">
-      <h2>Colour layers</h2>
-      <div id="layers"></div>
-    </div>
   </div>
 </div>
 
@@ -1007,59 +1190,51 @@
   </div>
 </div>
 
-<div id="exportPanel" class="dpanel rdock hide">
-  <div class="dhead" id="exportDrag">
-    <span class="dcrumb">Export</span>
-    <button class="ghost mini" id="exportClose" style="margin-left:auto">✕</button>
-  </div>
-  <div class="dbody">
-    <label style="margin-top:0">Machine file</label>
-    <select id="fmt">
-      <option value="dst" selected>DST — Tajima</option>
-      <option value="pes">PES — Brother</option>
-      <option value="jef">JEF — Janome</option>
-      <option value="exp">EXP — Melco</option>
-      <option value="vp3">VP3 — Husqvarna</option>
-      <option value="xxx">XXX — Singer</option>
-      <option value="u01">U01 — Barudan</option>
-      <option value="pec">PEC — Brother</option>
-      <option value="tbf">TBF — Tajima</option>
-      <option value="csv">CSV — stitch list</option>
-      <option value="png">PNG — raster</option>
-      <option value="zip">ZIP — all formats + worksheet</option>
-    </select>
-    <div class="row">
-      <div><label>Worksheet layout</label>
-        <select id="wsLayout">
-          <option value="production" selected>Production worksheet</option>
-          <option value="classic">Classic (overview + operator)</option>
-        </select></div>
-      <div><label>Worksheet theme</label>
-        <select id="wsThemeSel"><option value="0">Default</option></select></div>
-    </div>
-    <div class="row" style="margin-top:12px">
-      <a id="dl"><button class="ghost" style="width:100%">Download</button></a>
-      <button class="ghost" id="pdf">Preview worksheet</button>
-    </div>
-    <details id="quoteBox">
-      <summary>Quote sheet (embTools) — printed on the worksheet</summary>
-      <div class="row3">
-        <div><label>Setup fee $</label><input type="number" id="qSetup" value="0" step="1"></div>
-        <div><label>$ / 1000 stitches</label><input type="number" id="qPrice" value="0" step="0.1"></div>
-        <div><label>Design name</label><input type="text" id="qName" value="design"></div>
+<div id="exportPanel" class="hide"></div>
+<div id="exportModal" class="modal hide">
+  <div class="sheet xsheet">
+    <div class="xhead"><div><b>Export design</b><p>Configure your export settings before downloading.</p></div><button class="ghost mini" id="exportClose">✕</button></div>
+    <div class="xbody">
+      <div class="xstats">
+        <div><small>Stitches</small><b id="xStitches">0</b></div><div><small>Shapes</small><b id="xShapes">0</b></div>
+        <div><small>Color changes</small><b id="xChanges">0</b></div><div><small>Dimensions</small><b id="xDims">0.00 × 0.00 in</b></div>
       </div>
-      <div class="row">
-        <div><label>Client</label><select id="qClient"><option value="">—</option></select></div>
-        <div></div>
-      </div>
-      <div class="row3">
-        <div><label>Garments qty</label><input type="number" id="qQty" value="0" step="1"></div>
-        <div><label>Garment base $</label><input type="number" id="qBase" value="0" step="0.5"></div>
-        <div><label>Markup / discount %</label>
-          <div class="row"><input type="number" id="qMarkup" value="0" step="1"><input type="number" id="qDiscount" value="0" step="1"></div>
+      <label>Filename</label>
+      <div class="row" style="grid-template-columns:1fr auto;gap:8px"><input type="text" id="qName" value="design"><span class="xext" id="xExt">.dst</span></div>
+      <div class="xrowh"><label style="margin:0">File types</label><label class="tgl" style="margin-left:auto"><input type="checkbox" id="xAll"> Export all (zip)</label></div>
+      <div class="fchips"><button class="fchip on" data-fmt="dst">.dst<small>Tajima</small></button><button class="fchip" data-fmt="pes">.pes<small>Brother</small></button><button class="fchip" data-fmt="jef">.jef<small>Janome</small></button><button class="fchip" data-fmt="exp">.exp<small>Melco</small></button><button class="fchip" data-fmt="vp3">.vp3<small>Husqvarna</small></button><button class="fchip" data-fmt="xxx">.xxx<small>Singer</small></button><button class="fchip" data-fmt="u01">.u01<small>Barudan</small></button><button class="fchip" data-fmt="pec">.pec<small>Brother</small></button><button class="fchip" data-fmt="tbf">.tbf<small>Tajima</small></button><button class="fchip" data-fmt="csv">.csv<small>stitch list</small></button><button class="fchip" data-fmt="png">.png<small>raster</small></button></div>
+      <select id="fmt" class="hide"><option value="dst" selected>dst</option></select>
+      <div class="xrowh" style="margin-top:14px"><label style="margin:0">Include</label></div>
+      <div class="xinc">
+        <div class="tglrow"><span>Worksheet PDF</span><label class="tog"><input type="checkbox" id="xSheet"><i></i></label></div>
+        <div class="row" id="xSheetOpts" style="margin-top:2px">
+          <div><label>Layout</label><select id="wsLayout"><option value="production" selected>Production worksheet</option><option value="classic">Classic (overview + operator)</option></select></div>
+          <div><label>Theme</label><select id="wsThemeSel"><option value="0">Default</option></select></div>
         </div>
+        <div class="tglrow"><span>Quote PDF</span><label class="tog"><input type="checkbox" id="xQuote"><i></i></label></div>
       </div>
-    </details>
+      <details class="xsec" open><summary><span>Origin point</span><em id="xOriginName">Center</em></summary>
+        <div class="xorig"><div><b id="xOriginTitle">Center</b><p>Sets this point as (0, 0) in the exported file.</p></div>
+          <div class="ogrid"><button data-o="tl"><i></i></button><button data-o="tc"><i></i></button><button data-o="tr"><i></i></button><button data-o="ml"><i></i></button><button data-o="c" class=on><i></i></button><button data-o="mr"><i></i></button><button data-o="bl"><i></i></button><button data-o="bc"><i></i></button><button data-o="br"><i></i></button></div></div>
+      </details>
+      <details class="xsec" id="quoteBox"><summary><span>Quote</span><em id="xQuoteTotal"></em></summary>
+        <div class="row" style="margin-top:8px">
+          <div><label>Template</label><div style="display:flex;gap:6px"><select id="qTpl"><option value="">— none —</option></select><button class="ghost mini" id="qTplSave" title="Save these prices as a template">Save</button><button class="ghost mini hide" id="qTplDel" title="Delete this template">✕</button></div></div>
+          <div><label>Client</label><select id="qClient"><option value="">—</option></select></div>
+        </div>
+        <div class="qgrid"><div><label>Setup fee</label><div class="unit"><input type="number" id="qSetup" value="0" step="1" min="0"><span>$</span></div></div><div><label>Digitizing $ / 1000 st</label><div class="unit"><input type="number" id="qPrice" value="0" step="0.1" min="0"><span>$</span></div></div><div><label>Min. digitizing</label><div class="unit"><input type="number" id="qMin" value="0" step="1" min="0"><span>$</span></div></div><div><label>Garments</label><div class="unit"><input type="number" id="qQty" value="0" step="1" min="0"><span>qty</span></div></div><div><label>Garment cost</label><div class="unit"><input type="number" id="qBase" value="0" step="0.5" min="0"><span>$</span></div></div><div><label>Markup</label><div class="unit"><input type="number" id="qMarkup" value="0" step="1" min="0"><span>%</span></div></div><div><label>Run $ / 1000 st per piece</label><div class="unit"><input type="number" id="qRun" value="0" step="0.1" min="0"><span>$</span></div></div><div><label>Per colour change</label><div class="unit"><input type="number" id="qColorFee" value="0" step="0.25" min="0"><span>$</span></div></div><div><label>Extra per piece</label><div class="unit"><input type="number" id="qExtra" value="0" step="0.25" min="0"><span>$</span></div></div><div><label>Discount</label><div class="unit"><input type="number" id="qDiscount" value="0" step="1" min="0"><span>%</span></div></div><div><label>Rush</label><div class="unit"><input type="number" id="qRush" value="0" step="1" min="0"><span>%</span></div></div><div><label>Tax</label><div class="unit"><input type="number" id="qTax" value="0" step="0.25" min="0"><span>%</span></div></div></div>
+        <label>Notes on the quote</label><textarea id="qNotes" rows="2" placeholder="Turnaround, terms…"></textarea>
+        <div class="qcalc" id="qCalc"></div>
+        <div class="row" style="margin-top:8px"><button class="ghost mini" id="qPreview">Preview quote PDF</button><span></span></div>
+      </details>
+    </div>
+    <div class="xfoot">
+      <button class="ghost" id="pdf">Preview worksheet</button>
+      <span style="flex:1"></span>
+      <button class="ghost" id="xCancel">Cancel</button>
+      <a id="dl" class="hide"></a>
+      <button id="xExport"><i data-ic="download" data-size="18"></i> Export</button>
+    </div>
   </div>
 </div>
 
@@ -1124,9 +1299,7 @@
   <!-- thread colour editor view -->
   <div class="dbody hide" id="dpThreads">
     <div id="dpBlocks"></div>
-    <label>Brand</label>
-    <select id="dpBrand"></select>
-    <div class="swgrid" id="dpSwatches"></div>
+    <div class="hide"><select id="dpBrand"></select><div class="swgrid" id="dpSwatches"></div></div>
     <p class="muted" id="dpSwatchHint" style="margin:8px 0 0"></p>
   </div>
   <div class="dpfoot hide" id="dpFoot">
@@ -1351,6 +1524,9 @@ function hoopChanged() {
   $('hoopDel').classList.toggle('hide', !v.startsWith('c:'));
   if (v !== 'custom') lsSet('hoop', v);
   sizeChanged('width');
+  vecViewInit = false;
+  if (cctx && curMode === 'vector') { vecEnsureView(); drawFrame(); }
+  if (typeof renderInfo === 'function') renderInfo();
 }
 $('hoop').onchange = hoopChanged;
 ['hoopW', 'hoopH'].forEach(id => $(id).oninput = () => sizeChanged('width'));
@@ -1385,7 +1561,18 @@ function sizeChanged(from) {
     (fits ? `<span style="color:var(--ok)">fits ${hp.name}</span>`
           : `<span style="color:var(--warn)">too big for ${hp.name} by ${Math.max(w - hp.w, h - hp.h).toFixed(0)} mm</span>`);
   if (layoutActive) drawLayout();
+  if (window._fKind === 'image' && imgSel !== null && imgLayers[imgSel]) {
+    const L = imgLayers[imgSel]; L.w = w;
+    L.x = Math.min(Math.max(L.x, -w * 0.5), hp.w - w * 0.5);
+    renderImgList();
+    if (cctx && curMode === 'vector') drawFrame();
+  }
 }
+$('centerHoop').onclick = () => {
+  const L = imgSel !== null ? imgLayers[imgSel] : null; if (!L) return;
+  const hp = hoopDims(); L.x = (hp.w - L.w) / 2; L.y = (hp.h - L.w / L.aspect) / 2;
+  if (cctx) drawFrame();
+};
 $('width').oninput = () => sizeChanged('width');
 $('height').oninput = () => sizeChanged('height');
 $('scalePct').oninput = () => sizeChanged('scale');
@@ -1416,6 +1603,13 @@ async function setArt(f, kind) {
     w_mm = 90; h_mm = 90 * im.naturalHeight / Math.max(1, im.naturalWidth);
   }
   art = { w_mm, h_mm, aspect: w_mm / Math.max(h_mm, 1e-6), src };
+  if (kind === 'image') {                 // images live on the hoop as layers, no layout view
+    layoutActive = false;
+    const L = imgSel !== null ? imgLayers[imgSel] : null;
+    $('width').value = fmt(L ? L.w : w_mm);
+    sizeChanged('width');
+    return;
+  }
   $('width').value = fmt(w_mm);
   layoutActive = true;
   sizeChanged('width');
@@ -1497,7 +1691,6 @@ function modeChanged() {
   $('setDigitize').classList.toggle('hide', sk);
   $('setSketch').classList.toggle('hide', !sk);
   $('colorsWrap').classList.toggle('hide', sk);
-  $('stitchBox').classList.toggle('hide', sk || window._fKind === 'machine' || !window._fKind);
   $('goLayers').classList.toggle('hide', sk || window._fKind !== 'image');
   $('layersCard').classList.toggle('hide', sk || window._fKind !== 'image');
   $('go').textContent = goLabel(window._fKind);
@@ -1510,9 +1703,59 @@ $('drop').ondragover = e => { e.preventDefault(); };
 $('drop').ondrop = e => { e.preventDefault(); pickMany(e.dataTransfer.files); };
 $('file').onchange = e => { pickMany(e.target.files); e.target.value = ''; };
 // several files are combined only when they're all SVGs (positions kept)
+/* ---- reference images: each one is its own layer on the hoop */
+let imgLayers = [], imgSel = null, imgN = 0, hoopVisible = true;
+async function addImageLayer(f) {
+  const url = URL.createObjectURL(f);
+  const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = url; });
+  const hp = hoopDims(), aspect = img.naturalWidth / Math.max(1, img.naturalHeight);
+  const w = Math.min(hp.w * 0.8, hp.h * 0.8 * aspect);
+  const L = { id: ++imgN, name: f.name, file: f, img, url, aspect, w, x: (hp.w - w) / 2, y: (hp.h - w / aspect) / 2, opacity: 1, visible: true };
+  imgLayers.push(L);
+  if (curMode !== 'vector') setMode('vector');
+  await selectImage(imgLayers.length - 1);
+  drawFrame();
+}
+async function selectImage(i) {
+  imgSel = i;
+  renderImgList();
+  const L = imgLayers[i];
+  if (!L) return;
+  await pick(L.file);
+  $('width').value = fmt(L.w); sizeChanged('width');
+}
+function removeImage(i) {
+  imgLayers.splice(i, 1);
+  imgSel = imgLayers.length ? Math.min(i, imgLayers.length - 1) : null;
+  renderImgList();
+  if (imgSel !== null) selectImage(imgSel); else { window._f = null; window._fKind = null; $('sizeBox').classList.add('hide'); $('setArt').classList.add('hide'); $('stitchTypeBox').classList.add('hide'); $('go').disabled = true; $('goLayers').classList.add('hide'); $('thumb').classList.add('hide'); $('dropText').classList.remove('hide'); }
+  if (cctx) drawFrame();
+}
+function renderImgList() {
+  $('imgList').innerHTML = imgLayers.map((L, i) =>
+    `<div class="irow ${i === imgSel ? 'sel' : ''} ${L.visible ? '' : 'off'}" data-i="${i}">
+      <span class="grip">${icon('grip', 16)}</span>
+      <img src="${L.url}" alt="">
+      <div class="imeta"><div class="iname">${escH(L.name.replace(/\.[^.]+$/, ''))}</div><div class="isub">${escH((L.name.split('.').pop() || '').toLowerCase())} · ${fmt(L.w)} × ${fmt(L.w / L.aspect)} mm</div></div>
+      <div class="lside"><span class="lnum">${i + 1}</span><button class="lgear" data-gear="${i}" title="Image settings">${icon('settings', 18)}</button></div></div>`).join('');
+  document.querySelectorAll('#imgList .irow').forEach(el => el.onclick = e => { if (e.target.closest('button,input')) return; selectImage(+el.dataset.i); });
+  document.querySelectorAll('#imgList [data-gear]').forEach(b => b.onclick = e => { e.stopPropagation(); selectImage(+b.dataset.gear).then(() => { $('sizeSec').open = true; $('sizeSec').scrollIntoView({ block: 'nearest' }); }); });
+}
+$('uploadImg').onclick = () => $('file').click();
+function imgHit(w) {
+  // w: world px -> the topmost visible image under it
+  for (let i = imgLayers.length - 1; i >= 0; i--) {
+    const L = imgLayers[i]; if (!L.visible) continue;
+    const x0 = L.x * PXMM, y0 = L.y * PXMM, x1 = x0 + L.w * PXMM, y1 = y0 + L.w / L.aspect * PXMM;
+    if (w[0] >= x0 && w[0] <= x1 && w[1] >= y0 && w[1] <= y1) return i;
+  }
+  return null;
+}
 function pickMany(list) {
   const files = Array.from(list || []);
   if (!files.length) return;
+  const imgs = files.filter(f => classify(f) === 'image');
+  if (imgs.length) { (async () => { for (const f of imgs) await addImageLayer(f); })(); return; }
   const svgs = files.filter(f => classify(f) === 'svg');
   window._files = svgs.length > 1 && svgs.length === files.length ? svgs : [files[0]];
   if (files.length > 1 && window._files.length === 1)
@@ -1529,7 +1772,6 @@ async function pick(f) {
   $('setArt').classList.toggle('hide', kind !== 'image');
   $('setSvg').classList.toggle('hide', kind !== 'svg');
   $('sizeBox').classList.toggle('hide', kind === 'machine');
-  $('stitchBox').classList.toggle('hide', kind === 'machine' || isSketch());
   if (kind !== 'machine') setArt(f, kind);
   $('importName').textContent = kind === 'image' ? ''
     : window._files.length > 1 ? `${window._files.length} SVGs: ` + window._files.map(x => x.name).join(', ')
@@ -1722,22 +1964,26 @@ function renderThreads() {
 }
 
 $('fmt').onchange = updateDl;
-['qSetup','qPrice','qName','qQty','qBase','qMarkup','qDiscount','qClient','wsThemeSel','wsLayout'].forEach(id => $(id).onchange = updateDl);
+['qSetup','qPrice','qMin','qName','qQty','qBase','qMarkup','qRun','qColorFee','qExtra','qDiscount','qRush','qTax','qNotes','qClient','wsThemeSel','wsLayout'].forEach(id => $(id).onchange = updateDl);
 let wsUrl = '';
+function quoteParams() {
+  return { setup: +$('qSetup').value || 0, price_per_1000: +$('qPrice').value || 0, min_digitizing: +$('qMin').value || 0,
+    garment_qty: +$('qQty').value || 0, garment_base: +$('qBase').value || 0, markup_pct: +$('qMarkup').value || 0,
+    run_per_1000: +$('qRun').value || 0, colour_fee: +$('qColorFee').value || 0, extra_per_piece: +$('qExtra').value || 0,
+    discount_pct: +$('qDiscount').value || 0, rush_pct: +$('qRush').value || 0, tax_pct: +$('qTax').value || 0 };
+}
+function exportQuery(extra) {
+  const q = new URLSearchParams({ name: $('qName').value || 'design', palette: $('palette').value, client: $('qClient').value,
+    wtheme: $('wsThemeSel').value || '0', layout: $('wsLayout').value, notes: $('qNotes').value });
+  Object.entries(quoteParams()).forEach(([k, v]) => q.set(k, v));
+  Object.entries(extra || {}).forEach(([k, v]) => q.set(k, v));
+  return q;
+}
 function updateDl() {
   if (!job) return;
-  $('dl').href = `/api/download/${job}?fmt=${$('fmt').value}`;
-  const q = new URLSearchParams({
-    name: $('qName').value || 'design', palette: $('palette').value,
-    client: $('qClient').value,
-    setup: $('qSetup').value, price_per_1000: $('qPrice').value,
-    garment_qty: $('qQty').value, garment_base: $('qBase').value,
-    markup_pct: $('qMarkup').value, discount_pct: $('qDiscount').value,
-  });
-  q.set('wtheme', $('wsThemeSel').value || '0');
-  q.set('layout', $('wsLayout').value);
-  wsUrl = `/api/worksheet/${job}.pdf?` + q;
+  wsUrl = `/api/worksheet/${job}.pdf?` + exportQuery();
   $('pdfTop').disabled = false;
+  if (typeof renderQuote === 'function') renderQuote();
 }
 
 /* worksheet preview modal — renders the PDF inline before downloading */
@@ -2437,13 +2683,17 @@ $('goLayers').onclick = async () => {
     const res = await fetch('/api/vectorize', { method: 'POST', body: fd });
     if (!res.ok) throw new Error((await res.json()).detail);
     const d = await res.json();
-    vecLayers = d.layers; vecSel = null; vecViewInit = false; vecPathCache = null;
+    const I = imgSel !== null ? imgLayers[imgSel] : null;
+    const fresh = d.layers.map(L => ({ ...L, id: Date.now() + Math.random() }));
+    if (I) { fresh.forEach(L => transformObj(L, p => [p[0] + I.x, p[1] + I.y])); I.opacity = 0.3; renderImgList(); }
+    vecLayers = vecLayers.concat(fresh); vecSel = null; vecPathCache = null; vecRev++;
     vecImageJob = d.image_job; vecAI = d.ai_names_available;
     $('vecNames').classList.toggle('hide', !vecAI);
     $('vecNameStatus').textContent = '';
     openDock('layersPanel');
     renderVecList();
     setMode('vector');
+    autoStitchSoon();
     if (vecAI) nameLayersAI();          // semantic names arrive in the background
   } catch (err) { alert(err.message); }
   b.disabled = false; b.textContent = '✨ AI layers — edit before stitching';
@@ -2476,7 +2726,8 @@ function vecEnsureView() {
     if (x < mx) mx = x; if (x > Mx) Mx = x;
     if (y < my) my = y; if (y > My) My = y;
   });
-  if (mx > Mx) { const hp = hoopDims(); mx = 0; my = 0; Mx = hp.w * PXMM; My = hp.h * PXMM; }
+  const hp = hoopDims();
+  mx = Math.min(mx, 0); my = Math.min(my, 0); Mx = Math.max(Mx, hp.w * PXMM); My = Math.max(My, hp.h * PXMM);
   const w = Math.max(Mx - mx, 1), h = Math.max(My - my, 1);
   view.s = Math.min(cnv._w / (w * 1.12), cnv._h / (h * 1.12));
   view.fit = view.s;
@@ -2486,18 +2737,43 @@ function vecEnsureView() {
 function drawVectorLayers() {
   const paths = vecPaths();
   const hp = hoopDims();
-  // the hoop, as a dashed frame
-  cctx.save();
-  cctx.setLineDash([8 / view.s, 6 / view.s]); cctx.lineWidth = 1.5 / view.s; cctx.strokeStyle = 'rgba(255,255,255,.55)';
-  cctx.strokeRect(0, 0, hp.w * PXMM, hp.h * PXMM);
-  cctx.restore();
+  drawGridRulers();
+  if (hoopVisible) {
+    // the hoop is the canvas: a rounded frame, the sewing field dashed 3 mm inside, its name below
+    const W = hp.w * PXMM, H = hp.h * PXMM, rad = Math.min(W, H) * 0.06, m = 3 * PXMM;
+    cctx.save();
+    cctx.fillStyle = 'rgba(255,255,255,.07)'; cctx.beginPath(); cctx.roundRect(0, 0, W, H, rad); cctx.fill();
+    cctx.lineWidth = 2 / view.s; cctx.strokeStyle = 'rgba(255,255,255,.55)'; cctx.stroke();
+    cctx.setLineDash([8 / view.s, 6 / view.s]); cctx.lineWidth = 1 / view.s; cctx.strokeStyle = 'rgba(255,255,255,.35)';
+    cctx.strokeRect(m, m, W - 2 * m, H - 2 * m);
+    cctx.setLineDash([]);
+    cctx.fillStyle = 'rgba(255,255,255,.6)'; cctx.font = `${12 / view.s}px Inter, system-ui, sans-serif`; cctx.textAlign = 'center';
+    cctx.fillText(`${hp.name} · ${hp.w} × ${hp.h} mm`, W / 2, H + 18 / view.s);
+    cctx.restore();
+  }
+  imgLayers.forEach((L, i) => {
+    if (!L.visible) return;
+    const x = L.x * PXMM, y = L.y * PXMM, w = L.w * PXMM, h = L.w / L.aspect * PXMM;
+    cctx.save(); cctx.globalAlpha = L.opacity; cctx.drawImage(L.img, x, y, w, h); cctx.restore();
+    if (i === imgSel && vecSel === null) {
+      cctx.save(); cctx.lineWidth = 1.5 / view.s; cctx.strokeStyle = '#3b82f6';
+      cctx.strokeRect(x, y, w, h);
+      const hs = 9 / view.s;
+      [[x, y], [x + w, y], [x, y + h], [x + w, y + h]].forEach(([hx, hy]) => { cctx.fillStyle = '#fff'; cctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs); cctx.strokeRect(hx - hs / 2, hy - hs / 2, hs, hs); });
+      cctx.restore();
+    }
+  });
   // fresh stitches stand in for the flat shapes; while a shape is being
   // dragged (or until the re-stitch lands) the flat shapes show instead
   const stitched = vecStitched && playerData && !vecDrag && vecStitched.rev === vecRev;
-  if (stitched) drawRuns(playerData, blockColor, vecStitched.origin);
+  if (stitched) {
+    if (playerOpen) drawRuns(playerData, blockColor, vecStitched.origin, pbN);
+    else drawRuns(playerData, blockColor, vecStitched.origin);
+    drawOverlays(playerData, vecStitched.origin, playerOpen ? pbN : undefined);
+  }
   vecLayers.forEach((L, i) => {
     if (!L.visible || stitched) return;
-    cctx.globalAlpha = 0.92;
+    cctx.globalAlpha = 0.92 * (L.alpha === undefined ? 1 : L.alpha);
     cctx.fillStyle = L.color;
     if ((L.polys || []).length) {
       const st = L.params && L.params.stitch;
@@ -2507,6 +2783,14 @@ function drawVectorLayers() {
         if (DEC.includes(st)) { cctx.globalAlpha = 0.35; cctx.lineWidth = (L.params.width_mm || 3) * PXMM; cctx.stroke(paths[i]); cctx.globalAlpha = 0.92; }
         cctx.lineWidth = (st === 'outline' ? (L.params.border_mm || 1) : st === 'bean' ? 0.9 : 0.5) * PXMM;
         cctx.stroke(paths[i]);
+      } else if (L.params && L.params.gradient) {
+        const bb = vecBBox(L);
+        const a = ((L.params.angle === 'auto' || L.params.angle === undefined ? 0 : +L.params.angle) + 90) * Math.PI / 180;
+        const cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2, r = Math.hypot(bb.x1 - bb.x0, bb.y1 - bb.y0) / 2;
+        const g = cctx.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        const [c0, c1] = L.params.gradient_flip ? ['40', 'ff'] : ['ff', '40'];
+        g.addColorStop(0, L.color + c0); g.addColorStop(1, L.color + c1);
+        cctx.fillStyle = g; cctx.fill(paths[i], 'evenodd'); cctx.fillStyle = L.color;
       } else cctx.fill(paths[i], 'evenodd');
     }
     for (const ln of (L.lines || [])) {
@@ -2577,6 +2861,7 @@ function vecPick(el, e) {
   cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
   const hit = vecHitTest(dx, dy);
   vecSel = hit;
+  if (hit === null) { const ih = imgHit(worldPos(el, e)); if (ih !== null && ih !== imgSel) selectImage(ih); }
   if (hit !== null && !vecLayers[hit].drawn) openDock('layersPanel');
   renderVecList(); drawFrame(); syncObjBox();
   if (hit !== null) revealObjBox();
@@ -2692,7 +2977,7 @@ $('vecNames').onclick = nameLayersAI;
 
 /* The shapes are stitched as you work: every change re-sews the design
    (debounced) and the editor shows the real stitches over the shapes. */
-let autoSig = '', autoBusy = false, autoDirty = false, autoTimer = null, vecStitched = null;
+let autoSig = '', autoBusy = false, autoDirty = false, autoTimer = null, vecStitched = null, vecCounts = {};
 function autoStitchSoon() { clearTimeout(autoTimer); autoTimer = setTimeout(() => autoStitch(), 450); }
 function stitchStatus(t) { $('viewerHint').textContent = t; }
 async function autoStitch(force) {
@@ -2713,6 +2998,7 @@ async function autoStitch(force) {
     if (keep === 'vector' || keep === 'digitize') setMode(keep);
     await loadStitches();
     vecStitched = { rev, origin: [(d.origin_mm || [0, 0])[0] * PXMM, (d.origin_mm || [0, 0])[1] * PXMM] };
+    vecCounts = d.counts || {}; renderVecList(); if (!$('propsPanel').classList.contains('hide')) renderProps();
     stitchStatus('');
     if (cctx) drawFrame();
     if (typeof renderSeq === 'function' && !$('seqPanel').classList.contains('hide')) renderSeq();
@@ -2723,18 +3009,24 @@ async function autoStitch(force) {
 }
 $('vecStitch').onclick = () => autoStitch(true);
 async function stitchNow() { await autoStitch(); if (job) setMode('realistic'); }
-function drawRuns(data, colorAt, origin) {
-  // the stitched design, thread by thread, in the editor's coordinates
+function drawRuns(data, colorAt, origin, upto) {
+  // the stitched design, thread by thread, in the editor's coordinates;
+  // `upto` plays it up to that stitch
   const dpr = cnv._dpr, W = 1.8;
+  if (upto !== undefined) {
+    let left = upto; const cut = [];
+    for (const b of data) { const runs = []; for (const r of b.runs) { if (left <= 0) break; const take = Math.min(r.length, Math.ceil(left)); if (take >= 2) runs.push(r.slice(0, take)); left -= r.length; } cut.push({ ...b, runs }); }
+    data = cut.filter(b => b.runs.length);
+    if (!data.length) return;
+  }
   cctx.save();
   cctx.translate(origin[0], origin[1]);
-  const useSprites = view.s >= 1.15;
+  const useSprites = realisticOn && view.s >= 1.15;
   cctx.lineCap = 'round'; cctx.lineJoin = 'round';
   const all = new Path2D();
   data.forEach(b => b.runs.forEach(r => { all.moveTo(r[0][0], r[0][1]); for (let i = 1; i < r.length; i++) all.lineTo(r[i][0], r[i][1]); }));
-  cctx.save(); cctx.translate(0.5 / view.s, 0.7 / view.s);
-  cctx.strokeStyle = 'rgba(0,0,0,.30)'; cctx.lineWidth = W * 1.5; cctx.stroke(all);   // drop shadow
-  cctx.restore();
+  if (realisticOn) { cctx.save(); cctx.translate(0.5 / view.s, 0.7 / view.s);
+    cctx.strokeStyle = 'rgba(0,0,0,.30)'; cctx.lineWidth = W * 1.5; cctx.stroke(all); cctx.restore(); }   // drop shadow
   if (useSprites) {
     const a = view.s * dpr;
     for (let bi = 0; bi < data.length; bi++) {
@@ -2754,6 +3046,7 @@ function drawRuns(data, colorAt, origin) {
     for (let bi = 0; bi < data.length; bi++) {
       const col = colorAt(bi), paths = new Path2D();
       data[bi].runs.forEach(r => { paths.moveTo(r[0][0], r[0][1]); for (let i = 1; i < r.length; i++) paths.lineTo(r[i][0], r[i][1]); });
+      if (!realisticOn) { cctx.strokeStyle = col; cctx.lineWidth = 0.9 / view.s; cctx.stroke(paths); continue; }   // plan view
       cctx.strokeStyle = shade(col, 0.55); cctx.lineWidth = W; cctx.stroke(paths);
       cctx.save(); cctx.translate(-W * 0.10, -W * 0.16);
       cctx.strokeStyle = col; cctx.lineWidth = W * 0.62; cctx.stroke(paths);
@@ -2788,7 +3081,6 @@ function makeDraggable(panel, handle) {
   });
 }
 makeDraggable($('detailsPanel'), $('detailsDrag'));
-makeDraggable($('exportPanel'), $('exportDrag'));
 makeDraggable($('textPanel'), $('textDrag'));
 $('textBtn').onclick = () => {
   const p = $('textPanel');
@@ -2800,9 +3092,9 @@ $('textBtn').onclick = () => {
 };
 $('textClose').onclick = () => $('textPanel').classList.add('hide');
 $('detailsBtn').onclick = () => { if (toggleDock('detailsPanel')) renderInfo(); };
-$('exportBtn').onclick = () => toggleDock('exportPanel');
+$('exportBtn').onclick = () => openExport();
 $('detailsClose').onclick = () => $('detailsPanel').classList.add('hide');
-$('exportClose').onclick = () => $('exportPanel').classList.add('hide');
+$('exportClose').onclick = () => $('exportModal').classList.add('hide');
 $('dpClose').onclick = () => $('designPanel').classList.add('hide');
 
 /* --------------------------- Design panel: themes + thread recolouring */
@@ -3144,6 +3436,17 @@ const ICONS = {
   'arrow-down-line': '<path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/>',
   'chevron-up': '<path d="m18 15-6-6-6 6"/>',
   'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  'arrow-left': '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  move: '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',
+  sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/>',
+  upload: '<path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>',
+  gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  pause: '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>',
+  'move-right': '<path d="M18 8L22 12L18 16"/><path d="M2 12H22"/>',
+  scissors: '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
+  'tie': '<path d="M12 2v6"/><path d="M8 8h8"/><path d="M12 8c-3 3-3 9 0 14"/><path d="M12 8c3 3 3 9 0 14"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  'eye-off': '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>',
   copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   grip: '<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>',
@@ -3179,9 +3482,6 @@ function syncToolbar() {
       (id === 'design' && !$('designPanel').classList.contains('hide')) ||
       (id === 'text' && !$('textPanel').classList.contains('hide')));
   });
-  const goB = document.querySelector('[data-tool="go"]');
-  goB.disabled = vecLayers.length ? false : $('go').disabled;
-  goB.title = $('go').textContent.trim() || 'Stitch it';
 }
 const _setMode = setMode;
 setMode = function (m) { _setMode(m); syncToolbar(); updateZoomLabel(); };
@@ -3194,7 +3494,7 @@ const RAIL = [
   { id: 'art', ic: 'image', title: 'Artwork — import a file', act: () => toggleDock('artPanel') },
   null,
   { id: 'colors', ic: 'palette', title: 'Colors', act: () => { if (toggleDock('colorsPanel')) openColors(); } },
-  { id: 'settings', ic: 'sliders', title: 'Show / hide the settings panel', act: () => { $('leftPanel').classList.toggle('hide'); $('reopenPanel').classList.toggle('hide', !$('leftPanel').classList.contains('hide')); } },
+  { id: 'settings', ic: 'sliders', title: 'Settings — hoop, fabric & machine, stitch defaults, thread brand', act: () => toggleDock('settingsPanel') },
   { id: 'info', ic: 'info', title: 'Project info', act: () => { if (toggleDock('detailsPanel')) renderInfo(); } },
 ];
 $('reopenPanel').innerHTML = icon('sliders', 21);
@@ -3239,13 +3539,14 @@ $('hIn').onchange = () => { if (!art) return; $('height').value = fmt(+$('hIn').
 const _sizeChanged = sizeChanged;
 sizeChanged = function (from) { _sizeChanged(from); syncTopSize(); };
 $('fitBtn').onclick = () => {
-  if (cnv && bounds) { fitView(); drawFrame(); }
+  if (cnv && curMode === 'vector') { vecViewInit = false; vecEnsureView(); drawFrame(); }
+  else if (cnv && bounds) { fitView(); drawFrame(); }
   else if (canvas && curMode === 'plan') { loadPlanSvg(); }
   else if (curMode === 'photo') { imgZoom = 1; $('preview').style.setProperty('--imgz', 1); }
   updateZoomLabel();
 };
 $('hoopBtn').onclick = () => {
-  if (!art) return;
+  if (curMode === 'vector' || !art) { hoopVisible = !hoopVisible; $('hoopBtn').classList.toggle('on', hoopVisible); if (cctx) drawFrame(); return; }
   if (layoutActive) { layoutActive = false; if (job) setMode(curMode || 'photo'); else { clearSvg(); $('stageEmpty').classList.remove('hide'); } }
   else { layoutActive = true; drawLayout(); }
   syncTopSize();
@@ -3363,9 +3664,9 @@ function renderBlocks() {
   document.querySelectorAll('#dpBlocks .lrow').forEach((el, i) => {
     drawBlockThumb(el.querySelector('canvas'), playerData[i], blockColor(i));
     el.onclick = () => { selBlock = i; renderBlocks(); };
-    el.querySelector('.lgear').onclick = e => { e.stopPropagation(); selBlock = i; renderBlocks(); $('dpSwatches').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+    el.querySelector('.lgear').onclick = e => { e.stopPropagation(); selBlock = i; renderBlocks(); openDock('colorsPanel'); openColors(); };
   });
-  $('dpSwatchHint').textContent = selBlock === null ? 'Pick a block, then a swatch' : `Block ${selBlock + 1}`;
+  $('dpSwatchHint').textContent = selBlock === null ? 'Pick a block; its gear opens the thread library' : `Block ${selBlock + 1} — pick a thread in Colors`;
 }
 syncStitchType(); syncTopSize(); syncDesignName(); syncHist(); syncToolbar();
 
@@ -3447,7 +3748,9 @@ const RUNS = ['run', 'bean', 'satin', 'estitch', 'triangle', 'cross', 'motif'];
 const DECOR = ['estitch', 'triangle', 'cross', 'motif'];
 const objDef = { color: '#1A3B69', filled: true, run: 'run', pattern: 'tatami', angle: 'auto', density: 0.4, satinDensity: 0.32,
   border: true, width: 3, runLen: 2.5, stitchLen: 3.5, pull: 0.25, hand: 0, underpath: true, rowShort: true, trigger: 0.5,
-  underlay: 'auto', split: true, splitMax: 7, stagger: true, cycles: 4, amount: 0.3 };
+  underlay: 'auto', split: true, splitMax: 7, stagger: true, cycles: 4, amount: 0.3, gradient: false, gradTo: 1.5, gradFlip: false,
+  shortFrac: 0.45, underlays: null };
+const UL_DEFAULT = { auto: [{ type: 'contour', len_mm: 1.5 }, { type: 'center', len_mm: 2.5 }], light: [{ type: 'contour', len_mm: 1.5 }], heavy: [{ type: 'contour', len_mm: 1.5 }, { type: 'zigzag', len_mm: 3 }], none: [] };
 const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
 function readObjBox() {
   const d = objDef;
@@ -3465,6 +3768,8 @@ function readObjBox() {
   d.underlay = $('objUnderlay').value;
   d.split = $('objSplit').checked; d.splitMax = num('objSplitMax', 7); d.stagger = $('objStagger').checked;
   d.cycles = Math.round(num('objCycles', 4)); d.amount = num('objAmount', 0.3);
+  d.gradient = $('objGradient').checked; d.gradTo = num('objGradTo', 1.5); d.gradFlip = $('objGradFlip').checked;
+  d.shortFrac = num('objShortFrac', 0.45);
 }
 function paramsFor(L) {
   const isLine = !(L.polys || []).length;
@@ -3477,10 +3782,16 @@ function paramsFor(L) {
   return { stitch, fill_method: d.pattern, angle: d.angle, density: satin ? d.satinDensity : d.density, border_mm: 1.0,
     width_mm: d.width, run_len_mm: d.runLen, stitch_len_mm: d.stitchLen, pull_comp_mm: d.pull, hand: d.hand,
     underpath: d.underpath, row_short: d.rowShort, density_trigger: d.trigger, underlay: d.underlay,
-    split: d.split, split_max_mm: d.splitMax, stagger: d.stagger, cycles: d.cycles, amount_mm: d.amount };
+    split: d.split, split_max_mm: d.splitMax, stagger: d.stagger, cycles: d.cycles, amount_mm: d.amount,
+    gradient: d.gradient, gradient_to_mm: d.gradTo, gradient_flip: d.gradFlip, short_frac: d.shortFrac,
+    underlays: d.underlays ? d.underlays.map(u => ({ ...u })) : undefined,
+    tie_on: L.params && L.params.tie_on !== undefined ? L.params.tie_on : true,
+    tie_off: L.params && L.params.tie_off !== undefined ? L.params.tie_off : true,
+    trim_after: !!(L.params && L.params.trim_after), speed: (L.params && L.params.speed) || '' };
 }
 function applyObjBox() {
-  readObjBox();
+  const keepUL = objDef.underlays;
+  readObjBox(); objDef.underlays = keepUL;
   if (curMode === 'vector' && vecSel !== null && vecLayers[vecSel]) {
     vecSnapshot();
     const L = vecLayers[vecSel];
@@ -3509,8 +3820,8 @@ function syncObjBox() {
   const L = on && vecSel !== null ? vecLayers[vecSel] : null;
   if (on) {
     const bb = L ? vecBBox(L) : null;
-    $('wIn').value = bb ? ((bb.x1 - bb.x0) / PXMM / 25.4).toFixed(2) : '';
-    $('hIn').value = bb ? ((bb.y1 - bb.y0) / PXMM / 25.4).toFixed(2) : '';
+    $('wIn').value = bb ? fmtUnit((bb.x1 - bb.x0) / PXMM) : '';
+    $('hIn').value = bb ? fmtUnit((bb.y1 - bb.y0) / PXMM) : '';
     $('wIn').readOnly = $('hIn').readOnly = true;
   }
   if (!on) return;
@@ -3532,6 +3843,9 @@ function syncObjBox() {
     d.underlay = p.underlay || 'auto';
     d.split = p.split !== false; d.splitMax = p.split_max_mm || 7; d.stagger = p.stagger !== false;
     d.cycles = p.cycles || 4; d.amount = p.amount_mm === undefined ? 0.3 : p.amount_mm;
+    d.gradient = !!p.gradient; d.gradTo = p.gradient_to_mm || 1.5; d.gradFlip = !!p.gradient_flip;
+    d.shortFrac = p.short_frac === undefined ? 0.45 : p.short_frac;
+    d.underlays = Array.isArray(p.underlays) ? p.underlays.map(u => ({ ...u })) : null;
   }
   $('objColor').value = d.color.toLowerCase();
   $('objFilled').classList.toggle('on', d.filled);
@@ -3558,11 +3872,14 @@ function syncObjBox() {
   $('objUnderpath').checked = d.underpath; $('objRowShort').checked = d.rowShort;
   $('objTrigger').value = d.trigger; $('objTriggerV').textContent = (+d.trigger).toFixed(2);
   $('objUnderlay').value = d.underlay;
-  const [n, info] = underlayInfo(d, isLine);
-  $('objUnderN').textContent = `(${n})`; $('objUnderInfo').textContent = info;
+  $('objShortFrac').value = d.shortFrac; $('objShortFracV').textContent = (+d.shortFrac).toFixed(2);
+  $('objTriggerV').textContent = Math.round(d.trigger * 100) + '%';
+  renderUnderlays(d, isLine);
   $('objSplit').checked = d.split; $('objSplitMax').value = d.splitMax; $('objStagger').checked = d.stagger;
   $('objCycles').value = d.cycles; $('objAmount').value = d.amount;
   ['objSplitMax', 'objStagger', 'objCycles', 'objAmount'].forEach(id => $(id).disabled = !d.split);
+  $('objGradient').checked = d.gradient; $('objGradTo').value = d.gradTo; $('objGradFlip').checked = d.gradFlip;
+  $('gradRow').classList.toggle('hide', !d.gradient);
   $('objDup').disabled = $('objDel').disabled = !L;
 }
 $('objFilled').onclick = () => { if ($('objFilled').disabled) return; objDef.filled = true; $('objFilled').classList.add('on'); $('objOutlined').classList.remove('on'); applyObjBox(); syncObjBox(); };
@@ -3570,12 +3887,48 @@ $('objOutlined').onclick = () => { objDef.filled = false; $('objOutlined').class
 document.querySelectorAll('.runtypes button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.runtypes button').forEach(x => x.classList.toggle('on', x === b)); applyObjBox(); syncObjBox();
 });
-['objColor', 'objPattern', 'objAngle', 'objDensity', 'objSatinDensity', 'objBorder', 'objWidth', 'objDecorWidth', 'objRunLen', 'objStitchLen',
+['objPattern', 'objAngle', 'objDensity', 'objSatinDensity', 'objBorder', 'objWidth', 'objDecorWidth', 'objRunLen', 'objStitchLen',
  'objPull', 'objPullRun', 'objHand', 'objHandRun', 'objUnderpath', 'objRowShort', 'objTrigger', 'objUnderlay',
- 'objSplit', 'objSplitMax', 'objStagger', 'objCycles', 'objAmount'].forEach(id => $(id).onchange = () => { applyObjBox(); syncObjBox(); });
+ 'objSplit', 'objSplitMax', 'objStagger', 'objCycles', 'objAmount', 'objGradient', 'objGradTo', 'objGradFlip'].forEach(id => $(id).onchange = () => { applyObjBox(); syncObjBox(); });
 $('objHand').oninput = () => { $('objHandV').textContent = $('objHand').value; };
 $('objHandRun').oninput = () => { $('objHandRunV').textContent = $('objHandRun').value; };
-$('objTrigger').oninput = () => { $('objTriggerV').textContent = (+$('objTrigger').value).toFixed(2); };
+$('objTrigger').oninput = () => { $('objTriggerV').textContent = Math.round(+$('objTrigger').value * 100) + '%'; };
+$('objShortFrac').oninput = () => { $('objShortFracV').textContent = (+$('objShortFrac').value).toFixed(2); };
+$('objShortFrac').onchange = () => { applyObjBox(); syncObjBox(); };
+/* underlay list: the engine's automatic set until it is customised */
+const UL_ICON = { center: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12H2M10 12H8M16 12h-2M22 12h-2"/></svg>',
+  contour: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="12" x="2" y="6" rx="2"/></svg>',
+  zigzag: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 17l3.5-10L9 17l3-10 3.5 10 3-10L22 17"/></svg>' };
+function ulEffective(d, isLine) {
+  if (d.underlays) return d.underlays;
+  const satin = !d.filled || isLine;
+  if (d.underlay === 'none') return [];
+  if (d.underlay === 'light') return satin ? [{ type: 'center', len_mm: 2.5 }] : [{ type: 'contour', len_mm: 2.5 }];
+  if (d.underlay === 'heavy') return satin ? [{ type: 'center', len_mm: 2.5 }, { type: 'zigzag', len_mm: 3 }] : [{ type: 'contour', len_mm: 2.5 }, { type: 'zigzag', len_mm: 3 }];
+  return satin ? (d.width >= 2 ? [{ type: 'center', len_mm: 2.5 }, { type: 'zigzag', len_mm: 3 }] : [{ type: 'center', len_mm: 2.5 }]) : [{ type: 'contour', len_mm: 2.5 }, { type: 'center', len_mm: 3 }];
+}
+function renderUnderlays(d, isLine) {
+  const list = ulEffective(d, isLine), custom = !!d.underlays;
+  $('objUnderN').textContent = `(${list.length})`;
+  $('ulList').innerHTML = list.map((u, i) => `<div class="ulrow" data-i="${i}">
+      <div class="ulhead">${icon('chevron-down', 12)}<span>Underlay ${i + 1}</span><button class="ib" data-ulrm="${i}" title="Remove underlay">${icon('trash', 12)}</button></div>
+      <div class="ulbody"><div class="ulk">${['center', 'contour', 'zigzag'].map(k => `<button data-ulk="${k}" data-i="${i}" class="${u.type === k ? 'on' : ''}" title="${k[0].toUpperCase() + k.slice(1)}">${UL_ICON[k]}</button>`).join('')}</div>
+        <div class="unit"><input type="number" data-ullen="${i}" value="${u.len_mm || 1.5}" step="0.1" min="0.8" max="6"><span>mm</span></div></div></div>`).join('');
+  $('objUnderInfo').textContent = custom ? 'Custom underlays — sewn in this order before the top stitching.' : `Automatic for ${(!d.filled || isLine) ? 'satin' : 'a fill'}; edit to customise.`;
+  const customise = () => { if (!d.underlays) d.underlays = list.map(u => ({ ...u })); };
+  document.querySelectorAll('#ulList [data-ulk]').forEach(b => b.onclick = () => { customise(); d.underlays[+b.dataset.i].type = b.dataset.ulk; applyObjBoxUL(); });
+  document.querySelectorAll('#ulList [data-ullen]').forEach(inp => inp.onchange = () => { customise(); d.underlays[+inp.dataset.ullen].len_mm = +inp.value || 1.5; applyObjBoxUL(); });
+  document.querySelectorAll('#ulList [data-ulrm]').forEach(b => b.onclick = () => { customise(); d.underlays.splice(+b.dataset.ulrm, 1); applyObjBoxUL(); });
+}
+function applyObjBoxUL() {
+  const keep = objDef.underlays;
+  if (curMode === 'vector' && vecSel !== null && vecLayers[vecSel]) {
+    vecSnapshot(); readObjBox(); objDef.underlays = keep;
+    const L = vecLayers[vecSel]; L.params = paramsFor(L); vecChanged();
+  }
+  syncObjBox();
+}
+$('ulAdd').onclick = () => { const L = vecSel !== null ? vecLayers[vecSel] : null; const isLine = L && !(L.polys || []).length; if (!objDef.underlays) objDef.underlays = ulEffective(objDef, isLine).map(u => ({ ...u })); if (objDef.underlays.length < 4) objDef.underlays.push({ type: 'center', len_mm: 2 }); applyObjBoxUL(); };
 
 /* ---- fill pattern picker: a swatch button + the Available Fills grid */
 let fillList = null;
@@ -3600,6 +3953,7 @@ loadFills();
 $('objPatternBtn').onclick = e => { e.stopPropagation(); $('fillsPanel').classList.toggle('hide'); syncPatternPick(); };
 $('fillsClose').onclick = () => $('fillsPanel').classList.add('hide');
 $('objColor').oninput = () => { if (curMode === 'vector' && vecSel !== null) { vecLayers[vecSel].color = $('objColor').value.toUpperCase(); drawFrame(); } };
+$('objColor').onchange = () => { const keep = objDef.underlays; readObjBox(); objDef.underlays = keep; if (curMode === 'vector' && vecSel !== null && vecLayers[vecSel]) { vecSnapshot(); vecLayers[vecSel].color = objDef.color; vecChanged(); } syncObjBox(); };
 $('objDup').onclick = () => vecDuplicate();
 $('objDel').onclick = () => vecDelete();
 function vecDuplicate() {
@@ -3648,12 +4002,14 @@ function setTool(t) {
   syncToolbar(); syncHint(); drawFrame();
 }
 function syncHint() {
-  const show = curMode === 'vector' && TOOL_HINTS[tool] && !hintClosed;
+  const seen = lsGet('hint:' + tool) === '1';
+  const show = curMode === 'vector' && TOOL_HINTS[tool] && !hintClosed && !seen;
+  if (show) { lsSet('hint:' + tool, '1'); clearTimeout(syncHint._t); syncHint._t = setTimeout(() => $('toolHint').classList.add('hide'), 9000); }
   $('toolHint').classList.toggle('hide', !show);
   if (show) { $('toolHintTitle').innerHTML = icon((TOOLS.find(x => x && x.id === tool) || {}).ic || 'mouse-pointer', 16) + TOOL_HINTS[tool][0]; $('toolHintText').textContent = TOOL_HINTS[tool][1]; }
 }
 let hintClosed = false;
-$('toolHintClose').onclick = () => { hintClosed = true; syncHint(); };
+$('toolHintClose').onclick = () => { $('toolHint').classList.add('hide'); };
 function vecClick(el, e) {
   if (e.button === 2) { endTool(); return; }          // right-click ends the tool
   if (tool === 'open' || tool === 'closed') {
@@ -3687,9 +4043,33 @@ function vecToolDown(el, e) {
     vecDrag = { kind: 'free', pts: [mmPos(el, e)] };
     return true;
   }
-  if (tool !== 'select' || vecSel === null || !vecLayers[vecSel]) return false;
-  const L = vecLayers[vecSel], bb = vecBBox(L); if (!bb) return false;
+  if (tool !== 'select') return false;
   const w = worldPos(el, e), hs = 12 / view.s;
+  const rr = el.getBoundingClientRect(), dp = cnv._dpr;
+  cctx.setTransform(view.s * dp, 0, 0, view.s * dp, view.ox * dp, view.oy * dp);
+  const shapeHit = vecHitTest((e.clientX - rr.left) * dp, (e.clientY - rr.top) * dp);
+  if (imgSel !== null && vecSel === null && imgLayers[imgSel] && !imgLayers[imgSel].locked) {
+    // corner handles of the selected image: scale (aspect kept, opposite corner anchored)
+    const I = imgLayers[imgSel], x = I.x * PXMM, y = I.y * PXMM, ww = I.w * PXMM, hh = I.w / I.aspect * PXMM;
+    const corners = [['nw', x, y], ['ne', x + ww, y], ['sw', x, y + hh], ['se', x + ww, y + hh]];
+    for (const [k, cx, cy] of corners) if (Math.abs(w[0] - cx) <= hs && Math.abs(w[1] - cy) <= hs) {
+      vecDrag = { kind: 'imgscale', i: imgSel, h: k, ax: k.includes('w') ? I.x + I.w : I.x, ay: k.includes('n') ? I.y + I.w / I.aspect : I.y, w0: I.w };
+      return true;
+    }
+  }
+  if (shapeHit === null && imgLayers.length) {
+    const ih = imgHit(w);
+    if (ih !== null) {
+      const I = imgLayers[ih];
+      if (ih !== imgSel) selectImage(ih);
+      if (vecSel !== null) { vecSel = null; renderVecList(); syncObjBox(); }
+      if (I.locked) return true;
+      vecDrag = { kind: 'img', i: ih, start: w, ox: I.x, oy: I.y };
+      return true;
+    }
+  }
+  if (vecSel === null || !vecLayers[vecSel]) return false;
+  const L = vecLayers[vecSel], bb = vecBBox(L); if (!bb || L.locked) return false;
   for (const h of vecHandles(bb)) {
     if (Math.abs(w[0] - h.x) <= hs && Math.abs(w[1] - h.y) <= hs) {
       vecSnapshot();
@@ -3715,9 +4095,27 @@ function vecToolMove(el, e) {
       if (Math.hypot(p[0] - q[0], p[1] - q[1]) > 0.4) vecDrag.pts.push(p);
       requestAnimationFrame(drawFrame); return true;
     }
+    if (vecDrag.kind === 'img') {
+      const I = imgLayers[vecDrag.i];
+      [I.x, I.y] = snapMm([vecDrag.ox + (w[0] - vecDrag.start[0]) / PXMM, vecDrag.oy + (w[1] - vecDrag.start[1]) / PXMM], -1);
+      requestAnimationFrame(drawFrame); return true;
+    }
+    if (vecDrag.kind === 'imgscale') {
+      const I = imgLayers[vecDrag.i], mx = w[0] / PXMM, my = w[1] / PXMM;
+      const nw = Math.max(5, Math.abs(mx - vecDrag.ax)), nh = Math.max(5, Math.abs(my - vecDrag.ay));
+      I.w = Math.max(nw, nh * I.aspect);
+      I.x = vecDrag.h.includes('w') ? vecDrag.ax - I.w : vecDrag.ax;
+      I.y = vecDrag.h.includes('n') ? vecDrag.ay - I.w / I.aspect : vecDrag.ay;
+      requestAnimationFrame(drawFrame); return true;
+    }
     const L = vecLayers[vecSel]; const O = JSON.parse(vecDrag.orig);
     L.polys = O.polys; L.lines = O.lines;
-    const dx = (w[0] - vecDrag.start[0]) / PXMM, dy = (w[1] - vecDrag.start[1]) / PXMM;
+    let dx = (w[0] - vecDrag.start[0]) / PXMM, dy = (w[1] - vecDrag.start[1]) / PXMM;
+    if (vecDrag.kind === 'move' && (VIS.snapGrid || VIS.snapObj)) {
+      const b = vecDrag.bb0 || (vecDrag.bb0 = vecBBox(L));
+      const [sx, sy] = snapMm([b.x0 / PXMM + dx, b.y0 / PXMM + dy], vecSel);
+      dx = sx - b.x0 / PXMM; dy = sy - b.y0 / PXMM;
+    }
     if (vecDrag.kind === 'move') transformObj(L, p => [p[0] + dx, p[1] + dy]);
     else if (vecDrag.kind === 'scale') {
       const bb = vecDrag.bb, h = vecDrag.h;
@@ -3745,6 +4143,7 @@ function vecToolMove(el, e) {
 }
 function vecToolUp(el, e) {
   const d = vecDrag; vecDrag = null;
+  if (d.kind === 'img' || d.kind === 'imgscale') { const I = imgLayers[d.i]; if (I && d.kind === 'imgscale') { $('width').value = fmt(I.w); sizeChanged('width'); } renderImgList(); drawFrame(); return; }
   if (d.kind === 'free') {
     let pts = simplify(d.pts, 0.35);
     if (pts.length >= 2) {
@@ -3809,8 +4208,8 @@ document.querySelectorAll('#shapesMenu button').forEach(b => b.onclick = () => a
 TOOLS.length = 0;
 TOOLS.push(
   { id: 'select', ic: 'mouse-pointer', k: 'S', title: 'Select (S)', act: () => setTool('select') },
-  { id: 'pan', ic: 'hand', k: 'H', title: 'Pan (H)', act: () => setTool('pan') },
-  { id: 'measure', ic: 'ruler', k: 'M', title: 'Hoop & size (M)', act: () => $('hoopBtn').click() },
+  { id: 'pan', ic: 'hand', k: '␣', title: 'Pan (H, hold Space)', act: () => setTool('pan') },
+  { id: 'measure', ic: 'ruler', k: 'M', title: 'Measure — rulers & hoop (M)', act: () => { $('visRulers').checked = !$('visRulers').checked; visChanged(); } },
   null,
   { id: 'open', ic: 'pen-tool', k: '1', title: 'Draw open shape (1)', act: () => setTool('open') },
   { id: 'closed', ic: 'pentagon', k: '2', title: 'Draw closed shape (2)', act: () => setTool('closed') },
@@ -3819,12 +4218,8 @@ TOOLS.push(
   { id: 'text', ic: 'type', k: 'T', title: 'Text (T)', act: () => $('textBtn').click() },
   { id: 'shapes', ic: 'shapes', k: '', title: 'Add a shape', act: () => $('shapesMenu').classList.toggle('hide') },
   null,
-  { id: 'go', ic: 'wand', k: '', title: 'Stitch it', primary: true,
-    act: () => (curMode === 'vector' || (!window._f && vecLayers.length)) && vecLayers.length ? stitchNow() : $('go').click() },
-  null,
-  { id: 'player', ic: 'play', k: 'P', title: 'Stitch player (P)', act: () => job && setMode('player') },
-  { id: 'realistic', ic: 'eye', k: 'R', title: 'Realistic view (R)', act: () => job && setMode('realistic') },
-  { id: '3d', ic: 'box', k: 'V', title: '3D view (V)', act: () => job && setMode('3d') },
+  { id: 'player', ic: 'play', k: '', title: 'Start playback (P)', act: () => togglePlayerBar() },
+  { id: 'realistic', ic: 'eye', k: '', title: 'Toggle realistic view (R)', act: () => setRealistic(!realisticOn) },
 );
 $('bottomBar').innerHTML = TOOLS.map(t => t ? `<button class="tb${t.primary ? ' primary' : ''}" data-tool="${t.id}" title="${t.title}">${icon(t.ic, 22)}${t.k ? `<span class="k">${t.k}</span>` : ''}</button>` : '<span class="sep-v"></span>').join('');
 TOOLS.filter(Boolean).forEach(t => { document.querySelector(`[data-tool="${t.id}"]`).onclick = t.act; });
@@ -3836,10 +4231,10 @@ syncToolbar = function () {
       (id === 'measure' && layoutActive) || (id === 'shapes' && !$('shapesMenu').classList.contains('hide'));
     b.classList.toggle('on', on);
   });
-  const goB = document.querySelector('[data-tool="go"]');
-  const vec = curMode === 'vector' && vecLayers.length;
-  goB.disabled = vec ? false : $('go').disabled;
-  goB.title = vec ? 'Stitch shapes' : ($('go').textContent.trim() || 'Stitch it');
+  const rb = document.querySelector('[data-tool="realistic"]');
+  if (rb) { rb.classList.toggle('on', realisticOn); rb.innerHTML = icon(realisticOn ? 'eye' : 'eye-off', 22); }
+  const pb = document.querySelector('[data-tool="player"]');
+  if (pb) pb.classList.toggle('on', playerOpen);
 };
 const _setMode2 = setMode;
 setMode = function (m) { _setMode2(m); syncObjBox(); syncHint(); if (m === 'vector' && cnv) { cnv.classList.toggle('tool-draw', ['open', 'closed', 'free'].includes(tool)); cnv.classList.toggle('tool-pan', tool === 'pan'); } };
@@ -3848,7 +4243,7 @@ document.addEventListener('click', e => { if (!e.target.closest('#shapesMenu') &
 /* ---- keyboard shortcuts */
 const SHORTCUTS = [
   ['S', 'Select'], ['H', 'Pan'], ['M', 'Hoop & size overlay'], ['1', 'Draw open shape'], ['2', 'Draw closed shape'], ['3', 'Freehand'],
-  ['4', 'Pen digitizer'], ['T', 'Text'], ['P', 'Stitch player'], ['R', 'Realistic view'], ['V', '3D view'], ['D', 'Density map'],
+  ['4', 'Pen digitizer'], ['T', 'Text'], ['P', 'Play the stitches'], ['R', 'Realistic view on / off'], ['V', '3D view'], ['D', 'Density map'],
   ['Enter · right-click', 'Finish the shape and end the tool'], ['Esc', 'Cancel / back to Select / close panels'], ['⌫', 'Remove last point · delete selected shape'],
   ['⌘Z / ⇧⌘Z', 'Undo / redo shape edits'], ['⌘D', 'Duplicate selected shape'], ['Space (hold)', 'Pan while held'],
   ['+ / −', 'Zoom in / out'], ['0', 'Fit to screen'], ['?', 'This list'],
@@ -3857,7 +4252,7 @@ $('helpBody').innerHTML = '<table>' + SHORTCUTS.map(([k, d]) => `<tr><td style="
 function toggleHelp() { $('helpOverlay').classList.toggle('hide'); }
 $('helpClose').onclick = toggleHelp;
 $('helpOverlay').onclick = e => { if (e.target === $('helpOverlay')) toggleHelp(); };
-function closeAllPanels() { ['textPanel', 'detailsPanel', 'exportPanel', 'penPanel', 'layersPanel', 'designPanel', 'seqPanel', 'colorsPanel', 'artPanel', 'fillsPanel', 'shapesMenu', 'nameMenu', 'helpOverlay'].forEach(id => $(id).classList.add('hide')); syncToolbar(); }
+function closeAllPanels() { ['textPanel', 'detailsPanel', 'exportPanel', 'exportModal', 'propsPanel', 'penPanel', 'layersPanel', 'designPanel', 'seqPanel', 'colorsPanel', 'artPanel', 'settingsPanel', 'fillsPanel', 'shapesMenu', 'nameMenu', 'helpOverlay'].forEach(id => $(id).classList.add('hide')); syncToolbar(); }
 document.addEventListener('keydown', e => {
   const t = e.target;
   if (t && (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable)) return;
@@ -3870,16 +4265,16 @@ document.addEventListener('keydown', e => {
   switch (k) {
     case 's': setTool('select'); break;
     case 'h': setTool('pan'); break;
-    case 'm': $('hoopBtn').click(); break;
+    case 'm': $('visRulers').checked = !$('visRulers').checked; visChanged(); break;
     case '1': setTool('open'); break;
     case '2': setTool('closed'); break;
     case '3': setTool('free'); break;
     case '4': $('penBtn').click(); break;
     case 't': $('textBtn').click(); break;
-    case 'p': if (job) setMode('player'); break;
-    case 'r': if (job) setMode('realistic'); break;
-    case 'v': if (job) setMode('3d'); break;
-    case 'd': if (job) setMode('density'); break;
+    case 'p': togglePlayerBar(); break;
+    case 'r': setRealistic(!realisticOn); break;
+    case 'v': if (job) setMode(curMode === '3d' ? 'vector' : '3d'); break;
+    case 'd': if (job) setMode(curMode === 'density' ? 'vector' : 'density'); break;
     case 'enter': if (vecDraw || (curMode === 'vector' && tool !== 'select')) endTool(); else return; break;
     case 'escape':
       if (vecDraw) { vecDraw = null; vecCursor = null; drawFrame(); }
@@ -3906,14 +4301,14 @@ document.addEventListener('keyup', e => { if (e.key === ' ' && spaceTool !== nul
 syncObjBox(); syncHint(); syncToolbar();
 
 /* ============================================================ right dock: Layers · Sequencer · Colors · Project info */
-const DOCK = ['layersPanel', 'designPanel', 'seqPanel', 'colorsPanel', 'detailsPanel', 'exportPanel', 'artPanel'];
+const DOCK = ['layersPanel', 'designPanel', 'seqPanel', 'colorsPanel', 'detailsPanel', 'exportPanel', 'artPanel', 'settingsPanel'];
 function dockOpen() { return DOCK.find(id => !$(id).classList.contains('hide')) || null; }
 function openDock(id) { DOCK.forEach(d => { if (d !== id) $(d).classList.add('hide'); }); $(id).classList.remove('hide'); syncRail(); }
 function toggleDock(id) {
   if (dockOpen() === id) { $(id).classList.add('hide'); syncRail(); return false; }
   openDock(id); return true;
 }
-const RAIL_FOR = { layersPanel: 'layers', designPanel: 'layers', seqPanel: 'seq', colorsPanel: 'colors', detailsPanel: 'info', exportPanel: '', artPanel: 'art' };
+const RAIL_FOR = { layersPanel: 'layers', designPanel: 'layers', seqPanel: 'seq', colorsPanel: 'colors', detailsPanel: 'info', exportPanel: '', artPanel: 'art', settingsPanel: 'settings' };
 function syncRail() {
   const open = dockOpen();
   $('rail').classList.toggle('beside', !!open);
@@ -3930,7 +4325,7 @@ function openLayers() {
   else if (window._f && window._fKind === 'image') $('goLayers').click();
   else { setMode('vector'); openDock('layersPanel'); renderVecList(); }
 }
-['seqClose', 'colorsClose', 'artClose'].forEach(id => $(id).onclick = () => { $(id.replace('Close', 'Panel')).classList.add('hide'); syncRail(); });
+['seqClose', 'colorsClose', 'artClose', 'settingsClose'].forEach(id => $(id).onclick = () => { $(id.replace('Close', 'Panel')).classList.add('hide'); syncRail(); });
 
 /* ---- shape thumbnails + labels for the Layers dock */
 const STITCH_LABEL = { auto: 'Auto', fill: 'Fill', outline: 'Satin outline', run: 'Running', bean: 'Bean', satin: 'Satin',
@@ -3975,13 +4370,13 @@ renderVecList = function () {
     `<div class="lrow ${i === vecSel ? 'sel' : ''} ${L.visible ? '' : 'off'}" data-i="${i}">
       <span class="grip">${icon('grip', 16)}</span>
       <canvas width="112" height="112"></canvas>
-      <div class="lmeta"><div class="lname">${escH(L.name)}</div><div class="lsub">${stitchLabel(L)}</div></div>
+      <div class="lmeta"><div class="lname">${escH(L.name)}${L.locked ? ' ' + icon('lock', 11) : ''}</div><div class="lsub">${stitchLabel(L)}${vecCounts[String(L.id)] ? ' · ' + vecCounts[String(L.id)].toLocaleString() + ' st' : ''}</div></div>
       <div class="lside"><span class="lnum">${i + 1}</span><span class="ldot" style="background:${L.color}"></span>
         <button class="lgear" title="Layer settings">${icon('settings', 18)}</button></div></div>`).join('');
   document.querySelectorAll('#vecList .lrow').forEach((el, i) => {
     drawObjThumb(el.querySelector('canvas'), [vecLayers[i]]);
     el.onclick = () => { vecSel = i; renderVecList(); drawFrame(); if (typeof syncObjBox === 'function') syncObjBox(); };
-    el.querySelector('.lgear').onclick = e => { e.stopPropagation(); vecParamsOpen = !(vecParamsOpen && vecSel === i); vecSel = i; renderVecList(); drawFrame(); };
+    el.querySelector('.lgear').onclick = e => { e.stopPropagation(); vecSel = i; renderVecList(); drawFrame(); syncObjBox(); openProps(); };
   });
   const L = vecSel !== null ? vecLayers[vecSel] : null;
   $('vecParams').classList.toggle('hide', !(L && (vecParamsOpen || curMode !== 'vector')));
@@ -4193,7 +4588,345 @@ const _show3 = show;
 show = function (d) { _show3(d); renderInfo(); if (!$('seqPanel').classList.contains('hide')) loadStitches().then(renderSeq); };
 setInterval(() => { if (!$('detailsPanel').classList.contains('hide')) renderInfo(); }, 1500);
 renderInfo(); syncRail();
-if (!location.search.includes('design=') && !vecLayers.length && !job) openDock('artPanel');
+
+/* ============================================================ visibility settings (Settings dock) */
+const VIS_DEFAULT = { unit: 'in', grid: 0.5, showGrid: true, snapGrid: false, fine: 5, snapObj: false, rulers: false, jumps: false, trims: false, ties: false, needles: false };
+var VIS = { ...VIS_DEFAULT };
+try { VIS = { ...VIS_DEFAULT, ...(JSON.parse(lsGet('vis') || '{}')) }; } catch (e) {}
+const UNIT_MM = { in: 25.4, cm: 10, mm: 1 };
+function unitMm(v) { return v / UNIT_MM[VIS.unit]; }
+function fmtUnit(mm, d) { const v = mm / UNIT_MM[VIS.unit]; return v.toFixed(d === undefined ? (VIS.unit === 'mm' ? 0 : 2) : d); }
+function visSync() {
+  document.querySelectorAll('.seg2 [data-unit]').forEach(b => b.classList.toggle('on', b.dataset.unit === VIS.unit));
+  $('visGrid').value = VIS.grid; $('visGridUnit').textContent = VIS.unit;
+  $('visShowGrid').checked = VIS.showGrid; $('visSnapGrid').checked = VIS.snapGrid; $('visFine').value = VIS.fine;
+  $('visSnapObj').checked = VIS.snapObj; $('visRulers').checked = VIS.rulers;
+  $('visJumps').checked = VIS.jumps; $('visTrims').checked = VIS.trims; $('visTies').checked = VIS.ties; $('visNeedles').checked = VIS.needles;
+  document.querySelector('.stage').classList.toggle('nogrid', !VIS.showGrid);
+  document.querySelectorAll('#topSize .dim').forEach(el => { el.lastChild.textContent = ' ' + VIS.unit; });
+  if (cctx) drawFrame();
+  if (typeof syncTopSize === 'function') syncTopSize();
+  if (typeof syncObjBox === 'function' && curMode === 'vector') syncObjBox();
+}
+function visChanged() {
+  VIS.grid = +$('visGrid').value || 0.5; VIS.showGrid = $('visShowGrid').checked; VIS.snapGrid = $('visSnapGrid').checked;
+  VIS.fine = Math.max(1, Math.round(+$('visFine').value || 5)); VIS.snapObj = $('visSnapObj').checked; VIS.rulers = $('visRulers').checked;
+  VIS.jumps = $('visJumps').checked; VIS.trims = $('visTrims').checked; VIS.ties = $('visTies').checked; VIS.needles = $('visNeedles').checked;
+  lsSet('vis', JSON.stringify(VIS)); visSync();
+}
+['visGrid', 'visShowGrid', 'visSnapGrid', 'visFine', 'visSnapObj', 'visRulers', 'visJumps', 'visTrims', 'visTies', 'visNeedles'].forEach(id => $(id).onchange = visChanged);
+document.querySelectorAll('.seg2 [data-unit]').forEach(b => b.onclick = () => {
+  const old = VIS.unit; VIS.unit = b.dataset.unit;
+  VIS.grid = +(VIS.grid * UNIT_MM[old] / UNIT_MM[VIS.unit]).toFixed(VIS.unit === 'mm' ? 0 : 2) || 1;
+  lsSet('vis', JSON.stringify(VIS)); visSync();
+});
+// the top-bar size fields follow the unit
+syncTopSize = (function (orig) { return function () {
+  orig();
+  const k = 25.4 / UNIT_MM[VIS.unit];
+  ['wIn', 'hIn'].forEach(id => { const v = parseFloat($(id).value); if (isFinite(v)) $(id).value = (v * k).toFixed(VIS.unit === 'mm' ? 0 : 2); });
+}; })(syncTopSize);
+// snapping for drags: the fine grid, then other shapes' edges and centres
+function snapMm(p, skip) {
+  let [x, y] = p;
+  if (VIS.snapGrid) { const g = VIS.grid * UNIT_MM[VIS.unit] / VIS.fine; x = Math.round(x / g) * g; y = Math.round(y / g) * g; }
+  if (VIS.snapObj) {
+    const tol = 6 / view.s / PXMM, xs = [], ys = [];
+    vecLayers.forEach((L, i) => { if (i === skip || !L.visible) return; const b = vecBBox(L); if (!b) return;
+      xs.push(b.x0 / PXMM, b.x1 / PXMM, (b.x0 + b.x1) / 2 / PXMM); ys.push(b.y0 / PXMM, b.y1 / PXMM, (b.y0 + b.y1) / 2 / PXMM); });
+    const hp = hoopDims(); xs.push(0, hp.w, hp.w / 2); ys.push(0, hp.h, hp.h / 2);
+    for (const v of xs) if (Math.abs(v - x) < tol) { x = v; break; }
+    for (const v of ys) if (Math.abs(v - y) < tol) { y = v; break; }
+  }
+  return [x, y];
+}
+
+/* ============================================================ realistic toggle (persistent) + the stitch player in the editor */
+var realisticOn = lsGet('realistic') !== '0', playerOpen = false, pbPlaying = false, pbN = 0, pbRaf = 0, pbLast = 0;   // var: syncToolbar runs before this line
+const PB_SPEEDS = [1, 2, 4, 8, 16, 32, 64];
+let pbSpeedI = 4;
+function setRealistic(on) { realisticOn = on; lsSet('realistic', on ? '1' : '0'); syncToolbar(); $('pbReal').innerHTML = icon(on ? 'eye' : 'eye-off', 18); if (cctx) drawFrame(); }
+function togglePlayerBar() {
+  if (!playerOpen && !(playerData && playerData.length)) { if (job) loadStitches().then(() => togglePlayerBar()); return; }
+  playerOpen = !playerOpen;
+  $('playBar').classList.toggle('hide', !playerOpen);
+  $('bottomBar').classList.toggle('hide', playerOpen);
+  if (playerOpen) { if (curMode !== 'vector' && curMode !== 'digitize') setMode('vector'); pbN = 0; pbMarks(); pbStart(); }
+  else { pbStop(); pbN = 0; if (cctx) drawFrame(); }
+  syncToolbar();
+}
+function pbTotal() { return playerData ? playerData.reduce((n, b) => n + b.runs.reduce((m, r) => m + r.length, 0), 0) : 0; }
+function pbMarks() {
+  // one dot per colour stop, at its place on the timeline
+  const total = pbTotal() || 1; let n = 0;
+  $('pbMarks').innerHTML = (playerData || []).map((b, i) => {
+    const html = `<i style="left:${(n / total * 100).toFixed(2)}%;background:${blockColor(i)}"></i>`;
+    n += b.runs.reduce((m, r) => m + r.length, 0); return html;
+  }).join('');
+  $('pbPos').max = total;
+}
+function pbStart() {
+  if (!playerData) return;
+  pbPlaying = true; $('pbPlay').innerHTML = icon('pause', 18);
+  const total = pbTotal(); if (pbN >= total) pbN = 0;
+  pbLast = performance.now();
+  const tick = t => {
+    if (!pbPlaying) return;
+    const spm = 700 * PB_SPEEDS[pbSpeedI] / 4;          // 4x ≈ a 700 spm machine
+    pbN = Math.min(total, pbN + (t - pbLast) / 1000 * spm / 60); pbLast = t;
+    $('pbPos').value = Math.floor(pbN);
+    drawFrame();
+    if (pbN < total) pbRaf = requestAnimationFrame(tick); else pbStop();
+  };
+  pbRaf = requestAnimationFrame(tick);
+}
+function pbStop() { pbPlaying = false; $('pbPlay').innerHTML = icon('play', 18); if (pbRaf) cancelAnimationFrame(pbRaf); }
+$('pbPlay').onclick = () => pbPlaying ? pbStop() : pbStart();
+$('pbClose').onclick = () => togglePlayerBar();
+$('pbReal').onclick = () => setRealistic(!realisticOn);
+$('pbSpeed').onclick = () => { pbSpeedI = (pbSpeedI + 1) % PB_SPEEDS.length; $('pbSpeedV').textContent = PB_SPEEDS[pbSpeedI] + 'x'; };
+$('pbPos').oninput = () => { pbStop(); pbN = +$('pbPos').value; drawFrame(); };
+$('pbPlay').innerHTML = icon('play', 18); $('pbClose').innerHTML = icon('x', 18); $('pbReal').innerHTML = icon(realisticOn ? 'eye' : 'eye-off', 18);
+$('pbSpeed').querySelector('.pspeed').insertAdjacentHTML('afterbegin', icon('gauge', 14));
+
+/* overlays over the stitched design in the editor: jumps, trims, tie-ons, needle points */
+function drawOverlays(data, origin, upto) {
+  const s = view.s;
+  cctx.save(); cctx.translate(origin[0], origin[1]);
+  let n = 0;
+  for (let bi = 0; bi < data.length; bi++) {
+    const runs = data[bi].runs;
+    for (let ri = 0; ri < runs.length; ri++) {
+      const r = runs[ri];
+      if (upto !== undefined && n > upto) break;
+      if (ri > 0 && (VIS.jumps || VIS.trims)) {
+        const a = runs[ri - 1][runs[ri - 1].length - 1], b = r[0];
+        if (VIS.jumps) { cctx.setLineDash([5 / s, 4 / s]); cctx.strokeStyle = '#ef4444'; cctx.lineWidth = 1.2 / s; cctx.beginPath(); cctx.moveTo(a[0], a[1]); cctx.lineTo(b[0], b[1]); cctx.stroke(); cctx.setLineDash([]); }
+        if (VIS.trims) { cctx.fillStyle = '#f59e0b'; cctx.beginPath(); cctx.arc(a[0], a[1], 3.5 / s, 0, 7); cctx.fill(); cctx.strokeStyle = '#111'; cctx.lineWidth = 1 / s; cctx.stroke(); }
+      }
+      if (VIS.ties) { cctx.fillStyle = '#22c55e'; cctx.beginPath(); cctx.arc(r[0][0], r[0][1], 3 / s, 0, 7); cctx.fill(); }
+      n += r.length;
+    }
+    if (bi > 0 && (VIS.jumps || VIS.trims)) {
+      const f = runs[0] && runs[0][0];
+      if (f) { cctx.fillStyle = '#fff'; cctx.strokeStyle = '#111'; cctx.lineWidth = 1 / s; cctx.beginPath(); cctx.rect(f[0] - 4 / s, f[1] - 4 / s, 8 / s, 8 / s); cctx.fill(); cctx.stroke(); }
+    }
+  }
+  if (VIS.needles && vecSel !== null && vecLayers[vecSel]) {
+    const bb = vecBBox(vecLayers[vecSel]);
+    if (bb) {
+      cctx.fillStyle = 'rgba(59,130,246,.9)';
+      const x0 = bb.x0 - origin[0] - 2, y0 = bb.y0 - origin[1] - 2, x1 = bb.x1 - origin[0] + 2, y1 = bb.y1 - origin[1] + 2;
+      data.forEach(b => b.runs.forEach(r => r.forEach(p => { if (p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1) { cctx.beginPath(); cctx.arc(p[0], p[1], 1.4 / s, 0, 7); cctx.fill(); } })));
+    }
+  }
+  cctx.restore();
+}
+function drawGridRulers() {
+  // world-unit grid on the canvas + rulers along the top and left edges
+  const dpr = cnv._dpr, W = cnv._w, H = cnv._h;
+  const gmm = VIS.grid * UNIT_MM[VIS.unit], gpx = gmm * PXMM * view.s;
+  cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (VIS.showGrid && gpx >= 6) {
+    cctx.strokeStyle = 'rgba(255,255,255,.10)'; cctx.lineWidth = 1;
+    const x0 = view.ox % gpx, y0 = view.oy % gpx;
+    cctx.beginPath();
+    for (let x = x0; x < W; x += gpx) { cctx.moveTo(Math.round(x) + .5, 0); cctx.lineTo(Math.round(x) + .5, H); }
+    for (let y = y0; y < H; y += gpx) { cctx.moveTo(0, Math.round(y) + .5); cctx.lineTo(W, Math.round(y) + .5); }
+    cctx.stroke();
+  }
+  if (VIS.rulers) {
+    const RW = 22;
+    cctx.fillStyle = 'rgba(28,31,38,.92)'; cctx.fillRect(0, 0, W, RW); cctx.fillRect(0, 0, RW, H);
+    cctx.fillStyle = '#c7ccd6'; cctx.font = '10px Inter, system-ui, sans-serif'; cctx.strokeStyle = 'rgba(255,255,255,.35)'; cctx.lineWidth = 1;
+    const step = gpx < 40 ? gpx * Math.ceil(40 / gpx) : gpx, unitStep = step / (PXMM * view.s) / UNIT_MM[VIS.unit];
+    for (let x = view.ox % step; x < W; x += step) {
+      const v = ((x - view.ox) / (PXMM * view.s) / UNIT_MM[VIS.unit]);
+      cctx.beginPath(); cctx.moveTo(Math.round(x) + .5, RW - 7); cctx.lineTo(Math.round(x) + .5, RW); cctx.stroke();
+      cctx.fillText(v.toFixed(unitStep < 1 ? 1 : 0), x + 3, 11);
+    }
+    for (let y = view.oy % step; y < H; y += step) {
+      const v = ((y - view.oy) / (PXMM * view.s) / UNIT_MM[VIS.unit]);
+      cctx.beginPath(); cctx.moveTo(RW - 7, Math.round(y) + .5); cctx.lineTo(RW, Math.round(y) + .5); cctx.stroke();
+      cctx.save(); cctx.translate(11, y + 3); cctx.rotate(-Math.PI / 2); cctx.fillText(v.toFixed(unitStep < 1 ? 1 : 0), 0, 0); cctx.restore();
+    }
+  }
+  cctx.setTransform(view.s * dpr, 0, 0, view.s * dpr, view.ox * dpr, view.oy * dpr);
+}
+visSync();
+
+/* ============================================================ Properties popover + the floating edit toolbars */
+function shapeKind(L) { return (L.lines || []).length && !(L.polys || []).length ? 'Open' : 'Closed'; }
+function pointCount(L) { let n = 0; (L.polys || []).forEach(p => { n += p.shell.length; (p.holes || []).forEach(h => n += h.length); }); (L.lines || []).forEach(l => n += l.points.length); return n; }
+function openProps() { if (vecSel === null) return; $('propsPanel').classList.remove('hide'); renderProps(); }
+function renderProps() {
+  const L = vecSel !== null ? vecLayers[vecSel] : null; if (!L) { $('propsPanel').classList.add('hide'); return; }
+  const p = L.params || {};
+  $('prStitch').textContent = stitchLabel(L); $('prType').textContent = shapeKind(L);
+  $('prPoints').textContent = pointCount(L); $('prStitches').textContent = (vecCounts[String(L.id)] || 0).toLocaleString();
+  $('prName').value = L.name; $('prColor').value = L.color.toLowerCase(); $('prHex').value = L.color.toUpperCase();
+  $('prVis').innerHTML = icon(L.visible ? 'eye' : 'eye-off', 16) + ' ' + (L.visible ? 'Visible' : 'Hidden');
+  $('prAlpha').value = $('prAlphaN').value = L.alpha === undefined ? 1 : L.alpha;
+  $('prTieOn').checked = p.tie_on !== false; $('prTieOff').checked = p.tie_off !== false; $('prTrim').checked = !!p.trim_after;
+  document.querySelector(`[name=prSpeed][value=${p.speed === 'slow' ? 'slow' : 'fast'}]`).checked = true;
+}
+function propsApply(fn) { const L = vecSel !== null ? vecLayers[vecSel] : null; if (!L) return; vecSnapshot(); fn(L); vecChanged(); syncObjBox(); renderProps(); }
+$('propsClose').onclick = () => $('propsPanel').classList.add('hide');
+$('prName').onchange = () => propsApply(L => { L.name = $('prName').value || L.name; });
+$('prColor').oninput = () => { $('prHex').value = $('prColor').value.toUpperCase(); };
+$('prColor').onchange = () => propsApply(L => { L.color = $('prColor').value.toUpperCase(); });
+$('prHex').onchange = () => { const v = $('prHex').value.trim().replace(/^#?/, '#'); if (/^#[0-9a-f]{6}$/i.test(v)) propsApply(L => { L.color = v.toUpperCase(); }); };
+$('prVis').onclick = () => propsApply(L => { L.visible = !L.visible; });
+$('prAlpha').oninput = () => { $('prAlphaN').value = $('prAlpha').value; const L = vecLayers[vecSel]; if (L) { L.alpha = +$('prAlpha').value; drawFrame(); } };
+$('prAlphaN').onchange = () => { $('prAlpha').value = $('prAlphaN').value; const L = vecLayers[vecSel]; if (L) { L.alpha = +$('prAlphaN').value; drawFrame(); } };
+$('prTieOn').onchange = () => propsApply(L => { L.params.tie_on = $('prTieOn').checked; });
+$('prTieOff').onchange = () => propsApply(L => { L.params.tie_off = $('prTieOff').checked; });
+$('prTrim').onchange = () => propsApply(L => { L.params.trim_after = $('prTrim').checked; });
+document.querySelectorAll('[name=prSpeed]').forEach(r => r.onchange = () => propsApply(L => { L.params.speed = r.value === 'slow' ? 'slow' : ''; }));
+
+/* the toolbar floats above whatever is selected: a shape or an image */
+function editTarget() {
+  if (curMode !== 'vector') return null;
+  if (vecSel !== null && vecLayers[vecSel] && vecLayers[vecSel].visible) { const b = vecBBox(vecLayers[vecSel]); return b ? { kind: 'shape', bb: b, L: vecLayers[vecSel] } : null; }
+  if (imgSel !== null && imgLayers[imgSel] && imgLayers[imgSel].visible) { const I = imgLayers[imgSel]; return { kind: 'image', bb: { x0: I.x * PXMM, y0: I.y * PXMM, x1: (I.x + I.w) * PXMM, y1: (I.y + I.w / I.aspect) * PXMM }, L: I }; }
+  return null;
+}
+function placeEditBar() {
+  const t = editTarget(), bar = $('editBar');
+  if (!t || vecDrag || vecDraw || tool !== 'select') { bar.classList.add('hide'); return; }
+  const r = cnv.getBoundingClientRect(), st = document.querySelector('.stage').getBoundingClientRect();
+  const x = (t.bb.x0 + t.bb.x1) / 2 * view.s + view.ox + r.left - st.left, y = t.bb.y0 * view.s + view.oy + r.top - st.top - 42;
+  bar.style.left = Math.max(120, Math.min(st.width - 120, x)) + 'px'; bar.style.top = Math.max(70, y) + 'px';
+  $('ebShape').classList.toggle('hide', t.kind !== 'shape'); $('ebImage').classList.toggle('hide', t.kind !== 'image');
+  $('ebLock').classList.toggle('on', !!t.L.locked);
+  bar.classList.remove('hide');
+}
+$('ebLock').onclick = () => { const t = editTarget(); if (!t) return; t.L.locked = !t.L.locked; if (t.kind === 'shape') renderVecList(); placeEditBar(); drawFrame(); };
+$('ebDel').onclick = () => { const t = editTarget(); if (!t) return; if (t.kind === 'shape') vecDelete(); else removeImage(imgSel); placeEditBar(); };
+$('ebAI').onclick = () => $('goLayers').click();
+$('ebDigi').onclick = () => { if (!$('go').disabled) $('go').click(); };
+$('ebEdit').onclick = e => { e.stopPropagation(); $('ebMenu').classList.toggle('hide'); };
+document.addEventListener('click', e => { if (!e.target.closest('#ebMenu,#ebEdit')) $('ebMenu').classList.add('hide'); });
+document.querySelectorAll('#ebMenu [data-act]').forEach(b => b.onclick = () => {
+  $('ebMenu').classList.add('hide');
+  const L = vecSel !== null ? vecLayers[vecSel] : null; if (!L) return;
+  const act = b.dataset.act;
+  if (act === 'props') return openProps();
+  if (act === 'dup') return vecDuplicate();
+  if (act === 'front') return vecMoveTo(vecLayers.length - 1);
+  if (act === 'back') return vecMoveTo(0);
+  const bb = vecBBox(L); if (!bb) return;
+  const cx = (bb.x0 + bb.x1) / 2 / PXMM, cy = (bb.y0 + bb.y1) / 2 / PXMM;
+  vecSnapshot();
+  transformObj(L, act === 'fliph' ? (p => [2 * cx - p[0], p[1]]) : (p => [p[0], 2 * cy - p[1]]));
+  vecChanged();
+});
+drawFrame = (function (orig) { return function () { orig(); if (cnv) placeEditBar(); }; })(drawFrame);
+
+/* ============================================================ export modal + quotes */
+let xOrigin = 'c';
+const ORIGIN_NAMES = { tl: 'Top left', tc: 'Top center', tr: 'Top right', ml: 'Middle left', c: 'Center', mr: 'Middle right', bl: 'Bottom left', bc: 'Bottom center', br: 'Bottom right' };
+function xFormats() { return [...document.querySelectorAll('.fchip.on')].map(b => b.dataset.fmt); }
+function xSync() {
+  const fm = xFormats(), all = $('xAll').checked;
+  $('xExt').textContent = all ? '.zip' : (fm.length === 1 && !$('xSheet').checked && !$('xQuote').checked) ? '.' + fm[0] : '.zip';
+  $('xSheetOpts').classList.toggle('hide', !$('xSheet').checked && !all);
+  $('xExport').disabled = !all && !fm.length && !$('xSheet').checked && !$('xQuote').checked;
+  document.querySelectorAll('.ogrid button').forEach(b => b.classList.toggle('on', b.dataset.o === xOrigin));
+  $('xOriginName').textContent = $('xOriginTitle').textContent = ORIGIN_NAMES[xOrigin];
+  $('fmt').value = fm[0] || 'dst';
+}
+async function openExport() {
+  if (!job) return;
+  const r = lastReport || {};
+  $('xStitches').textContent = (r.stitches || 0).toLocaleString();
+  $('xShapes').textContent = vecLayers.length || (playerData ? playerData.length : (lastThreads || []).length);
+  $('xChanges').textContent = r.colour_changes || 0;
+  $('xDims').textContent = r.width_mm ? `${fmtUnit(r.width_mm)} × ${fmtUnit(r.height_mm)} ${VIS.unit}` : '—';
+  if ($('qName').value === 'design') $('qName').value = ($('designName').textContent || 'design').replace(/^Untitled design$/, 'design');
+  await loadQuoteTpls();
+  renderQuote(); xSync();
+  $('exportModal').classList.remove('hide');
+}
+document.querySelectorAll('.fchip').forEach(b => b.onclick = () => { b.classList.toggle('on'); $('xAll').checked = false; xSync(); });
+$('xAll').onchange = () => { if ($('xAll').checked) { document.querySelectorAll('.fchip').forEach(b => b.classList.add('on')); $('xSheet').checked = true; $('xQuote').checked = quoteHasPrices(); } xSync(); };
+['xSheet', 'xQuote'].forEach(id => $(id).onchange = xSync);
+document.querySelectorAll('.ogrid button').forEach(b => b.onclick = () => { xOrigin = b.dataset.o; xSync(); });
+$('xCancel').onclick = () => $('exportModal').classList.add('hide');
+$('exportModal').onclick = e => { if (e.target === $('exportModal')) $('exportModal').classList.add('hide'); };
+$('xExport').onclick = () => {
+  if (!job) return;
+  const all = $('xAll').checked, fm = xFormats();
+  const q = exportQuery({ origin: xOrigin, formats: all ? 'all' : fm.join(','), worksheet_pdf: ($('xSheet').checked || all) ? 1 : 0, quote_pdf: $('xQuote').checked ? 1 : 0 });
+  if (!all && fm.length === 1 && !$('xSheet').checked && !$('xQuote').checked) q.set('fmt', fm[0]);
+  window.location.href = `/api/download/${job}?` + q;
+  $('exportModal').classList.add('hide');
+};
+$('qPreview').onclick = () => {
+  if (!job) return;
+  const url = `/api/quote/${job}.pdf?` + exportQuery();
+  $('pdfName').textContent = ($('qName').value || 'design') + '-quote.pdf';
+  $('pdfFrame').src = url + '&inline=true'; $('pdfDl').href = url;
+  $('pdfModal').classList.remove('hide');
+};
+/* the quote maths, the same as the server's (worksheet.quote) */
+function quoteCalc(p, stitches, changes) {
+  const qty = Math.round(p.garment_qty || 0);
+  const digitizing = (p.price_per_1000 || p.min_digitizing) ? Math.max(p.min_digitizing, p.price_per_1000 / 1000 * stitches) : 0;
+  const marked_up = qty * p.garment_base * (1 + p.markup_pct / 100);
+  const run_piece = p.run_per_1000 / 1000 * stitches + p.colour_fee * changes + p.extra_per_piece;
+  const run = qty * run_piece;
+  const discount = p.discount_pct / 100 * (marked_up + run);
+  const rush = p.rush_pct / 100 * (marked_up + run + digitizing - discount);
+  const subtotal = p.setup + digitizing + marked_up + run - discount + rush;
+  const tax = p.tax_pct / 100 * subtotal, total = subtotal + tax;
+  return { qty, digitizing, marked_up, run, run_piece, discount, rush, subtotal, tax, total, per_piece: qty ? total / qty : 0 };
+}
+function quoteHasPrices() { return Object.values(quoteParams()).some(v => v); }
+function renderQuote() {
+  const p = quoteParams(), r = lastReport || {}, q = quoteCalc(p, r.stitches || 0, r.colour_changes || 0);
+  const $$ = v => '$' + v.toFixed(2);
+  const rows = [];
+  if (p.setup) rows.push(['Setup fee', $$(p.setup)]);
+  if (q.digitizing) rows.push([`Digitizing (${(r.stitches || 0).toLocaleString()} st${p.min_digitizing && q.digitizing <= p.min_digitizing ? ', minimum' : ''})`, $$(q.digitizing)]);
+  if (q.marked_up) rows.push([`Garments (${q.qty} × ${$$(p.garment_base)}${p.markup_pct ? ', +' + p.markup_pct + '%' : ''})`, $$(q.marked_up)]);
+  if (q.run) rows.push([`Embroidery (${q.qty} × ${$$(q.run_piece)} per piece)`, $$(q.run)]);
+  if (q.discount) rows.push([`Discount (${p.discount_pct}%)`, '-' + $$(q.discount)]);
+  if (q.rush) rows.push([`Rush (${p.rush_pct}%)`, $$(q.rush)]);
+  if (q.tax) rows.push(['Subtotal', $$(q.subtotal)], [`Tax (${p.tax_pct}%)`, $$(q.tax)]);
+  $('qCalc').innerHTML = rows.map(([a, b]) => `<div><span>${a}</span><span>${b}</span></div>`).join('') +
+    `<div class="tot"><span>Total</span><span>${$$(q.total)}</span></div>` + (q.qty ? `<div><span>Per piece (${q.qty})</span><span>${$$(q.per_piece)}</span></div>` : '');
+  $('xQuoteTotal').textContent = quoteHasPrices() ? $$(q.total) + (q.qty ? ` · ${$$(q.per_piece)} each` : '') : 'no prices yet';
+}
+let quoteTpls = [];
+async function loadQuoteTpls(sel) {
+  try { quoteTpls = await (await fetch('/api/quotes')).json(); } catch (e) { quoteTpls = []; }
+  $('qTpl').innerHTML = '<option value="">— none —</option>' + quoteTpls.map(t => `<option value="${t.id}">${escH(t.name)}</option>`).join('');
+  if (sel) $('qTpl').value = String(sel);
+  $('qTplDel').classList.toggle('hide', !$('qTpl').value);
+}
+const QMAP = { setup: 'qSetup', price_per_1000: 'qPrice', min_digitizing: 'qMin', garment_qty: 'qQty', garment_base: 'qBase', markup_pct: 'qMarkup', run_per_1000: 'qRun', colour_fee: 'qColorFee', extra_per_piece: 'qExtra', discount_pct: 'qDiscount', rush_pct: 'qRush', tax_pct: 'qTax' };
+$('qTpl').onchange = () => {
+  const t = quoteTpls.find(x => String(x.id) === $('qTpl').value);
+  $('qTplDel').classList.toggle('hide', !t);
+  if (!t) return;
+  Object.entries(QMAP).forEach(([k, id]) => { if (t.params[k] !== undefined) $(id).value = t.params[k]; });
+  updateDl();
+};
+$('qTplSave').onclick = async () => {
+  const cur = quoteTpls.find(x => String(x.id) === $('qTpl').value);
+  const name = prompt('Template name', cur ? cur.name : 'Left chest logo'); if (!name) return;
+  const r = await fetch('/api/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, params: quoteParams() }) });
+  if (!r.ok) return alert((await r.json()).detail);
+  await loadQuoteTpls((await r.json()).id);
+};
+$('qTplDel').onclick = async () => {
+  const t = quoteTpls.find(x => String(x.id) === $('qTpl').value); if (!t || !confirm(`Delete the "${t.name}" template?`)) return;
+  await fetch('/api/quotes/' + t.id, { method: 'DELETE' }); await loadQuoteTpls();
+};
+
+/* a fresh studio opens on the hoop with the Artwork dock */
+if (!location.search.includes('design=') && !vecLayers.length && !job) { setMode('vector'); openDock('artPanel'); }
 </script>
 </body>
 </html>

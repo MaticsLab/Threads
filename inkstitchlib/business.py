@@ -7,6 +7,7 @@ plus three persisted text panes (notes, quote log, to-do). Same schema here,
 in SQLite via the stdlib, stored under STITCHFORGE_DATA (defaults to ./data).
 """
 import os
+import json
 import sqlite3
 import threading
 
@@ -385,6 +386,41 @@ BUILTIN_HOOPS = [
     ('Tajima 7.1" (18 cm)', 180, 180), ('Tajima 11.8" × 13.8" (30 × 35)', 300, 350),
     ('Cap frame 2.6" × 5.5"', 67, 140), ('Left chest 4" × 4"', 100, 100),
 ]
+
+
+def _quote_table(con):
+    con.execute('''CREATE TABLE IF NOT EXISTS quote_tpl (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, params TEXT NOT NULL,
+        created TEXT DEFAULT CURRENT_TIMESTAMP)''')
+
+
+def list_quote_tpls():
+    with _lock, _db() as con:
+        _quote_table(con)
+        rows = con.execute('SELECT id, name, params FROM quote_tpl ORDER BY name').fetchall()
+    return [{'id': r['id'], 'name': r['name'], 'params': json.loads(r['params'])} for r in rows]
+
+
+def save_quote_tpl(name, params):
+    name = str(name or '').strip()[:60]
+    if not name:
+        raise ValueError('the quote template needs a name')
+    clean = {k: float(v) for k, v in (params or {}).items()
+             if isinstance(v, (int, float)) and k.replace('_', '').isalnum()}
+    with _lock, _db() as con:
+        _quote_table(con)
+        row = con.execute('SELECT id FROM quote_tpl WHERE name=?', (name,)).fetchone()
+        if row:
+            con.execute('UPDATE quote_tpl SET params=? WHERE id=?', (json.dumps(clean), row['id']))
+            return row['id']
+        return con.execute('INSERT INTO quote_tpl (name, params) VALUES (?, ?)',
+                           (name, json.dumps(clean))).lastrowid
+
+
+def delete_quote_tpl(qid):
+    with _lock, _db() as con:
+        _quote_table(con)
+        return con.execute('DELETE FROM quote_tpl WHERE id=?', (qid,)).rowcount > 0
 
 
 def list_hoops():
