@@ -19,7 +19,7 @@ import cv2
 from shapely.geometry import Polygon, MultiPolygon, LineString
 
 from digitizer import segment, core
-from . import fills
+from . import fills, patterns
 
 DEFAULT_PARAMS = {'stitch': 'auto', 'fill_method': 'tatami',
                   'angle': 'auto', 'density': 0.4, 'border_mm': 1.0}
@@ -104,7 +104,7 @@ def _poly_from_data(d):
 DECOR_TYPES = ('estitch', 'triangle', 'cross', 'motif')     # decorative runs
 LINE_TYPES = ('run', 'bean', 'satin') + DECOR_TYPES
 STITCH_TYPES = ('auto', 'fill', 'outline', 'run', 'bean', 'satin', 'applique', 'puff') + DECOR_TYPES
-FILL_METHODS = ('tatami', 'contour', 'circular', 'walk', 'satin')
+FILL_METHODS = ('tatami', 'contour', 'circular', 'walk', 'satin') + tuple(patterns.PATTERN_FILLS)
 
 
 def _normals(path):
@@ -175,9 +175,42 @@ def _read_layer(L, max_satin):
     ang = None if ang in (None, '', 'auto') else float(ang)
     width = max(0.6, min(12.0, float(prm.get('width_mm') or 3.0)))
     run_len = max(0.8, min(6.0, float(prm.get('run_len_mm') or 2.5)))
-    return {'density': density, 'method': method, 'type': stype, 'border': border,
+
+    def num(key, lo, hi, default):
+        try:
+            v = prm.get(key)
+            return default if v in (None, '') else max(lo, min(hi, float(v)))
+        except (TypeError, ValueError):
+            return default
+
+    def flag(key, default):
+        v = prm.get(key)
+        return default if v is None else bool(v)
+
+    umode = prm.get('underlay')
+    umode = umode if umode in core.UNDERLAY_MODES else None      # None: the design setting
+    split = flag('split', True)
+    info = {'density': density, 'method': method, 'type': stype, 'border': border,
             'rgb': rgb, 'angle': ang, 'name': (L.get('name') or 'Layer')[:48],
-            'max_satin': max_satin, 'width': width, 'run_len': run_len}
+            'max_satin': max_satin, 'width': width, 'run_len': run_len,
+            # per-object refinements (the reference panel's Fill Settings /
+            # Density Control / Underlays / Split Satin)
+            'stitch_len': num('stitch_len_mm', 1.0, 7.0, 3.5),
+            'pull_comp': num('pull_comp_mm', 0.0, 1.0, None),
+            'hand': num('hand', 0.0, 1.0, 0.0),
+            'underpath': flag('underpath', True),
+            'row_short': flag('row_short', True),
+            'density_trigger': num('density_trigger', 0.2, 1.0, 0.5),
+            'underlay': umode,
+            'split': split,
+            'split_max': num('split_max_mm', 3.0, 12.0, 7.0),
+            'stagger': flag('stagger', True),
+            'cycles': int(num('cycles', 2, 8, 4)),
+            'amount': num('amount_mm', 0.0, 1.0, 0.3)}
+    if split:
+        # split satin lets a column run wider than one stitch can span
+        info['max_satin'] = max(max_satin, min(12.0, info['split_max'] * 1.6))
+    return info
 
 
 def stitch(layers_in, max_satin=8.0, settings=None):
@@ -276,6 +309,10 @@ def stitch(layers_in, max_satin=8.0, settings=None):
         raise LayerError('nothing to stitch — every layer is hidden or empty')
     s.tie_off()
     s.pattern.end()
+    xs = [q[0] for q in s.pattern.stitches]
+    ys = [q[1] for q in s.pattern.stitches]
+    s.pattern.extras['origin_mm'] = [round(float(min(xs) + max(xs)) / 20.0, 3),
+                                     round(float(min(ys) + max(ys)) / 20.0, 3)]
     s.pattern.move_center_to_origin()
     for BL in block_layers:
         BL['rgb'] = tuple(BL['rgb'])
@@ -325,28 +362,65 @@ def _sew_line(s, it, phase):
             for p in reversed(under):
                 s.run_to(p, 2.5)
     if phase != core.UNDER:
-        zz = core.widen_zigzag(zz)
+        zz = core.shorten_zigzag(core.widen_zigzag(zz), mids)
         s.move_to(zz[0], None)
-        for p in zz:
-            s._st(p)
+        for i, p in enumerate(zz):
+            core.satin_to(s, p, i)
+
+
+_OBJ_TUNABLES = ('PULL_COMP', 'UNDERLAY', 'ROW_SHORT', 'DENSITY_TRIGGER',
+                 'SPLIT_SATIN', 'SPLIT_STAGGER', 'SPLIT_CYCLES', 'SPLIT_AMOUNT')
+
+
+def _hand_jitter(s, n0, amount, seed):
+    """Hand-stitch look: nudge every needle point sewn since n0 by up to
+    `amount` mm, the same way each time for the same object."""
+    import pystitch
+    rng = np.random.default_rng(seed)
+    st = s.pattern.stitches
+    for k in range(n0, len(st)):
+        if (int(st[k][2]) & 0xFF) == pystitch.STITCH:
+            st[k][0] += rng.uniform(-amount, amount) * 10.0
+            st[k][1] += rng.uniform(-amount, amount) * 10.0
 
 
 def _sew_one(s, it, phase):
+    """Sew one object with its own refinements applied to the engine for
+    the duration, then put the design-wide settings back."""
+    saved = {k: getattr(core, k) for k in _OBJ_TUNABLES}
+    core.set_tunables(pull_comp=it.get('pull_comp'), underlay=it.get('underlay'),
+                      row_short=it.get('row_short'), density_trigger=it.get('density_trigger'),
+                      split_satin=(it.get('split_max') if it.get('split') else 0.0),
+                      split_stagger=it.get('stagger'), split_cycles=it.get('cycles'),
+                      split_amount=it.get('amount'))
+    n0 = len(s.pattern.stitches)
+    try:
+        _sew_one_inner(s, it, phase)
+    finally:
+        core.set_tunables(**{k.lower(): v for k, v in saved.items()})
+    if it.get('hand') and phase != core.UNDER:
+        _hand_jitter(s, n0, it['hand'] * 0.45, seed=int(abs(hash(it['name'])) % 100000 + n0))
+
+
+def _sew_one_inner(s, it, phase):
     if it.get('line') is not None:
         return _sew_line(s, it, phase)
     g, stype = it['g'], it['type']
     density, border, method = it['density'], it['border'], it['method']
+    travel = g if it.get('underpath', True) else None
+    if phase == core.TOP and travel is None:
+        s.region_subtract(g)                  # no underpath: never travel across it
     # one uniform direction per object: its own principal axis unless the
     # layer sets an explicit angle
     ang = (core.principal_angle(g) + 90.0) if it['angle'] is None else it['angle']
     if stype == 'run':
         if phase != core.UNDER:
-            core.sew_edge_run(s, g, inset=0.35, travel=g)
+            core.sew_edge_run(s, g, inset=0.35, travel=travel)
         return
     if stype == 'outline':
         ring = core.satin_ring(g, border, density, start=s.pos)
         if ring:
-            core.sew_ring(s, ring, g, phase=phase)
+            core.sew_ring(s, ring, travel, phase=phase)
         return
     if stype == 'puff':
         # 3D foam: no underlay (it would crush the foam), tight satin with
@@ -361,8 +435,8 @@ def _sew_one(s, it, phase):
                 s.move_to(a, g)
                 s.run_to(b, it['max_satin'] + 1)
         else:
-            fills.sew_area(s, g, method, ang, min(density, 0.30), 3.5, travel=g)
-        core.outline_run(s, g, step=1.0, travel=g)
+            fills.sew_area(s, g, method, ang, min(density, 0.30), it['stitch_len'], travel=travel)
+        core.outline_run(s, g, step=1.0, travel=travel)
         return
     mw = core.poly_max_width(g)
     if stype in ('run', 'bean') or stype in DECOR_TYPES:
@@ -375,21 +449,21 @@ def _sew_one(s, it, phase):
     if stype == 'satin' or (method == 'satin' and stype in ('auto', 'fill')):
         if mw <= it['max_satin'] and g.area >= 1.5:
             core.sew_blob(s, g, density, it['max_satin'], min(border, mw * 0.3),
-                          travel=g, heavy_underlay=True, phase=phase)
+                          travel=travel, heavy_underlay=True, phase=phase)
             return
         method = 'tatami'                      # too wide to satin across
     if stype == 'auto' and mw <= it['max_satin'] and g.area >= 1.5:
         core.sew_blob(s, g, density, it['max_satin'], min(border, mw * 0.3),
-                      travel=g, heavy_underlay=True, phase=phase)
+                      travel=travel, heavy_underlay=True, phase=phase)
         return
     if phase != core.TOP:
-        core.fill_underlay(s, g, ang, travel=g)
+        core.fill_underlay(s, g, ang, travel=travel)
     if phase != core.UNDER:
-        fills.sew_area(s, g, method, ang, density, 3.5, travel=g)
+        fills.sew_area(s, g, method, ang, density, it['stitch_len'], travel=travel)
         if stype == 'auto' and g.area >= 4.0:
             ring = core.satin_ring(g, border, density, start=s.pos)
             if ring:
-                core.sew_ring(s, ring, g, phase=core.TOP)
+                core.sew_ring(s, ring, travel, phase=core.TOP)
 
 
 def _sew_applique_block(s, items):

@@ -218,9 +218,10 @@ Notes for the Containers runtime:
 - **Canvas workspace** — the studio (`/studio`) is a full-screen grey grid
   canvas with floating dark panels: a name pill (rename, save, worksheet,
   clients) top-left, the design's height/width in inches with fit-to-screen
-  and hoop toggles top-centre, Export / Save top-right; a settings panel on
-  the left (colour swatches, Outlined/Filled stitch type, Size & hoop, Fill
-  Settings, Density Control, Underlays, thread brand); a Layers dock on the
+  and hoop toggles top-centre, Export / Save top-right; the object panel on
+  the left (the selected shape's colour, stitch type and settings — see
+  *Design tools*); an Artwork dock for importing files (drop zone, size &
+  hoop, digitizer settings, thread brand); a Layers dock on the
   right listing every thread block with a stitched thumbnail, thread name
   and number, colour dot and a recolour gear; an icon rail pinned to the
   right edge that slides beside whichever panel is open — Layers (shapes
@@ -244,14 +245,23 @@ Notes for the Containers runtime:
   rounded, circle, ellipse, triangle, hexagon, star, heart, arrow, ring).
   Every shape is an object: select it (**S**) to move, scale from the
   corner handles, stretch from the side handles, rotate from the top handle;
-  Delete, ⌘D duplicates, ⌘Z / ⇧⌘Z undo and redo. The settings panel edits
-  the selected shape (or the defaults for the next one): *Outlined* with a
-  run type — running, bean, satin, E-stitch, triangle, cross or a motif
-  chain, at a set width and spacing — or *Filled* with a
-  pattern — tatami, satin, contour, circular or walk — plus angle, density
-  and a satin border. *Stitch shapes* sews them through the AI-layers
-  engine, so colour sequencing, underlay order, pull compensation and the
-  fabric/machine presets all apply. Press **?** for the shortcut list.
+  Delete, ⌘D duplicates, ⌘Z / ⇧⌘Z undo and redo. Clicking a shape opens
+  the object panel, which edits it (or the defaults for the next one):
+  *Outlined* with a run type — running, bean, satin, E-stitch, triangle,
+  cross or a motif chain — *Run Settings* (width, density, stitch length /
+  spacing, pull compensation, hand stitch) and *Split Satin* (max width,
+  stagger, cycles, amount); or *Filled* with a *Fill Pattern* chosen from
+  the Available Fills grid — tatami, satin, contour, circular, walk,
+  columns, offset columns, waves, triangle, checks, diamonds and hearts in
+  three sizes, each shown as a rendered swatch — *Fill Settings* (row
+  space, stitch length, pull compensation, angle, hand stitch, underpath,
+  satin border); plus *Density Control* (row shortening with its density
+  trigger) and *Underlays* (auto / light / heavy / none, with what will be
+  sewn). Every setting is per object and goes to the engine with the
+  shape. There is no stitch button: the design re-sews itself as you work
+  and the editor shows the real stitches over the shapes (flat shapes only
+  while one is being dragged or until the re-stitch lands), so Export and
+  the worksheet are always ready. Press **?** for the shortcut list.
 - **Text tool** — lettering is a canvas add-on: type text and place it
   below/above/beside/centered on the current design (appended as a new
   colour block, `POST /api/lettering` with `job` + `placement`), or start a
@@ -274,8 +284,8 @@ Notes for the Containers runtime:
   (linked arms stay a single shape), similar round shapes are grouped, each
   large shape and letter gets its own layer. Reorder, hide, rename, recolour
   and set per-layer stitch parameters (auto/fill/outline/run, fill method,
-  angle, density) — stitches (and therefore the DST) are only made when you
-  hit *Stitch layers* (`/api/vectorize` → `/api/stitch_layers`).
+  angle, density); the design re-sews itself after every change
+  (`/api/vectorize` → `/api/stitch_layers`).
 - **Uniform satin per object** — the auto engine gives each connected object
   one treatment: pure narrow strokes get flowing satin columns; anything
   wider is sewn with a single stitch direction (its own principal axis) plus
@@ -365,7 +375,10 @@ POST /api/sketch                 photo/drawing -> one-colour outline sketch
 GET  /api/presets                fabric + machine presets
 POST /api/vectorize              image -> editable vector layers (no stitches yet)
 POST /api/name_layers            vision-model names for the extracted layers
-POST /api/stitch_layers          sew the arranged layers into a design
+POST /api/stitch_layers          sew the arranged layers into a design (+ origin_mm)
+GET  /api/fills                  the fill patterns
+GET  /api/fill_preview/{id}.png  a rendered swatch of one fill
+GET  /api/threads/all            the whole thread library, every brand
                                  layers may carry `lines` (open paths) sewn as
                                  run / bean / satin; fill_method adds walk, satin
 GET  /api/fonts                  bundled fonts (+ /api/fonts/{id}/preview.png)
