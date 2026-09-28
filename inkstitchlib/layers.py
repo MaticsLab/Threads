@@ -156,6 +156,57 @@ def decor_points(path, width, kind):
     return out
 
 
+UNDERLAY_KINDS = ('center', 'contour', 'zigzag')
+
+
+def _underlay_list(v):
+    """Explicit underlays [{type, len_mm}] (None: the underlay mode decides)."""
+    if not isinstance(v, list):
+        return None
+    out = []
+    for u in v[:4]:
+        if not isinstance(u, dict) or u.get('type') not in UNDERLAY_KINDS:
+            continue
+        try:
+            ln = max(0.8, min(6.0, float(u.get('len_mm') or 1.5)))
+        except (TypeError, ValueError):
+            ln = 1.5
+        out.append({'type': u['type'], 'len': ln})
+    return out
+
+
+def _sew_underlays(s, it, g, ang, travel, satin_path=None):
+    """The object's own underlay list: centre run, contour (edge walk) or
+    zigzag, in order, before its top stitching."""
+    for u in it['underlays']:
+        if u['type'] == 'contour':
+            core.sew_edge_run(s, g, inset=0.7, maxlen=u['len'], travel=travel)
+        elif u['type'] == 'center':
+            if satin_path is not None:
+                s.move_to(satin_path[0], travel)
+                for p in satin_path:
+                    s.run_to(p, u['len'])
+            else:
+                core.sew_fill(s, g, ang + 90, core.UNDERLAY_SPACING, u['len'], stagger=False,
+                              start=s.pos, travel=travel)
+        else:   # zigzag
+            if satin_path is not None:
+                zz, _m = pen_zigzag(satin_path, min(it['width'] * 0.7, 6.0), 2.0)
+                if zz:
+                    s.move_to(zz[0], travel)
+                    for p in zz:
+                        s.run_to(p, 6.0)
+            else:
+                for a in (ang + 45, ang - 45):
+                    core.sew_fill(s, g, a, core.UNDERLAY_SPACING, u['len'], stagger=False,
+                                  start=s.pos, travel=travel)
+
+
+def pen_zigzag(path, width, spacing):
+    from . import pen
+    return pen.center_zigzag(path, width, spacing)
+
+
 def _read_layer(L, max_satin):
     prm = {**DEFAULT_PARAMS, **(L.get('params') or {})}
     density = max(0.25, min(3.0, float(prm.get('density') or 0.4)))
@@ -206,7 +257,18 @@ def _read_layer(L, max_satin):
             'split_max': num('split_max_mm', 3.0, 12.0, 7.0),
             'stagger': flag('stagger', True),
             'cycles': int(num('cycles', 2, 8, 4)),
-            'amount': num('amount_mm', 0.0, 1.0, 0.3)}
+            'amount': num('amount_mm', 0.0, 1.0, 0.3),
+            # gradient fill: row spacing grades from density to gradient_to
+            'gradient': flag('gradient', False),
+            'gradient_to': num('gradient_to_mm', 0.3, 4.0, 1.5),
+            'gradient_flip': flag('gradient_flip', False),
+            # stitch options
+            'tie_on': flag('tie_on', True), 'tie_off': flag('tie_off', True),
+            'trim_after': flag('trim_after', False),
+            'speed': prm.get('speed') if prm.get('speed') in ('slow', 'fast') else '',
+            'short_frac': num('short_frac', 0.0, 1.0, 0.45),
+            'underlays': _underlay_list(prm.get('underlays')),
+            'id': str(L.get('id') or '')}
     if split:
         # split satin lets a column run wider than one stitch can span
         info['max_satin'] = max(max_satin, min(12.0, info['split_max'] * 1.6))
@@ -230,6 +292,7 @@ def stitch(layers_in, max_satin=8.0, settings=None):
     from shapely.ops import unary_union
 
     settings = settings or {}
+    STITCH_COUNTS.clear()
     core.set_tunables(underlay=settings.get('underlay'),
                       pull_comp=settings.get('pull_comp'),
                       min_satin=settings.get('min_satin'))
@@ -349,6 +412,8 @@ def _sew_line(s, it, phase):
     if len(zz) < 4:
         return
     under = pen._resample(mids, 2.5)
+    if it.get('underlays') is not None and phase != core.TOP and it['width'] >= core.MIN_SATIN:
+        _sew_underlays(s, it, LineString(pts).buffer(it['width'] / 2), 0.0, None, satin_path=under)
     if it['width'] < core.MIN_SATIN:
         if phase != core.UNDER:
             core.bean_run(s, under, 2.0)
@@ -369,7 +434,8 @@ def _sew_line(s, it, phase):
 
 
 _OBJ_TUNABLES = ('PULL_COMP', 'UNDERLAY', 'ROW_SHORT', 'DENSITY_TRIGGER',
-                 'SPLIT_SATIN', 'SPLIT_STAGGER', 'SPLIT_CYCLES', 'SPLIT_AMOUNT')
+                 'SPLIT_SATIN', 'SPLIT_STAGGER', 'SPLIT_CYCLES', 'SPLIT_AMOUNT',
+                 'TIE_IN', 'TIE_OFF', 'SHORT_FRAC')
 
 
 def _hand_jitter(s, n0, amount, seed):
@@ -388,18 +454,33 @@ def _sew_one(s, it, phase):
     """Sew one object with its own refinements applied to the engine for
     the duration, then put the design-wide settings back."""
     saved = {k: getattr(core, k) for k in _OBJ_TUNABLES}
-    core.set_tunables(pull_comp=it.get('pull_comp'), underlay=it.get('underlay'),
+    core.set_tunables(pull_comp=it.get('pull_comp'),
+                      underlay='none' if it.get('underlays') is not None else it.get('underlay'),
                       row_short=it.get('row_short'), density_trigger=it.get('density_trigger'),
                       split_satin=(it.get('split_max') if it.get('split') else 0.0),
                       split_stagger=it.get('stagger'), split_cycles=it.get('cycles'),
-                      split_amount=it.get('amount'))
+                      split_amount=it.get('amount'),
+                      tie_in=it.get('tie_on'), tie_off=it.get('tie_off'),
+                      short_frac=it.get('short_frac'))
     n0 = len(s.pattern.stitches)
+    if it.get('speed') and phase != core.UNDER and s.pos is not None:
+        import pystitch
+        cmd = pystitch.SLOW if it['speed'] == 'slow' else pystitch.FAST
+        s.pattern.add_stitch_absolute(cmd, s.pos[0] * 10.0, s.pos[1] * 10.0)
     try:
         _sew_one_inner(s, it, phase)
     finally:
         core.set_tunables(**{k.lower(): v for k, v in saved.items()})
     if it.get('hand') and phase != core.UNDER:
         _hand_jitter(s, n0, it['hand'] * 0.45, seed=int(abs(hash(it['name'])) % 100000 + n0))
+    if it.get('trim_after') and phase != core.UNDER:
+        s.cut_thread()
+    n1 = sum(1 for k in range(n0, len(s.pattern.stitches)) if (int(s.pattern.stitches[k][2]) & 0xFF) == 0)
+    if it.get('id'):
+        STITCH_COUNTS[it['id']] = STITCH_COUNTS.get(it['id'], 0) + n1
+
+
+STITCH_COUNTS = {}          # layer id -> stitches, for the last stitch() call
 
 
 def _sew_one_inner(s, it, phase):
@@ -413,6 +494,8 @@ def _sew_one_inner(s, it, phase):
     # one uniform direction per object: its own principal axis unless the
     # layer sets an explicit angle
     ang = (core.principal_angle(g) + 90.0) if it['angle'] is None else it['angle']
+    if it.get('underlays') is not None and phase != core.TOP and stype not in ('run', 'bean', 'applique'):
+        _sew_underlays(s, it, g, ang, travel)
     if stype == 'run':
         if phase != core.UNDER:
             core.sew_edge_run(s, g, inset=0.35, travel=travel)
@@ -459,7 +542,10 @@ def _sew_one_inner(s, it, phase):
     if phase != core.TOP:
         core.fill_underlay(s, g, ang, travel=travel)
     if phase != core.UNDER:
-        fills.sew_area(s, g, method, ang, density, it['stitch_len'], travel=travel)
+        sp0, sp1 = density, None
+        if it.get('gradient'):
+            sp0, sp1 = (it['gradient_to'], density) if it.get('gradient_flip') else (density, it['gradient_to'])
+        fills.sew_area(s, g, method, ang, sp0, it['stitch_len'], travel=travel, spacing_end=sp1)
         if stype == 'auto' and g.area >= 4.0:
             ring = core.satin_ring(g, border, density, start=s.pos)
             if ring:

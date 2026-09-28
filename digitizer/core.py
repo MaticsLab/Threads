@@ -37,6 +37,9 @@ SPLIT_SATIN = 0.0         # split satin stitches longer than this (mm; 0 = off)
 SPLIT_STAGGER = True      # stagger the split needle points
 SPLIT_CYCLES = 4          # over this many stitches
 SPLIT_AMOUNT = 0.3        # by up to this much (mm)
+SHORT_FRAC = 0.45         # how far a shortened stitch pulls back (0 outside .. 1 inside)
+TIE_IN = True             # lock stitches when a run starts / ends (per object)
+TIE_OFF = True
 
 
 def configure(p):
@@ -103,7 +106,7 @@ def shorten_zigzag(zz, mids=None):
         other = np.hypot(zz[i - 1][0] - zz[i - 3][0], zz[i - 1][1] - zz[i - 3][1])
         if other > 1e-6 and same < DENSITY_TRIGGER * other and (i // 2) % 2 == 1:
             m = mids[i] if mids is not None else ((zz[i][0] + zz[i - 1][0]) / 2, (zz[i][1] + zz[i - 1][1]) / 2)
-            out[i] = (zz[i][0] + (m[0] - zz[i][0]) * 0.45, zz[i][1] + (m[1] - zz[i][1]) * 0.45)
+            out[i] = (zz[i][0] + (m[0] - zz[i][0]) * SHORT_FRAC, zz[i][1] + (m[1] - zz[i][1]) * SHORT_FRAC)
     return out
 
 
@@ -205,14 +208,21 @@ def mask_to_polys(m, scale, simplify_mm=0.12):
             pass
     return polys
 
-def scan_segments(poly, angle_deg, spacing, phase=0.0):
-    """Parallel scanlines clipped to poly, returned in original coordinates."""
+def scan_segments(poly, angle_deg, spacing, phase=0.0, spacing_end=None):
+    """Parallel scanlines clipped to poly, returned in original coordinates.
+    With spacing_end the row spacing grades from `spacing` at the first row
+    to `spacing_end` at the last (a gradient fill)."""
     rp = affinity.rotate(poly, -angle_deg, origin=(0, 0), use_radians=False)
     minx, miny, maxx, maxy = rp.bounds
     segs = []
     y = miny + spacing * 0.5 + phase
     row = 0
     while y < maxy:
+        if spacing_end is not None:
+            f = (y - miny) / max(maxy - miny, 1e-9)
+            step = spacing + (spacing_end - spacing) * f
+        else:
+            step = spacing
         line = LineString([(minx - 5, y), (maxx + 5, y)])
         inter = rp.intersection(line)
         parts = []
@@ -227,7 +237,7 @@ def scan_segments(poly, angle_deg, spacing, phase=0.0):
                 continue
             (x1, y1), (x2, y2) = list(pt.coords)[0], list(pt.coords)[-1]
             segs.append((row, (x1, y1), (x2, y2)))
-        y += spacing
+        y += step
         row += 1
     # rotate segment endpoints back
     out = []
@@ -285,6 +295,16 @@ class Sewer:
         # move_to prefers walking over them to jumping.
         self._region_parts = []
         self._region = None
+        self.cut = False          # a trim was forced: the next move must jump
+
+    def cut_thread(self):
+        """Trim right here (an object asked for 'trim after')."""
+        if self.pos is None:
+            return
+        self.tie_off()
+        self.pattern.trim()
+        self.trims += 1
+        self.cut = True
 
     def _st(self, p):
         self.pattern.add_stitch_absolute(pystitch.STITCH, p[0] * 10.0, p[1] * 10.0)
@@ -302,7 +322,7 @@ class Sewer:
     def tie_off(self):
         """Lock stitches before leaving an area, so the thread can't pull out."""
         u = self._unit_back()
-        if u is None:
+        if u is None or not TIE_OFF:
             return
         home = np.array(self.pos, float)
         for _ in range(2):
@@ -311,6 +331,8 @@ class Sewer:
             self._st((home[0], home[1]))
 
     def tie_in(self, toward):
+        if not TIE_IN:
+            return
         u = np.array(toward, float) - np.array(self.pos, float)
         n = np.linalg.norm(u)
         if n < 1e-6:
@@ -354,7 +376,7 @@ class Sewer:
         if d < 0.05:
             return
         inside = False
-        if d < 45:
+        if d < 45 and not self.cut:
             line = LineString([self.pos, p])
             if poly is not None:
                 inside = poly.buffer(0.35).covers(line)
@@ -364,10 +386,12 @@ class Sewer:
         if inside:
             self.run_to(p, 2.6)
         else:
-            self.tie_off()
-            if d > TRIM_DIST:
-                self.pattern.trim()
-                self.trims += 1
+            if not self.cut:
+                self.tie_off()
+                if d > TRIM_DIST:
+                    self.pattern.trim()
+                    self.trims += 1
+            self.cut = False
             self.pattern.add_stitch_absolute(pystitch.JUMP, p[0] * 10.0, p[1] * 10.0)
             self.jumps += 1
             self._st(p)
@@ -417,11 +441,12 @@ def bean_run(sewer, pts, maxlen=2.5, travel=None, repeats=1):
             sewer.run_to(tuple(b), maxlen)
 
 def sew_fill(sewer, poly, angle, spacing, maxlen, stagger=True, start=None, travel=None,
-             pattern=None):
+             pattern=None, spacing_end=None):
     """Rows of running stitch across poly. `pattern` is a needle-point
     function (see inkstitchlib.patterns) that decides where each row's
-    stitches land, for decorative fills."""
-    segs = scan_segments(poly, angle, spacing)
+    stitches land, for decorative fills; `spacing_end` grades the row
+    spacing across the shape (gradient fill)."""
+    segs = scan_segments(poly, angle, spacing, spacing_end=spacing_end)
     order = order_segments(segs, start)
     tp = travel if travel is not None else poly
     th = -np.radians(angle)
@@ -988,7 +1013,7 @@ def sew_ring(sewer, ring, travel=None, phase=BOTH):
                 inner = np.hypot(b[0] - ring[i - 2][1][0], b[1] - ring[i - 2][1][1])
                 outer = np.hypot(a[0] - ring[i - 2][0][0], a[1] - ring[i - 2][0][1])
                 if outer > 1e-6 and inner < DENSITY_TRIGGER * outer:
-                    b = (b[0] + (a[0] - b[0]) * 0.45, b[1] + (a[1] - b[1]) * 0.45)
+                    b = (b[0] + (a[0] - b[0]) * SHORT_FRAC, b[1] + (a[1] - b[1]) * SHORT_FRAC)
             satin_to(sewer, a if side == 0 else b, i)
             side ^= 1
 

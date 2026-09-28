@@ -113,7 +113,7 @@ def sew_polylines(sewer, lines, travel, max_stitch):
 
 
 def sew_area(sewer, poly, method, angle, spacing, max_stitch,
-             stagger=True, travel=None):
+             stagger=True, travel=None, spacing_end=None):
     """Top fill dispatch: tatami (scanline), contour, or circular.
 
     The region is grown by the pull compensation first: a fill pulls the
@@ -127,12 +127,13 @@ def sew_area(sewer, poly, method, angle, spacing, max_stitch,
     pat = patterns.make(method, max_stitch)
     if pat is not None:
         core.sew_fill(sewer, poly, angle, spacing, max(max_stitch, 1.5), stagger=False,
-                      start=sewer.pos, travel=travel, pattern=pat)
+                      start=sewer.pos, travel=travel, pattern=pat, spacing_end=spacing_end)
         return
     if method == 'walk':
         # open running-stitch fill: light coverage that lets the fabric show
         core.sew_fill(sewer, poly, angle, max(spacing * 3.0, 1.2), max(max_stitch, 3.5),
-                      stagger=True, start=sewer.pos, travel=travel)
+                      stagger=True, start=sewer.pos, travel=travel,
+                      spacing_end=None if spacing_end is None else max(spacing_end * 3.0, 1.2))
         return
     if method == 'contour':
         rings = contour_rings(poly, spacing, step=min(1.8, max_stitch))
@@ -145,4 +146,4 @@ def sew_area(sewer, poly, method, angle, spacing, max_stitch,
             sew_polylines(sewer, lines, travel, max_stitch)
             return
     core.sew_fill(sewer, poly, angle, spacing, max_stitch,
-                  stagger=stagger, start=sewer.pos, travel=travel)
+                  stagger=stagger, start=sewer.pos, travel=travel, spacing_end=spacing_end)

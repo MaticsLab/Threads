@@ -795,6 +795,93 @@ def test_fill_patterns_and_previews():
     assert client.get('/api/fill_preview/nope.png').status_code == 404
 
 
+def test_quote_v2_templates_and_export_options(image_job):
+    from inkstitchlib import worksheet
+    q = worksheet.quote(10000, setup=25, price_per_1000=2, min_digitizing=30, garment_qty=12,
+                        garment_base=8, markup_pct=50, run_per_1000=1, colour_changes=3,
+                        colour_fee=0.5, extra_per_piece=1, discount_pct=10, rush_pct=0, tax_pct=8)
+    assert q['digitizing'] == 30                      # minimum beats 10k × $2/1000
+    assert abs(q['marked_up'] - 144) < 1e-9 and abs(q['run_piece'] - 12.5) < 1e-9
+    assert abs(q['run'] - 150) < 1e-9 and abs(q['discount'] - 29.4) < 1e-9
+    assert abs(q['subtotal'] - (25 + 30 + 144 + 150 - 29.4)) < 1e-9
+    assert abs(q['total'] - q['subtotal'] * 1.08) < 1e-9 and abs(q['per_piece'] - q['total'] / 12) < 1e-9
+    r = client.post('/api/quote_calc', json={'stitches': 5000, 'colour_changes': 2, 'params': {'price_per_1000': 3, 'colour_fee': 1, 'garment_qty': 2}})
+    assert r.status_code == 200 and abs(r.json()['digitizing'] - 15) < 1e-9 and abs(r.json()['run'] - 4) < 1e-9
+    r = client.post('/api/quotes', json={'name': 'Left chest', 'params': {'setup': 20, 'price_per_1000': 2.5}})
+    assert r.status_code == 200
+    qid = r.json()['id']
+    tpls = client.get('/api/quotes').json()
+    assert any(t['id'] == qid and t['params']['setup'] == 20 for t in tpls)
+    assert client.delete('/api/quotes/%d' % qid).status_code == 200
+    job, _ = image_job
+    r = client.get('/api/quote/%s.pdf?setup=20&price_per_1000=2&garment_qty=3&garment_base=5&name=Test' % job)
+    assert r.status_code == 200 and r.content[:4] == b'%PDF'
+    # a single format at a chosen origin, and a zip of several with both PDFs
+    r = client.get('/api/download/%s?fmt=pes&origin=tl&name=My%%20Logo' % job)
+    assert r.status_code == 200 and 'Logo.pes' in r.headers['content-disposition']
+    import io, zipfile
+    r = client.get('/api/download/%s?formats=dst,jef&worksheet_pdf=1&quote_pdf=1&setup=10&name=Logo' % job)
+    assert r.status_code == 200
+    names = zipfile.ZipFile(io.BytesIO(r.content)).namelist()
+    assert 'Logo.dst' in names and 'Logo.jef' in names and 'Logo-worksheet.pdf' in names and 'Logo-quote.pdf' in names
+    r = client.get('/api/download/%s?fmt=zip' % job)
+    names = zipfile.ZipFile(io.BytesIO(r.content)).namelist()
+    assert 'design.dst' in names and 'design-worksheet.pdf' in names
+
+
+def test_underlay_list_and_counts():
+    from inkstitchlib import layers as veclayers
+    import pystitch
+    box = {'shell': [[0, 0], [20, 0], [20, 10], [0, 10]], 'holes': []}
+    L = lambda prm: [{'id': 'a1', 'name': 'A', 'color': '#111111', 'polys': [box], 'params': dict({'stitch': 'fill'}, **prm)}]
+    n = lambda prm: sum(1 for q in veclayers.stitch(L(prm))[0].stitches if (q[2] & 0xFF) == pystitch.STITCH)
+    none = n({'underlays': []})
+    one = n({'underlays': [{'type': 'contour', 'len_mm': 2}]})
+    two = n({'underlays': [{'type': 'contour', 'len_mm': 2}, {'type': 'zigzag', 'len_mm': 3}]})
+    assert none < one < two
+    assert veclayers.STITCH_COUNTS.get('a1', 0) > 0
+    r = client.post('/api/stitch_layers', json={'layers': L({'underlays': [{'type': 'center'}], 'short_frac': 0.3})})
+    assert r.status_code == 200 and r.json()['counts']['a1'] > 50
+
+
+def test_stitch_options_tie_trim_speed():
+    from inkstitchlib import layers as veclayers
+    import pystitch
+    box = {'shell': [[0, 0], [20, 0], [20, 10], [0, 10]], 'holes': []}
+    box2 = {'shell': [[30, 0], [50, 0], [50, 10], [30, 10]], 'holes': []}
+    L = lambda prm: [{'name': 'A', 'color': '#111111', 'polys': [box], 'params': dict({'stitch': 'fill'}, **prm)},
+                     {'name': 'B', 'color': '#111111', 'polys': [box2], 'params': {'stitch': 'fill'}}]
+    cmds = lambda pat: [c & 0xFF for x, y, c in pat.stitches]
+    base = cmds(veclayers.stitch(L({}))[0])
+    trimmed = cmds(veclayers.stitch(L({'trim_after': True}))[0])
+    assert trimmed.count(pystitch.TRIM) > base.count(pystitch.TRIM)
+    no_ties = cmds(veclayers.stitch(L({'tie_on': False, 'tie_off': False}))[0])
+    assert no_ties.count(pystitch.STITCH) < base.count(pystitch.STITCH)
+    slow = cmds(veclayers.stitch(L({'speed': 'slow'}))[0])
+    assert pystitch.SLOW in slow and pystitch.SLOW not in base
+
+
+def test_gradient_fill():
+    from inkstitchlib import layers as veclayers
+    import pystitch
+    import numpy as np
+    box = {'shell': [[0, 0], [30, 0], [30, 30], [0, 30]], 'holes': []}
+    F = lambda prm: {'name': 'F', 'color': '#1a3b69', 'polys': [box],
+                     'params': dict({'stitch': 'fill', 'angle': 0, 'underlay': 'none'}, **prm)}
+    st = lambda pat: np.array([(x, y) for x, y, c in pat.stitches if (c & 0xFF) == pystitch.STITCH], float) / 10.0
+    plain = st(veclayers.stitch([F({})])[0])
+    grad = st(veclayers.stitch([F({'gradient': True, 'gradient_to_mm': 2.0})])[0])
+    flip = st(veclayers.stitch([F({'gradient': True, 'gradient_to_mm': 2.0, 'gradient_flip': True})])[0])
+    assert len(grad) < len(plain) * 0.6 and abs(len(grad) - len(flip)) < len(grad) * 0.15
+    # dense end vs open end: many more needle points in one half of the shape
+    top = (grad[:, 1] < 0).sum(); bottom = (grad[:, 1] >= 0).sum()
+    assert max(top, bottom) > 2.0 * min(top, bottom)
+    ftop = (flip[:, 1] < 0).sum(); fbottom = (flip[:, 1] >= 0).sum()
+    assert (top > bottom) != (ftop > fbottom)
+    r = client.post('/api/stitch_layers', json={'layers': [F({'gradient': True, 'fill_method': 'waves'})]})
+    assert r.status_code == 200, r.text
+
+
 def test_object_refinements():
     """Split satin, hand stitch, per-object underlay and the origin the studio
     uses to overlay stitches on the shapes."""

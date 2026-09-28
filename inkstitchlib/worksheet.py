@@ -134,16 +134,80 @@ def _kv_rows(c, x, y, rows, key_w=42 * mm, lh=13):
     return y
 
 
+QUOTE_FIELDS = ('setup', 'price_per_1000', 'min_digitizing', 'garment_qty', 'garment_base',
+                'markup_pct', 'run_per_1000', 'colour_fee', 'extra_per_piece',
+                'discount_pct', 'rush_pct', 'tax_pct')
+
+
 def quote(stitches, setup=0.0, price_per_1000=0.0, garment_qty=0, garment_base=0.0,
-          markup_pct=0.0, discount_pct=0.0):
-    """The embTools quote sheet calculation (quotesheet.cpp)."""
-    product = garment_qty * garment_base
-    marked_up = (markup_pct / 100.0) * product + product
-    discount = (discount_pct / 100.0) * product
-    digitizing = (price_per_1000 / 1000.0) * stitches
-    total = setup + marked_up + (digitizing - discount)
+          markup_pct=0.0, discount_pct=0.0, min_digitizing=0.0, run_per_1000=0.0,
+          colour_changes=0, colour_fee=0.0, extra_per_piece=0.0, rush_pct=0.0, tax_pct=0.0,
+          **_ignored):
+    """The quote calculation, grown from embTools' quote sheet (quotesheet.cpp).
+
+    One-time: setup fee + digitizing (price per 1000 stitches, at least the
+    minimum). Per piece: the garment marked up, plus the embroidery run
+    (run price per 1000 stitches + a fee per colour change + any extra per
+    piece). Then the discount off the per-piece work, a rush surcharge,
+    tax, the total and the price per piece."""
+    stitches = float(stitches or 0)
+    qty = int(garment_qty or 0)
+    digitizing = 0.0
+    if price_per_1000 or min_digitizing:
+        digitizing = max(float(min_digitizing or 0), price_per_1000 / 1000.0 * stitches)
+    product = qty * garment_base
+    marked_up = product * (1 + markup_pct / 100.0)
+    run_piece = run_per_1000 / 1000.0 * stitches + colour_fee * int(colour_changes or 0) + extra_per_piece
+    run = qty * run_piece
+    discount = discount_pct / 100.0 * (marked_up + run)
+    rush = rush_pct / 100.0 * (marked_up + run + digitizing - discount)
+    subtotal = setup + digitizing + marked_up + run - discount + rush
+    tax = tax_pct / 100.0 * subtotal
+    total = subtotal + tax
     return {'product': product, 'marked_up': marked_up, 'discount': discount,
-            'digitizing': digitizing, 'setup': setup, 'total': total}
+            'digitizing': digitizing, 'setup': setup, 'run': run, 'run_piece': run_piece,
+            'rush': rush, 'subtotal': subtotal, 'tax': tax, 'total': total,
+            'per_piece': total / qty if qty else 0.0, 'qty': qty}
+
+
+def quote_rows(stitches, quote_params):
+    """(label, amount) lines for a quote, only the ones that apply."""
+    q = quote(stitches, **quote_params)
+    g = lambda k, d=0: quote_params.get(k, d) or d
+    rows = []
+    if q['setup']:
+        rows.append(('Setup fee', '$%.2f' % q['setup']))
+    if q['digitizing']:
+        lab = 'Digitizing (%s st @ $%.2f/1000' % ('{:,}'.format(int(stitches)), g('price_per_1000'))
+        if g('min_digitizing') and q['digitizing'] <= g('min_digitizing'):
+            lab += ', minimum'
+        rows.append((lab + ')', '$%.2f' % q['digitizing']))
+    if q['marked_up']:
+        rows.append(('Garments (%d × $%.2f%s)' % (q['qty'], g('garment_base'),
+                     ', %+.0f%% markup' % g('markup_pct') if g('markup_pct') else ''), '$%.2f' % q['marked_up']))
+    if q['run']:
+        rows.append(('Embroidery (%d × $%.2f per piece)' % (q['qty'], q['run_piece']), '$%.2f' % q['run']))
+    if q['discount']:
+        rows.append(('Discount (%.0f%%)' % g('discount_pct'), '-$%.2f' % q['discount']))
+    if q['rush']:
+        rows.append(('Rush (%.0f%%)' % g('rush_pct'), '$%.2f' % q['rush']))
+    if q['tax']:
+        rows.append(('Subtotal', '$%.2f' % q['subtotal']))
+        rows.append(('Tax (%.2f%%)' % g('tax_pct'), '$%.2f' % q['tax']))
+    return q, rows
+
+
+def build_quote(path, stitches, quote_params, design_name='design', client='',
+                theme=None, logo_path=None, colour_changes=0, notes=''):
+    """A one-page quote PDF on its own."""
+    c = Canvas(path, pagesize=letter)
+    c.setTitle('%s — quote' % design_name)
+    _apply_theme(c, theme, logo_path)
+    _quote_page(c, stitches, dict(quote_params, colour_changes=colour_changes), design_name,
+                client=client, notes=notes)
+    c.showPage()
+    c.save()
+    return path
 
 
 # ------------------------------------------------ production worksheet
@@ -393,28 +457,22 @@ def _production_page(c, pattern, report, layers, thread_matches, preview_png,
     _text(c, x1 - 3, fy, 'Page %d of %d' % (c.getPageNumber(), pages), 7.5, align='right')
 
 
-def _quote_page(c, stitches, quote_params, design_name):
-    """The embTools quote sheet on its own page (production layout)."""
+def _quote_page(c, stitches, quote_params, design_name, client='', notes=''):
+    """The quote on its own page."""
+    import datetime
     W, H = c._pagesize
-    q = quote(stitches, **quote_params)
+    q, rows = quote_rows(stitches, quote_params)
     x = 0.5 * 72
     y = H - 0.6 * 72
     _text(c, x, y, 'Quote — %s' % design_name, 14, bold=True, color=c._accent)
+    _text(c, W - x, y, datetime.date.today().strftime('%b %d, %Y'), 9, align='right')
+    if client:
+        y -= 15
+        _text(c, x, y, 'For: %s' % client, 10)
     y -= 10
     c.setStrokeColor(black)
     c.line(x, y, W - x, y)
     y -= 20
-    rows = [('Setup fee', '$%.2f' % q['setup']),
-            ('Digitizing (%s st @ $%.2f/1000)' % ('{:,}'.format(stitches),
-                                                  quote_params.get('price_per_1000', 0)),
-             '$%.2f' % q['digitizing'])]
-    if q['product']:
-        rows.append(('Garments (%d × $%.2f, %+.0f%% markup)'
-                     % (quote_params.get('garment_qty', 0), quote_params.get('garment_base', 0),
-                        quote_params.get('markup_pct', 0)), '$%.2f' % q['marked_up']))
-    if q['discount']:
-        rows.append(('Discount (%.0f%%)' % quote_params.get('discount_pct', 0),
-                     '-$%.2f' % q['discount']))
     for k, v in rows:
         _text(c, x, y, k, 10)
         _text(c, W - x, y, v, 10, align='right')
@@ -422,6 +480,15 @@ def _quote_page(c, stitches, quote_params, design_name):
     c.line(x, y + 10, W - x, y + 10)
     _text(c, x, y - 4, 'Total', 11, bold=True)
     _text(c, W - x, y - 4, '$%.2f' % q['total'], 11, bold=True, align='right')
+    if q['qty']:
+        y -= 16
+        _text(c, x, y - 4, 'Per piece (%d)' % q['qty'], 10)
+        _text(c, W - x, y - 4, '$%.2f' % q['per_piece'], 10, align='right')
+    if notes:
+        y -= 30
+        for line in str(notes).splitlines()[:12]:
+            _text(c, x, y, line[:110], 9)
+            y -= 13
 
 
 def build_production(path, pattern, report, layers, thread_matches=None,
@@ -529,28 +596,12 @@ def build(path, pattern, report, layers, thread_matches=None, preview_png=None,
 
     # quote block (embTools port)
     if quote_params:
-        q = quote(stitches, **quote_params)
-        y -= 14
+        q, qrows = quote_rows(stitches, quote_params)
         _text(c, MARGIN, y, 'QUOTE', 9, bold=True, color=c._accent)
         y -= 6
         c.setStrokeColor(LINE)
         c.line(MARGIN, y, PAGE_W - MARGIN, y)
         y -= 14
-        qrows = [
-            ('Setup fee', '$%.2f' % q['setup']),
-            ('Digitizing (%s st @ $%.2f/1000)' % ('{:,}'.format(stitches),
-                                                  quote_params.get('price_per_1000', 0)),
-             '$%.2f' % q['digitizing']),
-        ]
-        if q['product']:
-            qrows.append(('Garments (%d × $%.2f, %+.0f%% markup)'
-                          % (quote_params.get('garment_qty', 0),
-                             quote_params.get('garment_base', 0),
-                             quote_params.get('markup_pct', 0)),
-                          '$%.2f' % q['marked_up']))
-        if q['discount']:
-            qrows.append(('Discount (%.0f%%)' % quote_params.get('discount_pct', 0),
-                          '-$%.2f' % q['discount']))
         for k, v in qrows:
             _text(c, MARGIN, y, k, 9, color=MUTED)
             _text(c, MARGIN + 120 * mm, y, v, 9, align='right')

@@ -218,10 +218,18 @@ Notes for the Containers runtime:
 - **Canvas workspace** — the studio (`/studio`) is a full-screen grey grid
   canvas with floating dark panels: a name pill (rename, save, worksheet,
   clients) top-left, the design's height/width in inches with fit-to-screen
-  and hoop toggles top-centre, Export / Save top-right; the object panel on
-  the left (the selected shape's colour, stitch type and settings — see
-  *Design tools*); an Artwork dock for importing files (drop zone, size &
-  hoop, digitizer settings, thread brand); a Layers dock on the
+  and hoop toggles top-centre, Export / Save top-right (a back arrow
+  top-left returns to the clients page); the object panel on the left (the
+  selected shape's colour, stitch type and settings — see *Design tools*);
+  the canvas **is the hoop** — a rounded frame with the sewing field dashed
+  inside, chosen in Settings (presets, saved custom sizes), with a
+  unit-aware grid (in / cm / mm), optional rulers, snap to grid and snap
+  to objects; an Artwork dock where every imported image is its own layer
+  on the hoop (drag it, scale it from its corners, dim it; its toolbar
+  offers AI layers, Auto digitize, lock and delete); a Settings dock
+  (Visibility: units, grid, snapping, rulers, show jumps / trims / tie-ons
+  / needle points; Hoop; fabric & machine; stitch and underlay defaults;
+  thread brand; tools); a Layers dock on the
   right listing every thread block with a stitched thumbnail, thread name
   and number, colour dot and a recolour gear; an icon rail pinned to the
   right edge that slides beside whichever panel is open — Layers (shapes
@@ -229,9 +237,12 @@ Notes for the Containers runtime:
   colour stops in sew order), Artwork, Colors (the whole thread library:
   every brand, search, screen eyedropper, the design's own colours),
   settings and Project info (name, dimensions, shapes, colour changes,
-  colours, stitch count); a bottom icon toolbar
-  (select, plan, density, pen, AI layers, threads, sketch, text, stitch,
-  player, realistic, 3D) with key hints; zoom in/out with a % readout; and
+  colours, stitch count); a bottom toolbar (select, pan, measure | open,
+  closed, freehand, pen, text, shapes | play, realistic) with key hints —
+  play turns the bar into a stitch player in place (timeline with a dot per
+  colour stop, speed 1–64×, play/pause, close) that sews the design over
+  the shapes with jumps dashed and colour changes marked, and the realistic
+  toggle (R) persists while you edit; zoom in/out with a % readout; and
   undo/redo that steps back and forth between the designs made this
   session. Icons are the open-source Lucide set. One **Create** tab takes any file —
   PNG/JPG artwork, SVG, or a machine file — and shows only the settings that
@@ -257,11 +268,28 @@ Notes for the Containers runtime:
   space, stitch length, pull compensation, angle, hand stitch, underpath,
   satin border); plus *Density Control* (row shortening with its density
   trigger) and *Underlays* (auto / light / heavy / none, with what will be
-  sewn). Every setting is per object and goes to the engine with the
-  shape. There is no stitch button: the design re-sews itself as you work
+  sewn — a list of underlays, each centre / contour / zigzag with its own
+  stitch length, add or remove them; plus stitch shortening with a trigger
+  spacing and fractional spacing, and a gradient fill that opens the rows
+  up towards one edge). The gear on a layer opens **Properties**: stitch
+  type, closed/open, points, stitches; name, colour, visibility,
+  transparency; tie on / tie off / trim after and slow / fast speed. The
+  toolbar above a selected shape offers Edit shape (properties, duplicate,
+  bring to front / send to back, flip), lock and delete. Every setting is
+  per object and goes to the engine with the shape. There is no stitch
+  button: the design re-sews itself as you work
   and the editor shows the real stitches over the shapes (flat shapes only
   while one is being dragged or until the re-stitch lands), so Export and
   the worksheet are always ready. Press **?** for the shortcut list.
+- **Export** — one dialog: stitch / shape / colour-change / size cards, a
+  filename, the file types to include (any of DST, PES, JEF, EXP, VP3, XXX,
+  U01, PEC, TBF, CSV, PNG, or *Export all*), the worksheet PDF (layout,
+  theme) and the quote PDF, the origin point (which corner or centre is
+  (0, 0) in the file) and the **Quote**: setup fee, digitizing per 1000
+  stitches with a minimum, garments × cost with markup, an embroidery run
+  price per piece (per 1000 stitches + per colour change + extra), discount,
+  rush and tax, with the breakdown, total and per-piece price live — saved
+  as named templates for next time.
 - **Text tool** — lettering is a canvas add-on: type text and place it
   below/above/beside/centered on the current design (appended as a new
   colour block, `POST /api/lettering` with `job` + `placement`), or start a
@@ -377,6 +405,10 @@ POST /api/vectorize              image -> editable vector layers (no stitches ye
 POST /api/name_layers            vision-model names for the extracted layers
 POST /api/stitch_layers          sew the arranged layers into a design (+ origin_mm)
 GET  /api/fills                  the fill patterns
+GET  /api/download/{job}         one format (fmt, origin=tl…br, name) or a zip of
+                                 formats=dst,pes,… (+worksheet_pdf, quote_pdf)
+GET  /api/quote/{job}.pdf        the quote alone; POST /api/quote_calc prices a design
+GET/POST/DELETE /api/quotes      saved quote templates
 GET  /api/fill_preview/{id}.png  a rendered swatch of one fill
 GET  /api/threads/all            the whole thread library, every brand
                                  layers may carry `lines` (open paths) sewn as
