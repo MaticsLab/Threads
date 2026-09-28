@@ -101,50 +101,57 @@ def _poly_from_data(d):
         return None
 
 
-def stitch(layers_in, max_satin=8.0):
-    """Sew the arranged layers, in order, one uniform treatment per object."""
+STITCH_TYPES = ('auto', 'fill', 'outline', 'run', 'applique', 'puff')
+
+
+def _read_layer(L, max_satin):
+    prm = {**DEFAULT_PARAMS, **(L.get('params') or {})}
+    density = max(0.25, min(3.0, float(prm.get('density') or 0.4)))
+    method = prm.get('fill_method')
+    if method not in ('tatami', 'contour', 'circular'):
+        method = 'tatami'
+    stype = prm.get('stitch')
+    if stype not in STITCH_TYPES:
+        stype = 'auto'
+    border = max(0.5, min(3.0, float(prm.get('border_mm') or 1.0)))
+    hexv = str(L.get('color', '#1A3B69')).lstrip('#')
+    if len(hexv) != 6:
+        hexv = '1A3B69'
+    v = int(hexv, 16)
+    rgb = ((v >> 16) & 255, (v >> 8) & 255, v & 255)
+    ang = prm.get('angle')
+    ang = None if ang in (None, '', 'auto') else float(ang)
+    return {'density': density, 'method': method, 'type': stype, 'border': border,
+            'rgb': rgb, 'angle': ang, 'name': (L.get('name') or 'Layer')[:48],
+            'max_satin': max_satin}
+
+
+def stitch(layers_in, max_satin=8.0, settings=None):
+    """Sew the arranged layers, one uniform treatment per object.
+
+    Objects are planned into colour blocks first (core.plan_blocks): a
+    layer's objects join an earlier block of the same colour whenever
+    nothing sewn in between would cover them, so a design with the same
+    thread in several layers still sews with the fewest colour stops.
+    Each block sews all of its underlay, then all of its top stitching.
+    Appliqué layers keep their own block and sew placement line → stop →
+    tack-down → stop → satin border, for every piece in the layer at once.
+
+    settings: {underlay, pull_comp, min_satin, knockdown, cap_mode}.
+    """
     import pystitch
+    from shapely.ops import unary_union
 
-    s = core.Sewer()
-    block_colors = []
-    block_layers = []
-    prev_rgb = None
-    drawn = 0
+    settings = settings or {}
+    core.set_tunables(underlay=settings.get('underlay'),
+                      pull_comp=settings.get('pull_comp'),
+                      min_satin=settings.get('min_satin'))
 
-    def start_block(rgb, name):
-        nonlocal prev_rgb
-        if rgb == prev_rgb:
-            return
-        th = pystitch.EmbThread()
-        th.color = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
-        th.description = name[:48]
-        if prev_rgb is None:
-            s.pattern.add_thread(th)
-        else:
-            s.color_break(th)
-        block_colors.append(rgb)
-        block_layers.append({'name': name[:48],
-                             'hex': '#%02X%02X%02X' % rgb, 'rgb': rgb})
-        prev_rgb = rgb
-
+    pieces = []                                   # (key, geom, item)
     for L in layers_in:
         if not L.get('visible', True):
             continue
-        prm = {**DEFAULT_PARAMS, **(L.get('params') or {})}
-        density = max(0.25, min(3.0, float(prm.get('density') or 0.4)))
-        method = prm.get('fill_method')
-        if method not in ('tatami', 'contour', 'circular'):
-            method = 'tatami'
-        stype = prm.get('stitch')
-        if stype not in ('auto', 'fill', 'outline', 'run'):
-            stype = 'auto'
-        border = max(0.5, min(3.0, float(prm.get('border_mm') or 1.0)))
-        hexv = str(L.get('color', '#1A3B69')).lstrip('#')
-        if len(hexv) != 6:
-            hexv = '1A3B69'
-        v = int(hexv, 16)
-        rgb = ((v >> 16) & 255, (v >> 8) & 255, v & 255)
-
+        info = _read_layer(L, max_satin)
         polys = [q for q in (_poly_from_data(d) for d in L.get('polys') or []) if q]
         flat = []
         for p in polys:
@@ -152,43 +159,56 @@ def stitch(layers_in, max_satin=8.0):
         flat = [q for q in flat if q.area > 0.3]
         if not flat:
             continue
-        start_block(rgb, L.get('name') or 'Layer')
+        key = info['rgb'] if info['type'] != 'applique' else (info['rgb'], 'applique', id(L))
+        for g in flat:
+            pieces.append((key, g, dict(info, g=g)))
+    if not pieces:
+        raise LayerError('nothing to stitch — every layer is hidden or empty')
 
-        def sew_one(g, phase):
-            # one uniform direction per object: its own principal axis unless
-            # the layer sets an explicit angle
-            ang = prm.get('angle')
-            ang = (core.principal_angle(g) + 90.0) if (ang in (None, '', 'auto')) else float(ang)
-            if stype == 'run':
-                if phase != core.UNDER:
-                    core.sew_edge_run(s, g, inset=0.35, travel=g)
-                return
-            if stype == 'outline':
-                ring = core.satin_ring(g, border, density)
-                if ring:
-                    core.sew_ring(s, ring, g, phase=phase)
-                return
-            mw = core.poly_max_width(g)
-            if stype == 'auto' and mw <= max_satin and g.area >= 1.5:
-                core.sew_blob(s, g, density, max_satin, min(border, mw * 0.3),
-                              travel=g, heavy_underlay=True, phase=phase)
-                return
-            if phase != core.TOP:
-                core.sew_edge_run(s, g, travel=g)
-            if phase != core.UNDER:
-                fills.sew_area(s, g, method, ang, density, 3.5, travel=g)
-                if stype == 'auto' and g.area >= 4.0:
-                    ring = core.satin_ring(g, border, density)
-                    if ring:
-                        core.sew_ring(s, ring, g)
+    s = core.Sewer()
+    block_layers = []
 
-        # the whole layer's underlay first, then its top stitching
+    def start_block(rgb, name):
+        th = pystitch.EmbThread()
+        th.color = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
+        th.description = name
+        if not block_layers:
+            s.pattern.add_thread(th)
+        else:
+            s.color_break(th)
+        block_layers.append({'name': name, 'hex': '#%02X%02X%02X' % rgb, 'rgb': rgb})
+
+    everything = unary_union([g for _k, g, _it in pieces])
+    centre_x = everything.centroid.x
+    keyfn = lambda it: (it['g'].centroid.x, it['g'].centroid.y)
+
+    def order(items):
+        if settings.get('cap_mode'):
+            return core.cap_order(items, keyfn, centre_x)
+        return core.order_by_nearest(items, keyfn, s.pos)
+
+    if settings.get('knockdown'):
+        start_block(pieces[0][2]['rgb'], 'Knockdown')
+        core.sew_knockdown(s, everything)
+
+    for key, items in core.plan_blocks(pieces):
+        rgb = items[0]['rgb']
+        start_block(rgb, items[0]['name'])
+        if items[0]['type'] == 'applique':
+            _sew_applique_block(s, order(items))
+            continue
         for phase in (core.UNDER, core.TOP):
-            for g in core.order_by_nearest(flat, lambda q: (q.centroid.x, q.centroid.y), s.pos):
-                sew_one(g, phase)
-        drawn += len(flat)
+            if phase == core.TOP:
+                s.region_clear()
+                for it in items:
+                    s.region_add(it['g'])
+            for it in order(items):
+                _sew_one(s, it, phase)
+                if phase == core.TOP:
+                    s.region_subtract(it['g'])
+        s.region_clear()
 
-    if drawn == 0 or s.count == 0:
+    if s.count == 0:
         raise LayerError('nothing to stitch — every layer is hidden or empty')
     s.tie_off()
     s.pattern.end()
@@ -196,3 +216,70 @@ def stitch(layers_in, max_satin=8.0):
     for BL in block_layers:
         BL['rgb'] = tuple(BL['rgb'])
     return s.pattern, block_layers
+
+
+def _sew_one(s, it, phase):
+    g, stype = it['g'], it['type']
+    density, border, method = it['density'], it['border'], it['method']
+    # one uniform direction per object: its own principal axis unless the
+    # layer sets an explicit angle
+    ang = (core.principal_angle(g) + 90.0) if it['angle'] is None else it['angle']
+    if stype == 'run':
+        if phase != core.UNDER:
+            core.sew_edge_run(s, g, inset=0.35, travel=g)
+        return
+    if stype == 'outline':
+        ring = core.satin_ring(g, border, density, start=s.pos)
+        if ring:
+            core.sew_ring(s, ring, g, phase=phase)
+        return
+    if stype == 'puff':
+        # 3D foam: no underlay (it would crush the foam), tight satin with
+        # extra width so the foam edge is buried, then a perforating run
+        # around the outline so the surplus foam tears away clean
+        if phase == core.UNDER:
+            return
+        rows = core.blob_rows(g, min(density, 0.30), it['max_satin'], start=s.pos)
+        if rows is not None:
+            for a, b, _row in rows:
+                a, b = core.widen(a, b, core.comp_side() + 0.3)
+                s.move_to(a, g)
+                s.run_to(b, it['max_satin'] + 1)
+        else:
+            fills.sew_area(s, g, method, ang, min(density, 0.30), 3.5, travel=g)
+        core.outline_run(s, g, step=1.0, travel=g)
+        return
+    mw = core.poly_max_width(g)
+    if stype == 'auto' and mw <= it['max_satin'] and g.area >= 1.5:
+        core.sew_blob(s, g, density, it['max_satin'], min(border, mw * 0.3),
+                      travel=g, heavy_underlay=True, phase=phase)
+        return
+    if phase != core.TOP:
+        core.fill_underlay(s, g, ang, travel=g)
+    if phase != core.UNDER:
+        fills.sew_area(s, g, method, ang, density, 3.5, travel=g)
+        if stype == 'auto' and g.area >= 4.0:
+            ring = core.satin_ring(g, border, density, start=s.pos)
+            if ring:
+                core.sew_ring(s, ring, g, phase=core.TOP)
+
+
+def _sew_applique_block(s, items):
+    """Placement lines for every piece → stop (lay the fabric) → tack-down
+    zigzag → stop (trim the fabric) → satin border with its underlay."""
+    for it in items:
+        core.outline_run(s, it['g'], step=2.5, travel=None)
+    s.stop()
+    for it in items:
+        ring = core.satin_ring(it['g'], max(0.8, it['border'] * 0.6), 1.2, start=s.pos)
+        if ring:
+            core.sew_ring(s, ring, None, phase=core.TOP)
+        else:
+            core.outline_run(s, it['g'], offset=-0.4, step=1.5)
+    s.stop()
+    for it in items:
+        ring = core.satin_ring(it['g'], it['border'], it['density'], start=s.pos)
+        if ring:
+            core.sew_ring(s, ring, None, phase=core.BOTH)
+        else:
+            core.outline_run(s, it['g'], step=1.5)

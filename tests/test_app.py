@@ -605,3 +605,106 @@ def test_hoops():
     assert client.post('/api/hoops', json={'w_mm': 'x'}).status_code == 400
     assert client.delete('/api/hoops/%d' % hid).status_code == 200
     assert client.delete('/api/hoops/%d' % hid).status_code == 404
+
+
+def test_presets_and_stitch_settings():
+    r = client.get('/api/presets').json()
+    assert any(f['id'] == 'fleece' and f['knockdown'] for f in r['fabrics'])
+    assert any(m['id'] == 'tajima' and m['format'] == 'dst' for m in r['machines'])
+    from app import _stitch_settings
+    st = _stitch_settings({'settings': {'underlay': 'bogus', 'pull_comp': 5, 'knockdown': 1}})
+    assert st == {'underlay': 'auto', 'pull_comp': 1.0, 'min_satin': 1.0,
+                  'knockdown': True, 'cap_mode': False}
+
+
+def test_knockdown_and_cap_mode_on_image(image_job):
+    job, base = image_job
+    r = client.post('/api/digitize', data={
+        'job': job, 'colors': 2, 'width_mm': 60, 'hoop_w': 100, 'hoop_h': 100,
+        'density': 0.4, 'max_satin': 8, 'autotune': False, 'underlay': 'heavy',
+        'knockdown': True, 'cap_mode': True, 'pull_comp': 0.4, 'fabric': 'fleece'})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert len(d['threads']) == 3                      # knockdown + 2 colours
+    assert d['report']['colour_changes'] == 2
+    assert d['report']['stitches'] > base['report']['stitches']
+    assert len(client.get('/api/stitches/%s' % job).json()) == 3
+    from app import _load_meta
+    assert _load_meta(job)['layers'][0]['name'] == 'Knockdown'
+
+
+def test_pull_compensation_widens_satin():
+    from inkstitchlib import svginput
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="60mm" height="30mm" viewBox="0 0 60 30">'
+           '<path d="M5,10 h50 v6 h-50 z" fill="#1a3b69"/></svg>')
+    narrow, _l, _i = svginput.digitize_svg(svg, pull_comp=0.0)
+    wide, _l, _i = svginput.digitize_svg(svg, pull_comp=0.6)
+
+    import pystitch
+
+    def width(pat):
+        xs = [x for x, y, c in pat.stitches if (c & 0xFF) == pystitch.STITCH]
+        return (max(xs) - min(xs)) / 10.0
+    assert width(narrow) < 50.3 and width(wide) > width(narrow) + 0.5
+
+
+def test_narrow_satin_becomes_running_stitch():
+    from inkstitchlib import pen
+    thin = [{'mode': 'center', 'color': '#a8201a', 'width_mm': 0.6, 'spacing_mm': 0.4,
+             'points': [[0, 0], [30, 0]]}]
+    fat = [{'mode': 'center', 'color': '#a8201a', 'width_mm': 3.0, 'spacing_mm': 0.4,
+            'points': [[0, 0], [30, 0]]}]
+    pt, _ = pen.build(thin)
+    pf, _ = pen.build(fat)
+    import pystitch
+    ys_thin = [abs(y) for x, y, c in pt.stitches if (c & 0xFF) == pystitch.STITCH]
+    ys_fat = [abs(y) for x, y, c in pf.stitches if (c & 0xFF) == pystitch.STITCH]
+    assert max(ys_thin) < 3 and max(ys_fat) > 12         # 0.1 mm units: run vs 3 mm satin
+
+
+def test_layers_colour_sequencing_applique_and_puff():
+    from inkstitchlib import layers as veclayers
+    import pystitch
+    box = lambda x, y, w, h: {'shell': [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], 'holes': []}
+    blue1 = {'name': 'A', 'color': '#1a3b69', 'polys': [box(0, 0, 20, 20)], 'params': {'stitch': 'fill'}}
+    red = {'name': 'B', 'color': '#a8201a', 'polys': [box(40, 0, 20, 20)], 'params': {'stitch': 'fill'}}
+    blue2 = {'name': 'C', 'color': '#1a3b69', 'polys': [box(80, 0, 20, 20)], 'params': {'stitch': 'fill'}}
+    pat, blocks = veclayers.stitch([blue1, red, blue2])
+    assert [b['hex'] for b in blocks] == ['#1A3B69', '#A8201A']     # blue layers merged
+    # red overlapping the first blue must keep a third block
+    red_over = dict(red, polys=[box(10, 5, 20, 10)])
+    pat, blocks = veclayers.stitch([blue1, red_over, dict(blue2, polys=[box(15, 8, 20, 4)])])
+    assert [b['hex'] for b in blocks] == ['#1A3B69', '#A8201A', '#1A3B69']
+
+    app_layer = {'name': 'Patch', 'color': '#1d7a4c', 'polys': [box(0, 0, 30, 30)],
+                 'params': {'stitch': 'applique', 'border_mm': 2.0}}
+    pat, blocks = veclayers.stitch([app_layer])
+    assert pat.count_stitch_commands(pystitch.STOP) == 2 and len(blocks) == 1
+    puff = {'name': 'Puff', 'color': '#f0b428', 'polys': [box(0, 0, 40, 6)],
+            'params': {'stitch': 'puff'}}
+    pat, blocks = veclayers.stitch([puff], settings={'knockdown': True})
+    assert blocks[0]['name'] == 'Knockdown' and len(blocks) == 2
+    r = client.post('/api/stitch_layers', json={'layers': [app_layer, puff],
+                                                'settings': {'cap_mode': True}})
+    assert r.status_code == 200, r.text
+
+
+def test_sketch_mode():
+    from PIL import Image as PImage, ImageDraw as PDraw
+    im = PImage.new('RGB', (400, 300), (255, 255, 255))
+    d = PDraw.Draw(im)
+    d.ellipse([40, 40, 240, 240], outline=(30, 30, 30), width=6)
+    d.line([260, 60, 380, 260], fill=(30, 30, 30), width=6)
+    buf = io.BytesIO(); im.save(buf, 'PNG')
+    r = client.post('/api/sketch', files={'image': ('photo.png', buf.getvalue(), 'image/png')},
+                    data={'width_mm': 80, 'detail': 3, 'color': '#a8201a'})
+    assert r.status_code == 200, r.text
+    dj = r.json()
+    assert dj['kind'] == 'sketch' and dj['sketch_info']['lines'] >= 2
+    # the drawing spans 340 of the 400 px -> 68 mm of the 80 mm image width
+    assert 64 <= dj['report']['width_mm'] <= 72 and len(dj['threads']) == 1
+    single = client.post('/api/sketch', files={'image': ('photo.png', buf.getvalue(), 'image/png')},
+                         data={'width_mm': 80, 'detail': 3, 'bean': False}).json()
+    assert single['report']['stitches'] < dj['report']['stitches'] * 0.6
+    blank = PImage.new('RGB', (200, 200), (255, 255, 255)); b2 = io.BytesIO(); blank.save(b2, 'PNG')
+    assert client.post('/api/sketch', files={'image': ('b.png', b2.getvalue(), 'image/png')}).status_code == 400

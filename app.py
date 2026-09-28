@@ -34,6 +34,7 @@ from inkstitchlib import stitch_svg, threads, lettering, worksheet, svginput, bu
 from inkstitchlib import layers as veclayers
 from inkstitchlib import ai_naming
 from inkstitchlib import density as density_map
+from inkstitchlib import presets, sketch as sketch_mod
 
 JOBS = os.path.join(tempfile.gettempdir(), 'stitchforge_jobs')
 os.makedirs(JOBS, exist_ok=True)
@@ -307,7 +308,13 @@ async def digitize(job: str = Form(...), colors: int = Form(3),
                    autotune: bool = Form(True),
                    fill_method: str = Form('tatami'),
                    fill_angle: float = Form(65.0),
-                   palette: str = Form('Madeira Rayon')):
+                   palette: str = Form('Madeira Rayon'),
+                   underlay: str = Form(''),
+                   pull_comp: float = Form(-1.0),
+                   knockdown: bool = Form(False),
+                   cap_mode: bool = Form(False),
+                   trim_dist: float = Form(2.0),
+                   fabric: str = Form(''), machine: str = Form('')):
     d = _job_dir(job)
     src = None
     for fn in os.listdir(d):
@@ -325,11 +332,25 @@ async def digitize(job: str = Form(...), colors: int = Form(3),
                           hoop_h_mm=hoop_h, row_spacing=density,
                           satin_spacing=round(density / 2, 4),
                           max_satin=max_satin, heavy_underlay=heavy_underlay,
-                          fill_method=fill_method, fill_angle=fill_angle)
+                          fill_method=fill_method, fill_angle=fill_angle,
+                          underlay=presets.clean_underlay(
+                              underlay, 'auto' if heavy_underlay else 'light'),
+                          pull_comp=presets.clamp(pull_comp, 0.0, 1.0, 0.25)
+                          if pull_comp >= 0 else 0.25,
+                          knockdown=knockdown, cap_mode=cap_mode,
+                          trim_dist=presets.clamp(trim_dist, 0.5, 20.0, 2.0))
         pat, rep, stats, log = engine.digitize(
             layers, p, max_passes=4 if autotune else 2)
+        if knockdown:
+            # the knockdown block sews first, in the first thread
+            layers = [{'name': 'Knockdown', 'hex': layers[0]['hex'],
+                       'rgb': layers[0]['rgb']}] + list(layers)
+            rep['stitches'] = sum(1 for q in pat.stitches
+                                  if (q[2] & 0xFF) == pystitch.STITCH)
         settings = {'density': p.row_spacing, 'max_satin': p.max_satin,
-                    'min_fill_area': p.min_fill_area}
+                    'min_fill_area': p.min_fill_area, 'underlay': p.underlay,
+                    'pull_comp': p.pull_comp, 'knockdown': knockdown,
+                    'cap_mode': cap_mode, 'fabric': fabric, 'machine': machine}
         png = _store(job, pat, layers, rep, settings)
         thread_matches = threads.match_layers(layers, palette)
     except HTTPException:
@@ -339,6 +360,12 @@ async def digitize(job: str = Form(...), colors: int = Form(3),
         raise HTTPException(500, f'digitizing failed: {e}')
 
     warnings = []
+    narrow = sum(st.get('narrow', 0) for st in stats)
+    if narrow:
+        warnings.append('%d detail%s narrower than %.1f mm sew as a running stitch '
+                        'instead of satin — enlarge the design or simplify the art '
+                        'to keep them as satin.' % (narrow, '' if narrow == 1 else 's',
+                                                    p.min_satin))
     if not rep['fits_hoop']:
         warnings.append('Design is %.1f x %.1f mm and will not fit the %.0f x %.0f mm '
                         'hoop. Reduce the width.' % (rep['width_mm'], rep['height_mm'],
@@ -481,7 +508,10 @@ async def import_file(design: List[UploadFile] = File(...),
                       palette: str = Form('Madeira Rayon'),
                       job: str = Form(''),
                       placement: str = Form('new'),
-                      gap_mm: float = Form(5.0)):
+                      gap_mm: float = Form(5.0),
+                      underlay: str = Form(''),
+                      pull_comp: float = Form(-1.0),
+                      knockdown: bool = Form(False)):
     """Ink/Stitch style input: read any embroidery file, or digitize SVGs.
 
     Several SVGs in one upload are sewn into one design, each where it sits
@@ -522,7 +552,10 @@ async def import_file(design: List[UploadFile] = File(...),
                 p, lyr, inf = svginput.digitize_svg(
                     data, width_mm=(width_mm or None) if scale is None else None,
                     scale=scale, fill_method=fill_method, fill_angle=fill_angle,
-                    row_spacing=density, center=False)
+                    row_spacing=presets.clamp(density, 0.2, 1.0, 0.35), center=False,
+                    underlay=presets.clean_underlay(underlay) if underlay else None,
+                    pull_comp=presets.clamp(pull_comp, 0.0, 1.0, 0.25) if pull_comp >= 0 else None,
+                    knockdown=knockdown)
             except svginput.SvgError as e:
                 raise HTTPException(400, '%s: %s' % (name, e))
             except Exception as e:
@@ -632,6 +665,50 @@ async def import_file(design: List[UploadFile] = File(...),
                     'warnings': svg_warnings, 'preview': _b64(png)})
 
 
+def _stitch_settings(data):
+    """Sanitised stitch settings shared by the layer and pen paths."""
+    st = data.get('settings') or {}
+    return {'underlay': presets.clean_underlay(st.get('underlay'), 'auto'),
+            'pull_comp': presets.clamp(st.get('pull_comp'), 0.0, 1.0, 0.25),
+            'min_satin': presets.clamp(st.get('min_satin'), 0.3, 3.0, 1.0),
+            'knockdown': bool(st.get('knockdown')),
+            'cap_mode': bool(st.get('cap_mode'))}
+
+
+@app.get('/api/presets')
+def presets_list():
+    """Fabric and machine presets the UI applies to the stitch controls."""
+    return presets.all_presets()
+
+
+# ------------------------------------------------- sketch (redwork) mode
+@app.post('/api/sketch')
+async def sketch_image(image: UploadFile = File(...), width_mm: float = Form(90.0),
+                       detail: int = Form(3), color: str = Form('#1A3B69'),
+                       bean: bool = Form(True), palette: str = Form('Madeira Rayon')):
+    """A photo or line drawing as a one-colour outline sketch (bean stitch)."""
+    job = uuid.uuid4().hex[:12]
+    d = _job_dir(job, must_exist=False)
+    os.makedirs(d, exist_ok=True)
+    src = os.path.join(d, 'src' + os.path.splitext(image.filename or '.png')[1])
+    with open(src, 'wb') as f:
+        f.write(await image.read())
+    try:
+        pat, layers, info = sketch_mod.sketch(
+            src, width_mm=max(10.0, min(400.0, width_mm)), detail=detail,
+            color=color, bean=bean)
+    except sketch_mod.SketchError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f'sketching failed: {e}')
+    rep = basic_report(pat)
+    png = _store(job, pat, layers, rep, dict(info, width_mm=width_mm), kind='sketch')
+    return _native({'job': job, 'kind': 'sketch', 'report': rep, 'sketch_info': info,
+                    'threads': threads.match_layers(layers, palette),
+                    'warnings': [], 'preview': _b64(png)})
+
+
 # ------------------------------------------- AI layers (vector-first design)
 @app.post('/api/vectorize')
 async def vectorize(image: UploadFile = File(...), colors: int = Form(4),
@@ -693,7 +770,7 @@ async def stitch_layers(data: dict):
     if len(lyrs) > 80:
         raise HTTPException(400, 'too many layers (max 80)')
     try:
-        pat, block_layers = veclayers.stitch(lyrs)
+        pat, block_layers = veclayers.stitch(lyrs, settings=_stitch_settings(data))
     except veclayers.LayerError as e:
         raise HTTPException(400, str(e))
     except Exception as e:
@@ -720,7 +797,7 @@ async def pen_digitize(data: dict):
     if len(shapes) > 200:
         raise HTTPException(400, 'too many shapes (max 200)')
     try:
-        pat, layers = pen.build(shapes)
+        pat, layers = pen.build(shapes, settings=_stitch_settings(data))
     except pen.PenError as e:
         raise HTTPException(400, str(e))
     except Exception as e:

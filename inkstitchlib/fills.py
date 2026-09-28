@@ -113,7 +113,16 @@ def sew_polylines(sewer, lines, travel, max_stitch):
 
 def sew_area(sewer, poly, method, angle, spacing, max_stitch,
              stagger=True, travel=None):
-    """Top fill dispatch: tatami (scanline), contour, or circular."""
+    """Top fill dispatch: tatami (scanline), contour, or circular.
+
+    The region is grown by the pull compensation first: a fill pulls the
+    fabric in across its rows, so the sewn area must be drawn wider than
+    the artwork for the finished fill to land on the outline."""
+    comp = core.comp_side()
+    if comp > 0:
+        grown = poly.buffer(comp, join_style=2, mitre_limit=2.0)
+        if grown.geom_type == 'Polygon' and not grown.is_empty:
+            poly = grown
     if method == 'contour':
         rings = contour_rings(poly, spacing, step=min(1.8, max_stitch))
         if rings:

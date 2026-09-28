@@ -205,7 +205,6 @@
   <nav class="topnav">
     <button id="tabClients" onclick="location.href='/'">Clients</button>
     <button id="tabImage" class="on">Create</button>
-    <button id="tabBiz">Business</button>
   </nav>
   <div class="hact">
     <button class="mini" id="saveTop" disabled title="Keep this design in a client's library">
@@ -258,30 +257,64 @@
         </div>
 
         <div id="setArt">
-          <label>Thread colours</label>
-          <select id="colors">
-            <option>2</option><option selected>3</option><option>4</option>
-            <option>5</option><option>6</option>
-          </select>
-
           <div class="row">
-            <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.28" max="0.5"></div>
-            <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
+            <div><label>Mode</label>
+              <select id="artMode">
+                <option value="digitize" selected>Digitize — fills &amp; satin</option>
+                <option value="sketch">Sketch — one-colour outline</option>
+              </select></div>
+            <div id="colorsWrap"><label>Thread colours</label>
+              <select id="colors">
+                <option>2</option><option selected>3</option><option>4</option>
+                <option>5</option><option>6</option>
+              </select></div>
           </div>
-
-          <div class="row">
-            <div><label>Fill method</label>
-              <select id="fillMethod">
-                <option value="tatami" selected>Tatami</option>
-                <option value="contour">Contour</option>
-                <option value="circular">Circular</option>
-              </select>
+          <div id="setDigitize">
+            <div class="row">
+              <div><label>Fill method</label>
+                <select id="fillMethod">
+                  <option value="tatami" selected>Tatami</option>
+                  <option value="contour">Contour</option>
+                  <option value="circular">Circular</option>
+                </select>
+              </div>
+              <div><label>Fill angle <span class="muted">(65 = auto)</span></label><input type="number" id="fillAngle" value="65" step="5" min="0" max="180"></div>
             </div>
-            <div><label>Fill angle <span class="muted">(65 = auto)</span></label><input type="number" id="fillAngle" value="65" step="5" min="0" max="180"></div>
+            <label><input type="checkbox" id="autotune" checked> Auto-tune from QA</label>
           </div>
+          <div id="setSketch" class="hide">
+            <div class="row3">
+              <div><label>Detail <span class="muted" id="skDetailVal">3</span></label>
+                <input type="range" id="skDetail" min="1" max="5" value="3" style="width:100%;margin-top:10px"></div>
+              <div><label>Thread</label><input type="color" id="skColor" value="#1a3b69" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
+              <div><label>Stitch</label>
+                <select id="skBean"><option value="1" selected>Bean (triple)</option><option value="0">Single run</option></select></div>
+            </div>
+          </div>
+        </div>
 
-          <label><input type="checkbox" id="underlay" checked> Heavy underlay</label>
-          <label><input type="checkbox" id="autotune" checked> Auto-tune from QA</label>
+        <div id="stitchBox" class="hide">
+          <div class="row">
+            <div><label>Fabric</label><select id="fabric"><option value="">—</option></select></div>
+            <div><label>Machine</label><select id="machine"><option value="">—</option></select></div>
+          </div>
+          <div class="row3">
+            <div><label>Density (mm)</label><input type="number" id="density" value="0.35" step="0.025" min="0.25" max="0.6"></div>
+            <div><label>Satin cap (mm)</label><input type="number" id="satin" value="8" step="0.5" min="3" max="12"></div>
+            <div><label>Pull comp (mm)</label><input type="number" id="pullComp" value="0.25" step="0.05" min="0" max="1"></div>
+          </div>
+          <div class="row3">
+            <div><label>Underlay</label>
+              <select id="underlayMode">
+                <option value="auto" selected>Auto (by width)</option>
+                <option value="light">Light</option>
+                <option value="heavy">Heavy</option>
+                <option value="none">None</option>
+              </select></div>
+            <div><label>&nbsp;</label><label class="tgl" style="margin:0;height:38px"><input type="checkbox" id="knockdown"> Knockdown</label></div>
+            <div><label>&nbsp;</label><label class="tgl" style="margin:0;height:38px"><input type="checkbox" id="capMode"> Cap frame</label></div>
+          </div>
+          <input type="hidden" id="trimDist" value="2">
         </div>
 
         <div id="setSvg" class="hide">
@@ -315,38 +348,6 @@
         <button id="goLayers" class="wide ghost hide" style="margin-top:8px">✨ AI layers — edit before stitching</button>
       </div>
 
-      <!-- ============================== business (embTools) -->
-      <div id="paneBiz" class="hide">
-        <h2>1 · Clients &amp; vendors</h2>
-        <div class="row">
-          <div><label>Book</label>
-            <select id="bizKind"><option value="client" selected>Clients</option><option value="vendor">Vendors</option></select>
-          </div>
-          <div><label>Sort by</label>
-            <select id="bizSort"><option value="name" selected>Name</option><option value="business">Business</option></select>
-          </div>
-        </div>
-        <div id="bizList" style="max-height:180px;overflow:auto;margin-top:10px"></div>
-
-        <div class="row">
-          <div><label>Name *</label><input type="text" id="bzName"></div>
-          <div><label>Business</label><input type="text" id="bzBusiness"></div>
-        </div>
-        <div class="row">
-          <div><label>Email</label><input type="text" id="bzEmail"></div>
-          <div><label>Phone</label><input type="text" id="bzPhone"></div>
-        </div>
-        <div class="row">
-          <div><label>Mobile</label><input type="text" id="bzMobile"></div>
-          <div><label>Website</label><input type="text" id="bzWebsite"></div>
-        </div>
-        <label>Address</label><input type="text" id="bzAddress">
-        <label>Billing address</label><input type="text" id="bzBilling">
-        <div class="row" style="margin-top:14px">
-          <button id="bizSave">Add</button>
-          <button id="bizDelete" class="ghost" disabled>Delete</button>
-        </div>
-      </div>
 
       <label style="margin-top:16px">Thread palette</label>
       <div class="palrow">
@@ -389,17 +390,6 @@
       <div id="layers"></div>
     </div>
 
-    <div class="card">
-      <h2>Notes (embTools)</h2>
-      <div class="tabs" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
-        <button class="ntab on" data-note="notes">Notes</button>
-        <button class="ntab" data-note="quotes">Quote log</button>
-        <button class="ntab" data-note="todo">To-do</button>
-      </div>
-      <textarea id="noteText" style="min-height:90px" placeholder="Saved on the server, embTools style…"></textarea>
-      <button id="noteSave" class="mini" style="margin-top:8px">Save</button>
-      <span class="muted" id="noteStatus"></span>
-    </div>
   </div>
 
   <section id="work">
@@ -461,6 +451,8 @@
             <option value="fill">Fill only</option>
             <option value="outline">Satin outline</option>
             <option value="run">Running outline</option>
+            <option value="applique">Appliqué (placement · tack-down · border)</option>
+            <option value="puff">3D puff (foam)</option>
           </select></div>
         <div><label>Thread</label>
           <input type="color" id="vlColor" style="width:100%;height:38px;padding:2px;border:1px solid var(--line2);border-radius:9px"></div>
@@ -626,7 +618,7 @@
         <div><label>Design name</label><input type="text" id="qName" value="design"></div>
       </div>
       <div class="row">
-        <div><label>Client (from Business book)</label><select id="qClient"><option value="">—</option></select></div>
+        <div><label>Client</label><select id="qClient"><option value="">—</option></select></div>
         <div></div>
       </div>
       <div class="row3">
@@ -759,7 +751,7 @@ const $ = id => document.getElementById(id);
 let job = null, kind = null, fonts = [], lastThreads = [], rev = 0;  // rev busts caches when a job is extended in place
 
 /* ------------------------------------------------------------- tabs */
-const TABS = { tabImage: 'paneImage', tabBiz: 'paneBiz' };
+const TABS = { tabImage: 'paneImage' };
 Object.keys(TABS).forEach(t => $(t).onclick = () => setTab(t));
 function setTab(active) {
   Object.entries(TABS).forEach(([t, pane]) => {
@@ -788,75 +780,15 @@ function runtimeCalc() {
 ['rtStitches', 'rtSpeed', 'rtTrims', 'rtTrimSec'].forEach(id => $(id).oninput = runtimeCalc);
 runtimeCalc();
 
-/* --------------------------------------- business database (embTools port) */
-const BZ = ['name', 'business_name', 'email', 'phone', 'mobile', 'website', 'address', 'billing_address'];
-const BZ_IDS = ['bzName', 'bzBusiness', 'bzEmail', 'bzPhone', 'bzMobile', 'bzWebsite', 'bzAddress', 'bzBilling'];
-let bizEditing = null;
-
-async function bizLoad() {
-  const rows = await (await fetch(`/api/business/${$('bizKind').value}?sort=${$('bizSort').value}`)).json();
-  $('bizList').innerHTML = rows.map(r =>
-    `<div class="chip" style="cursor:pointer" data-id="${r.id}">
-       <span>${r.name}</span><span class="muted" style="margin-left:auto">${r.business_name || r.email || ''}</span>
-     </div>`).join('') || '<p class="muted">No entries yet</p>';
-  document.querySelectorAll('#bizList .chip').forEach(el => el.onclick = () => bizEdit(rows.find(r => r.id == el.dataset.id)));
-  if ($('bizKind').value === 'client') {
+/* ------------------------------------------ clients (for the worksheet) */
+async function clientsLoad() {
+  try {
+    const rows = await (await fetch('/api/business/client')).json();
     $('qClient').innerHTML = '<option value="">—</option>' +
       rows.map(r => `<option>${r.name}</option>`).join('');
-  }
-  bizClear();
+  } catch (e) {}
 }
-function bizEdit(r) {
-  bizEditing = r.id;
-  BZ.forEach((f, i) => $(BZ_IDS[i]).value = r[f] || '');
-  $('bizSave').textContent = 'Update';
-  $('bizDelete').disabled = false;
-}
-function bizClear() {
-  bizEditing = null;
-  BZ_IDS.forEach(id => $(id).value = '');
-  $('bizSave').textContent = 'Add';
-  $('bizDelete').disabled = true;
-}
-$('bizKind').onchange = bizLoad;
-$('bizSort').onchange = bizLoad;
-$('bizSave').onclick = async () => {
-  const data = {};
-  BZ.forEach((f, i) => data[f] = $(BZ_IDS[i]).value);
-  if (!data.name.trim()) { alert('Name is required'); return; }
-  const kind = $('bizKind').value;
-  const url = bizEditing ? `/api/business/${kind}/${bizEditing}` : `/api/business/${kind}`;
-  const res = await fetch(url, { method: bizEditing ? 'PUT' : 'POST',
-    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-  if (!res.ok) { alert((await res.json()).detail); return; }
-  bizLoad();
-};
-$('bizDelete').onclick = async () => {
-  if (!bizEditing) return;
-  await fetch(`/api/business/${$('bizKind').value}/${bizEditing}`, { method: 'DELETE' });
-  bizLoad();
-};
-bizLoad();
-
-/* --------------------------------------------------- notes (embTools port) */
-let noteKind = 'notes';
-document.querySelectorAll('.ntab').forEach(b => b.onclick = async () => {
-  document.querySelectorAll('.ntab').forEach(x => x.classList.toggle('on', x === b));
-  noteKind = b.dataset.note;
-  await noteLoad();
-});
-async function noteLoad() {
-  const d = await (await fetch(`/api/notes/${noteKind}`)).json();
-  $('noteText').value = d.text;
-  $('noteStatus').textContent = '';
-}
-$('noteSave').onclick = async () => {
-  await fetch(`/api/notes/${noteKind}`, { method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: $('noteText').value }) });
-  $('noteStatus').textContent = 'saved';
-};
-noteLoad();
+clientsLoad();
 
 /* ------------------------------------------------- thread palettes / brands */
 let paletteList = [];
@@ -1080,6 +1012,69 @@ function drawLayout() {
 }
 loadHoops();
 
+/* ------------------------------------------------ fabric / machine presets */
+let presets = { fabrics: [], machines: [] };
+async function loadPresets() {
+  presets = await (await fetch('/api/presets')).json();
+  $('fabric').innerHTML = '<option value="">—</option>' +
+    presets.fabrics.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+  $('machine').innerHTML = '<option value="">—</option>' +
+    presets.machines.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+  const f = lsGet('fabric'), m = lsGet('machine');
+  if (m) { $('machine').value = m; applyMachine(); }
+  if (f) { $('fabric').value = f; applyFabric(); }
+}
+function machineSatin() {
+  const m = presets.machines.find(x => x.id === $('machine').value);
+  return m ? m.max_satin : 12;
+}
+function applyFabric() {
+  lsSet('fabric', $('fabric').value);
+  const f = presets.fabrics.find(x => x.id === $('fabric').value);
+  if (!f) return;
+  $('density').value = f.density;
+  $('underlayMode').value = f.underlay;
+  $('pullComp').value = f.pull_comp;
+  $('knockdown').checked = f.knockdown;
+  $('capMode').checked = f.cap_mode;
+  $('satin').value = Math.min(f.max_satin, machineSatin());
+}
+function applyMachine() {
+  lsSet('machine', $('machine').value);
+  const m = presets.machines.find(x => x.id === $('machine').value);
+  if (!m) return;
+  $('satin').value = Math.min(+$('satin').value || 8, m.max_satin);
+  $('trimDist').value = m.trim_dist;
+  $('fmt').value = m.format;
+  if (job) updateDl();
+}
+$('fabric').onchange = applyFabric;
+$('machine').onchange = applyMachine;
+function stitchSettings() {
+  return { underlay: $('underlayMode').value, pull_comp: +$('pullComp').value,
+           knockdown: $('knockdown').checked, cap_mode: $('capMode').checked };
+}
+loadPresets();
+
+/* ------------------------------------------------ digitize vs sketch mode */
+function isSketch() { return window._fKind === 'image' && $('artMode').value === 'sketch'; }
+function goLabel(kind) {
+  return kind === 'image' ? (isSketch() ? 'Sketch it' : 'Digitize')
+    : kind === 'svg' ? 'Import & stitch' : 'Import';
+}
+function modeChanged() {
+  const sk = isSketch();
+  $('setDigitize').classList.toggle('hide', sk);
+  $('setSketch').classList.toggle('hide', !sk);
+  $('colorsWrap').classList.toggle('hide', sk);
+  $('stitchBox').classList.toggle('hide', sk || window._fKind === 'machine' || !window._fKind);
+  $('goLayers').classList.toggle('hide', sk || window._fKind !== 'image');
+  $('layersCard').classList.toggle('hide', sk || window._fKind !== 'image');
+  $('go').textContent = goLabel(window._fKind);
+}
+$('artMode').onchange = modeChanged;
+$('skDetail').oninput = () => { $('skDetailVal').textContent = $('skDetail').value; };
+
 $('drop').onclick = () => $('file').click();
 $('drop').ondragover = e => { e.preventDefault(); };
 $('drop').ondrop = e => { e.preventDefault(); pickMany(e.dataTransfer.files); };
@@ -1104,16 +1099,16 @@ async function pick(f) {
   $('setArt').classList.toggle('hide', kind !== 'image');
   $('setSvg').classList.toggle('hide', kind !== 'svg');
   $('sizeBox').classList.toggle('hide', kind === 'machine');
+  $('stitchBox').classList.toggle('hide', kind === 'machine' || isSketch());
   if (kind !== 'machine') setArt(f, kind);
   $('importName').textContent = kind === 'image' ? ''
     : window._files.length > 1 ? `${window._files.length} SVGs: ` + window._files.map(x => x.name).join(', ')
     : f.name;
   $('importPlacement').disabled = !job;
   if (!job) $('importPlacement').value = 'new';
-  $('go').textContent = kind === 'image' ? 'Digitize'
-    : kind === 'svg' ? 'Import & stitch' : 'Import';
-  $('goLayers').classList.toggle('hide', kind !== 'image');
-  $('layersCard').classList.toggle('hide', kind !== 'image');
+  $('go').textContent = goLabel(kind);
+  $('goLayers').classList.toggle('hide', kind !== 'image' || isSketch());
+  $('layersCard').classList.toggle('hide', kind !== 'image' || isSketch());
 
   if (kind === 'image' || kind === 'svg') {
     const r = new FileReader();
@@ -1144,10 +1139,19 @@ async function pick(f) {
 $('go').onclick = async () => {
   const kind = window._fKind;
   const b = $('go'); b.disabled = true;
-  b.innerHTML = '<span class="spin"></span>' + (kind === 'image' ? 'Digitizing…' : 'Importing…');
+  b.innerHTML = '<span class="spin"></span>' + (kind === 'image' ? (isSketch() ? 'Sketching…' : 'Digitizing…') : 'Importing…');
   try {
     let res;
-    if (kind === 'image') {
+    if (isSketch()) {
+      const fd = new FormData();
+      fd.append('image', window._f);
+      fd.append('width_mm', $('width').value);
+      fd.append('detail', $('skDetail').value);
+      fd.append('color', $('skColor').value);
+      fd.append('bean', $('skBean').value === '1');
+      fd.append('palette', $('palette').value);
+      res = await fetch('/api/sketch', { method: 'POST', body: fd });
+    } else if (kind === 'image') {
       const hp = hoopDims();
       const fd = new FormData();
       fd.append('job', job); fd.append('colors', $('colors').value);
@@ -1155,7 +1159,11 @@ $('go').onclick = async () => {
       fd.append('hoop_w', hp.w); fd.append('hoop_h', hp.h);
       fd.append('density', $('density').value);
       fd.append('max_satin', $('satin').value);
-      fd.append('heavy_underlay', $('underlay').checked);
+      const st = stitchSettings();
+      fd.append('underlay', st.underlay); fd.append('pull_comp', st.pull_comp);
+      fd.append('knockdown', st.knockdown); fd.append('cap_mode', st.cap_mode);
+      fd.append('trim_dist', $('trimDist').value);
+      fd.append('fabric', $('fabric').value); fd.append('machine', $('machine').value);
       fd.append('autotune', $('autotune').checked);
       fd.append('fill_method', $('fillMethod').value);
       fd.append('fill_angle', $('fillAngle').value);
@@ -1170,6 +1178,10 @@ $('go').onclick = async () => {
       if (placement !== 'new') fd.append('job', job);
       fd.append('width_mm', placement === 'keep' ? 0 : $('width').value);
       fd.append('fill_method', $('importFill').value);
+      fd.append('density', $('density').value);
+      const st = stitchSettings();
+      fd.append('underlay', st.underlay); fd.append('pull_comp', st.pull_comp);
+      fd.append('knockdown', st.knockdown);
       fd.append('palette', $('palette').value);
       res = await fetch('/api/import', { method: 'POST', body: fd });
     }
@@ -1177,7 +1189,7 @@ $('go').onclick = async () => {
     show(await res.json());
   } catch (err) { alert(err.message); }
   b.disabled = false;
-  b.textContent = kind === 'image' ? 'Digitize' : kind === 'svg' ? 'Import & stitch' : 'Import';
+  b.textContent = goLabel(kind);
 };
 
 /* --------------------- Text tool: lettering, standalone or added on */
@@ -1240,6 +1252,10 @@ function show(d) {
     rows.push(['Letter height', d.lettering.height_mm + ' mm']);
     rows.push(['Satin columns', d.lettering.satin_columns]);
     rows.push(['Running paths', d.lettering.running_paths]);
+  }
+  if (d.sketch_info) {
+    rows.push(['Sketch lines', d.sketch_info.lines]);
+    rows.push(['Line length', d.sketch_info.length_mm + ' mm']);
   }
   if (d.import_info) {
     if (d.import_info.source_format) rows.push(['Imported from', d.import_info.source_format.toUpperCase()]);
@@ -1939,7 +1955,7 @@ $('penStitch').onclick = async () => {
   try {
     const res = await fetch('/api/pen', { method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ palette: $('palette').value, shapes: penShapes.map(sh => ({
+      body: JSON.stringify({ palette: $('palette').value, settings: stitchSettings(), shapes: penShapes.map(sh => ({
         mode: sh.mode, color: sh.color, width_mm: sh.width_mm,
         spacing_mm: sh.spacing_mm, run_len_mm: sh.run_len_mm,
         points: sh.points.map(p => [+(p[0] / PXMM).toFixed(3), +(p[1] / PXMM).toFixed(3)]),
@@ -2133,7 +2149,7 @@ $('vecStitch').onclick = async () => {
   try {
     const res = await fetch('/api/stitch_layers', { method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ layers: vecLayers, palette: $('palette').value }) });
+      body: JSON.stringify({ layers: vecLayers, palette: $('palette').value, settings: stitchSettings() }) });
     if (!res.ok) throw new Error((await res.json()).detail);
     $('layersPanel').classList.add('hide');
     show(await res.json());

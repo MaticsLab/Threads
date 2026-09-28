@@ -469,8 +469,8 @@ def _sew_stroke(s, subs_mm, sw_mm, attrs, max_satin):
     repeats = int(float(_ink(attrs, 'bean_stitch_repeats') or 0))
     zz_spacing = float(_ink(attrs, 'zigzag_spacing_mm') or 0.5)
     for sub in subs_mm:
-        if sw_mm >= 0.8 and sw_mm <= max_satin:
-            # zigzag at the stroke width
+        if sw_mm >= core.MIN_SATIN and sw_mm <= max_satin:
+            # zigzag at the stroke width (+ pull compensation)
             pts = resample_polyline(sub, zz_spacing)
             if len(pts) < 2:
                 continue
@@ -478,7 +478,7 @@ def _sew_stroke(s, subs_mm, sw_mm, attrs, max_satin):
             d = np.gradient(p, axis=0)
             L = np.linalg.norm(d, axis=1)
             L[L < 1e-9] = 1e-9
-            n = np.column_stack([-d[:, 1] / L, d[:, 0] / L]) * (sw_mm / 2)
+            n = np.column_stack([-d[:, 1] / L, d[:, 0] / L]) * (sw_mm / 2 + core.comp_side())
             s.move_to(tuple(p[0]), None)
             side = 1.0
             for q, nq in zip(p, n):
@@ -536,7 +536,7 @@ def _stroke_pieces(subs_mm, st, attrs, clip, stroke_c, unit2mm, max_satin,
         def under(s, polys=polys):
             for q in polys:
                 if q.area >= 3.0:
-                    core.sew_edge_run(s, q, travel=q)
+                    core.fill_underlay(s, q, fill_angle, travel=q)
 
         def top(s, polys=polys):
             for q in polys:
@@ -548,40 +548,10 @@ def _stroke_pieces(subs_mm, st, attrs, clip, stroke_c, unit2mm, max_satin,
     return [(foot, None, lambda s, lines=lines: _sew_stroke(s, lines, sw_mm, attrs, max_satin))]
 
 
-def _plan_blocks(pieces):
-    """Group pieces into colour blocks, sewing order preserved where it
-    matters: a piece joins the latest block of its colour unless a piece
-    sewn after that block overlaps it (then it would be covered), in which
-    case a new block starts. Returns [(rgb, [(under_fn, top_fn), ...])]."""
-    blocks = []            # [rgb, [(under, top)], [footprints]]
-    for rgb, geom, fn in pieces:
-        target = None
-        for bi in range(len(blocks) - 1, -1, -1):
-            if blocks[bi][0] == rgb:
-                # an overlap too small to see isn't worth a colour change
-                limit = max(1.0, 0.02 * geom.area)
-                covered = False
-                for later in blocks[bi + 1:]:
-                    for g in later[2]:
-                        if g.intersects(geom) and g.intersection(geom).area > limit:
-                            covered = True
-                            break
-                    if covered:
-                        break
-                if not covered:
-                    target = blocks[bi]
-                break
-        if target is None:
-            target = [rgb, [], []]
-            blocks.append(target)
-        target[1].append(fn)
-        target[2].append(geom)
-    return [(b[0], b[1]) for b in blocks]
-
-
 def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
                  row_spacing=0.35, max_stitch=3.5, max_satin=8.0,
-                 heavy_underlay=True, scale=None, center=True):
+                 heavy_underlay=True, scale=None, center=True, underlay=None,
+                 pull_comp=None, min_satin=None, knockdown=False):
     """SVG bytes/str -> (pystitch pattern via Sewer, layers, info).
 
     Coordinates are page coordinates: the viewBox's top-left corner is
@@ -593,6 +563,8 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
     """
     import pystitch
 
+    core.set_tunables(underlay=underlay or ('auto' if heavy_underlay else 'light'),
+                      pull_comp=pull_comp, min_satin=min_satin)
     if isinstance(data, bytes):
         data = data.decode('utf-8', 'replace')
     try:
@@ -665,20 +637,32 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
             zz = satin_zigzag(subs_mm, spacing)
             if zz:
                 under = center_run(subs_mm)
+                width = float(np.mean([math.dist(a, b) for a, b in zip(zz, zz[1:])])) if len(zz) > 1 else 0.0
+                from shapely.geometry import MultiPoint
+                foot = MultiPoint(zz).convex_hull
+                if width < core.MIN_SATIN and under:
+                    # too narrow to hold satin: bean stitch along the centre
+                    pieces.append((rgb, foot, (None, lambda s, u=under: core.bean_run(s, u, 2.0))))
+                    n_satin += 1
+                    continue
+                zz = core.widen_zigzag(zz)
+                mode = core.underlay_mode()
 
-                def satin_under(s, zz=zz, under=under):
+                def satin_under(s, zz=zz, under=under, mode=mode):
+                    if mode == 'none':
+                        return
                     s.move_to(under[0] if under else zz[0], None)
                     for pnt in under:
                         s.run_to(pnt, 2.5)
-                    for pnt in reversed(under):
-                        s.run_to(pnt, 2.5)
+                    if mode != 'light':
+                        for pnt in reversed(under):
+                            s.run_to(pnt, 2.5)
 
                 def satin_top(s, zz=zz):
                     s.move_to(zz[0], None)
                     for pnt in zz:
                         s._st(pnt)
-                from shapely.geometry import MultiPoint
-                pieces.append((rgb, MultiPoint(zz).convex_hull, (satin_under, satin_top)))
+                pieces.append((rgb, foot, (satin_under, satin_top)))
                 n_satin += 1
             continue
 
@@ -709,10 +693,7 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
                 def fill_under(s, geoms=geoms, angle=angle):
                     for q in geoms:
                         if q.area >= 3.0:
-                            core.sew_edge_run(s, q, travel=q)
-                            if heavy_underlay:
-                                core.sew_fill(s, q, angle + 45, 2.5, 3.0,
-                                              stagger=False, start=s.pos, travel=q)
+                            core.fill_underlay(s, q, angle, travel=q)
 
                 def fill_top(s, geoms=geoms, angle=angle, spacing=spacing):
                     for q in geoms:
@@ -729,21 +710,36 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
 
     s = core.Sewer()
     layers, block_colors = [], []
-    for rgb, fns in _plan_blocks(pieces):
+
+    def start_block(rgb, name=None):
         th = pystitch.EmbThread()
         th.color = (rgb[0] << 16) | (rgb[1] << 8) | rgb[2]
-        th.description = 'Colour %d' % (len(block_colors) + 1)
+        th.description = name or 'Colour %d' % (len(block_colors) + 1)
         if not block_colors:
             s.pattern.add_thread(th)
         else:
             s.color_break(th)
-        block_colors.append(rgb)
-        # the block's underlay first, then its top stitching
+        block_colors.append((rgb, th.description))
+
+    if knockdown and pieces:
+        from shapely.ops import unary_union
+        start_block(pieces[0][0], 'Knockdown')
+        core.sew_knockdown(s, unary_union([g for _r, g, _f in pieces]))
+
+    for rgb, fns in core.plan_blocks(pieces):
+        start_block(rgb)
+        # the block's underlay first, then its top stitching; while the top
+        # is pending, travel may run across the block's other pieces
         for under, _top in fns:
             if under:
                 under(s)
+        s.region_clear()
+        for _r, g, _f in pieces:
+            if _r == rgb:
+                s.region_add(g)
         for _under, top in fns:
             top(s)
+        s.region_clear()
 
     if s.count == 0:
         raise SvgError('the SVG contained no stitchable geometry')
@@ -752,9 +748,8 @@ def digitize_svg(data, width_mm=None, fill_method='tatami', fill_angle=65.0,
     if center:
         s.pattern.move_center_to_origin()
 
-    for i, rgb in enumerate(block_colors):
-        layers.append({'name': 'Colour %d' % (i + 1),
-                       'hex': '#%02X%02X%02X' % rgb, 'rgb': rgb})
+    for rgb, name in block_colors:
+        layers.append({'name': name, 'hex': '#%02X%02X%02X' % rgb, 'rgb': rgb})
     info = {'elements': len(elements), 'satin_columns': n_satin,
             'fills': n_fill, 'strokes': n_stroke,
             'natural_width_mm': round(natural_w_mm, 1),

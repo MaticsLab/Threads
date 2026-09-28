@@ -19,7 +19,7 @@ class Params:
     max_satin: float = 8.0           # widest safe satin stitch
     max_stitch: float = 3.5
     min_stitch: float = 0.5
-    pull_comp: float = 0.12
+    pull_comp: float = 0.25       # total widening across the stitch direction
     trim_dist: float = 2.0
     underlay_spacing: float = 2.5
     min_fill_area: float = 0.20
@@ -28,6 +28,16 @@ class Params:
     fill_method: str = 'tatami'   # tatami | contour | circular (Ink/Stitch fills)
     fill_angle: float = 65.0
     heavy_underlay: bool = True
+    underlay: str = 'auto'        # auto | light | heavy | none (see core)
+    min_satin: float = 1.0        # narrower columns sew as bean running stitch
+    knockdown: bool = False       # open fill over the footprint first (fleece)
+    cap_mode: bool = False        # centre-out, bottom-up sequencing for caps
+
+    def __post_init__(self):
+        if not self.heavy_underlay and self.underlay == 'auto':
+            self.underlay = 'light'
+        if self.underlay not in core.UNDERLAY_MODES:
+            self.underlay = 'auto'
 
 
 # ------------------------------------------------------------------ build
@@ -40,12 +50,35 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
 
     s = core.Sewer()
     stats = []
+    union = np.zeros(layers[0]['mask'].shape, np.uint8)
+    for L in layers:
+        union = np.maximum(union, core.clean(L['mask'], k=k, min_area_px=min_area_px))
+    ys, xs = np.where(union > 0)
+    centre_x = float(xs.mean() * scale) if len(xs) else 0.0
+
+    if p.knockdown:
+        # its own block in the first colour, sewn before anything else
+        th = pystitch.EmbThread()
+        th.color = layers[0]['hex_int']
+        th.description = 'Knockdown'
+        s.pattern.add_thread(th)
+        foot = unary_union(core.mask_to_polys(union, scale, simplify_mm=0.3))
+        if not foot.is_empty:
+            core.sew_knockdown(s, foot)
+        stats.append({'name': 'Knockdown', 'hex': layers[0]['hex'], 'columns': 0,
+                      'blobs': 0, 'fills': 0, 'narrow': 0, 'stitches': s.count})
+
+    def order(items, keyfn):
+        if p.cap_mode:
+            return core.cap_order(items, keyfn, centre_x)
+        return core.order_by_nearest(items, keyfn, s.pos)
+
     for idx, L in enumerate(layers):
         m = core.clean(L['mask'], k=k, min_area_px=min_area_px)
         th = pystitch.EmbThread()
         th.color = L['hex_int']
         th.description = L['name']
-        if idx > 0:
+        if idx > 0 or p.knockdown:
             s.color_break(th)
         else:
             s.pattern.add_thread(th)
@@ -59,7 +92,7 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
             ys, xs = np.where(comp > 0)
             comps.append((comp, (xs.mean() * scale, ys.mean() * scale)))
 
-        ncol = nfill = nblob = 0
+        ncol = nfill = nblob = nnarrow = 0
         start_count = s.count
         # Plan every shape first (columns vs fills vs blobs), then sew the
         # block in two passes: all underlay, then all top stitching. Each
@@ -118,12 +151,7 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
                               heavy_underlay=p.heavy_underlay, phase=phase)
                 return
             if phase != core.TOP and q.area >= 3.0:
-                core.sew_edge_run(s, g, travel=travel)
-                if p.heavy_underlay:
-                    core.sew_fill(s, g, 110.0, p.underlay_spacing, 3.0,
-                                  stagger=False, start=s.pos, travel=travel)
-                    core.sew_fill(s, g, 20.0, p.underlay_spacing, 3.0,
-                                  stagger=False, start=s.pos, travel=travel)
+                core.fill_underlay(s, g, p.fill_angle, travel)
             if phase != core.UNDER:
                 fill_methods.sew_area(s, g, p.fill_method, p.fill_angle,
                                       p.row_spacing, p.max_stitch, travel=travel)
@@ -135,8 +163,15 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
                     if ring:
                         core.sew_ring(s, ring, travel)
 
+        # while the block's top stitching is pending, travel may run over
+        # any of its objects (the runs get covered); each object leaves the
+        # region once its top is down
         for phase in (core.UNDER, core.TOP):
-            for pl in core.order_by_nearest(plans, lambda t: t['cen'], s.pos):
+            if phase == core.TOP:
+                s.region_clear()
+                for pl in plans:
+                    s.region_add(pl['travel'])
+            for pl in order(plans, lambda t: t['cen']):
                 travel = pl['travel']
                 for r in core.order_by_nearest(
                         pl['regions'], lambda z: (z['g'].centroid.x, z['g'].centroid.y), s.pos):
@@ -144,10 +179,14 @@ def build_pattern(layers, canvas_mm, width_px, p: Params):
                     if phase == core.TOP:
                         nblob += r['blob']; nfill += not r['blob']
                 for col in core.order_columns(pl['columns'], s.pos):
-                    core.sew_column(s, col, travel, phase=phase)
-                    ncol += phase == core.TOP
+                    kind = core.sew_column(s, col, travel, phase=phase)
+                    if phase == core.TOP:
+                        ncol += kind == 'satin'; nnarrow += kind == 'run'
+                if phase == core.TOP:
+                    s.region_subtract(travel)
+        s.region_clear()
         stats.append({'name': L['name'], 'hex': L['hex'], 'columns': ncol,
-                      'blobs': nblob, 'fills': nfill,
+                      'blobs': nblob, 'fills': nfill, 'narrow': nnarrow,
                       'stitches': s.count - start_count})
 
     s.tie_off()
@@ -213,13 +252,15 @@ def qa_report(pat, layers, canvas_mm, width_px, p: Params):
             prev = None
 
     # coverage: rasterise the thread and compare against each layer mask
-    blocks, ci, prev = [[] for _ in layers], 0, None
+    # (a knockdown block, when present, comes first and belongs to no layer)
+    off = 1 if p.knockdown else 0
+    blocks, ci, prev = [[] for _ in layers], -off, None
     for x, y, c in st:
         k = c & 0xFF
         if k == pystitch.COLOR_CHANGE:
             ci += 1; prev = None; continue
         if k == pystitch.STITCH:
-            if prev is not None and ci < len(layers):
+            if prev is not None and 0 <= ci < len(layers):
                 blocks[ci].append((prev, (x, y)))
             prev = (x, y)
         elif k == pystitch.JUMP:
