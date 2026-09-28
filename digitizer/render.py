@@ -2,7 +2,7 @@
 import numpy as np, pystitch
 from PIL import Image, ImageDraw
 
-def preview(pat, colors, out_path, px_wide=1000, bg=(184,189,196), shade=False):
+def preview(pat, colors, out_path, px_wide=1000, bg=(141,148,160), shade=False):
     """shade=True draws each stitch over a darker edge so threads read as
     separate strands (and white thread shows on a white page)."""
     xs=[s[0] for s in pat.stitches]; ys=[s[1] for s in pat.stitches]
